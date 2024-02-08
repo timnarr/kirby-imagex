@@ -17,6 +17,7 @@ $imagex = new Imagex([
 $pictureAttributes = $imagex->getPictureAttributes();
 $pictureSources = $imagex->getPictureSources();
 $imgAttributes = $imagex->getImgAttributes();
+$smallestModernFormat = $imagex->getSmallestFormat();
 ?>
 
 <picture <?= attr($pictureAttributes) ?>>
@@ -26,3 +27,5 @@ $imgAttributes = $imagex->getImgAttributes();
 
 	<img <?= attr($imgAttributes) ?>>
 </picture>
+
+<?php snippet('imagex-preload', ['pictureSources' => $pictureSources, 'smallestModernFormat' => $smallestModernFormat]) ?>

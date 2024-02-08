@@ -5,7 +5,7 @@
 - 🌠 Dynamic generation of image srcsets for art-directed or media-condition-based images.
 - 📐 Helps you easily change the aspect ratio without the need to define new srcset presets.
 - 😴 Supports native lazy loading and is customizable for JavaScript lazy loading libraries.
-- 🚀 Improve the performance of your critical LCP (Largest Contentful Paint) images, utilizing `Priority Hints`.
+- 🚀 Improve the performance of your critical LCP (Largest Contentful Paint) images, utilizing `Priority Hints` and `Preload Resource Hints`.
 - ⚡️ Supports multiple modern image formats, like `avif` and `webp`.
 - 🧩 Can easily be integrated into existing blocks/projects.
 - 🪄 Uses only Kirby's core capabilities for image editing.
@@ -33,6 +33,7 @@ return [
     'formats' => ['avif', 'webp'],
     'includeInitialFormat' => false,
     'noSrcsetInImg' => false,
+    'preloadLinks' => false,
     'relativeUrls' => false,
   ],
 ];
@@ -43,8 +44,9 @@ return [
 | `cache` | `true` | Boolean | Imagex will cache some calculations. Read more about it here: "[Cache](#cache)" |
 | `customLazyloading` | `false` | Boolean | Imagex will initially use native lazy loading with the `loading` attribute. You can enable this option if you want to use a custom lazy loading library like lazysizes or any other JS-based solution. Imagex automatically use `data-src` and `data-srcset` if this is option is active. If you need something like `data-sizes="auto"` please use the snippet config to add it as a lazy HTML attribute. |
 | `formats` | `['avif', 'webp']` | Array with Strings | Define the modern file formats you want to use. ⚠️ Order matters here! You should go from the most to less modern format. The order in this array also affects the `formatSizeHandling` snippet-option. [Read more about why the correct order is important](#why-order-matters). You shouldn't add the initial image format like `png` or `jpeg` here. |
-| `includeInitialFormat` | `false` | Boolean | If active the format of the uploaded image (normally jpeg or png) will be treated as a modern format, which means Imagex will create `<source>` tags for it. This is especially useful when you can't use modern formats, but want to use art directed images. |
+| `includeInitialFormat` | `false` | Boolean | If active the format of the uploaded image (normally jpeg or png) will be treated as a modern format, which means Imagex will create `<source>` tags and preloading links for it. This is especially useful when you can't use modern formats, but want to use art directed images and preloading links. |
 | `noSrcsetInImg` | `false` | Boolean | If active this will only output `src` with the smallest size from the given srcset-preset and the `srcset` attribute is omitted. |
+| `preloadLinks` | `false` | Boolean | If active Imagex will generate preloading links for the most modern format and add them to the `<head>` as a progressive enhancement. See "[Preload `<link>`s for critical images](#preload-links-for-critical-images)" |
 | `relativeUrls` | `false` | Boolean | Output relative image URLs everywhere when active. |
 
 ## Adjust Kirby's Thumbs Config and Add Srcset Presets
@@ -213,10 +215,41 @@ $options = [
 Imagex will do some simple calculations per image, like calculating the height by the given width and ratio. Basically imagex get the srcset definition from the config file, calculate and set the height and output the final config. The result will be cached to reduce unnecessary calculations when you use the same combination of srcset-preset and ratio for other images.
 
 ## Performance Improvements for Critical Images
-Imagex provides features like Priority Hints for improving the loading times of critical images.
+Imagex provides features like Priority Hints and Preload Resource Hints for improving the loading times of critical images.
 
 ### With Priority Hints
 Imagex will set the priority hint `fetchpriority="high"` to critical images to get the browser to load it sooner. Imagex set this by default if you pass `'critical' => true` to the imagex snippet. Read more about [fetchpriority here](https://web.dev/articles/fetch-priority#the_fetchpriority_attribute).
+
+### With Preload Resource Hints
+With Imagex it is possible to easily preload critical responsive images with resource hints, providing a preload link element and using the `imagesizes` and `imagesrcset` attributes. Imagex uses the `page.render:after` hook from Kirby, searches for images with preloading links and add them to the end of the `<head>`. You only have to opt-in in this feature by setting `'preloadLinks' => true` in the config.php and set `'critical' => true` for the images you want to preload.
+
+Here is an example of a final preload link:
+
+```html
+<link
+  rel="preload"
+  as="image"
+  imagesizes="100vw"
+  imagesrcset="
+    /image-560x280.avif 560w,
+    /image-768x384.avif 768w,
+    /image-960x480.avif 960w,
+    /image-1080x540.avif 1080w,
+    /image-1240x620.avif 1240w"
+  media="(min-width: 650px)"
+  type="image/avif"
+>
+```
+
+Browser support is pretty good and it is supported in Chromium browsers and Firefox for quite a while. Safari is late, but supports it since v17.2., see "Can I use" for [imagesrcset](https://caniuse.com/mdn-html_elements_link_imagesrcset) and [imagesizes](https://caniuse.com/?search=imagesizes).
+
+Imagex omits the `href` attribute of the `<link>` element, so older browsers that don't support `imagesizes` and `imagesrcset` don't load unecassary bytes and we can really use this as a progressive enhancement.
+
+Preloading responsive images also works well for art directed images using the `media` attribute and defining an appropriate media condition. Imagex will also automatically generate links for art directed images when you use them.
+
+🚧 **There are two things to note:**
+1. Preloading links only work with one format. Even if we have multiple preload links for different formats and define a `type` attribute with the mime-type, like `type="image/avif"`, the browser will preload both formats if these formats are supported. This works different in the `<picture>` element where the browser use the first matching `<source>` and ignore the others. Thats why Imagex will only preload the most modern image format and will also consider if you have the `formatSizeHandling` option activated.
+2. You should set the sizes attribute to a lenght value like `100vw` or a media condition like `(min-width: 1200px) 600px, 100vw`.
 
 ## Why Order Matters?
 ### Format Order and Media Attribute

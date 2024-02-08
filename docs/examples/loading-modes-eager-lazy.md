@@ -16,6 +16,7 @@ return [
     'formats' => ['avif', 'webp'],
     'includeInitialFormat' => false,
     'noSrcsetInImg' => false,
+    'preloadLinks' => false,
     'relativeUrls' => false,
   ],
 ];
