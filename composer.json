@@ -1,0 +1,57 @@
+{
+	"name": "timnarr/kirby-imagex",
+	"description": "Modern images for Kirby CMS – This plugin helps you orchestrate modern, responsive and performant images in Kirby",
+  "type": "kirby-plugin",
+  "keywords": [
+    "kirby",
+    "kirby-cms",
+    "kirby-plugin",
+		"images",
+		"responsive-images",
+		"modern-images"
+  ],
+	"version": "0.1.0",
+	"license": "MIT",
+	"homepage": "https://github.com/timnarr/kirby-imagex",
+	"authors": [
+		{
+			"name": "Tim Narr",
+			"email": "dev@tim-narr.com",
+			"homepage": "https://tim-narr.com"
+		}
+	],
+	"require": {
+		"php": "~8.1.0 || ~8.2.0 || ~8.3.0",
+		"getkirby/composer-installer": "^1.2"
+	},
+	"require-dev": {
+		"friendsofphp/php-cs-fixer": "^3",
+		"phpunit/phpunit": "^10.5",
+		"getkirby/cms": "^4.0"
+	},
+	"autoload": {
+		"psr-4": {
+			"TimNarr\\": ["classes/"]
+		},
+		"files": [
+			"helpers/aspectRatio.php",
+			"helpers/attributes.php",
+			"helpers/misc.php",
+			"helpers/srcset.php"
+		]
+	},
+	"scripts": {
+		"lint": ["php-cs-fixer fix --dry-run --diff"],
+		"lint:fix": ["php-cs-fixer fix"],
+		"test": ["phpunit tests"]
+	},
+	"config": {
+		"optimize-autoloader": true,
+		"allow-plugins": {
+			"getkirby/composer-installer": true
+		}
+	},
+	"extra": {
+		"kirby-cms-path": false
+	}
+}
