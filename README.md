@@ -8,7 +8,7 @@
 - 🚀 Improve the performance of your critical LCP (Largest Contentful Paint) images, utilizing `Priority Hints`.
 - ⚡️ Supports multiple modern image formats, like `avif` and `webp`.
 - 🧩 Can easily be integrated into existing blocks/projects.
-- 🪄 Uses only Kirby's core capabilities for image editing.
+- 🪄 Uses only Kirby's core capabilities for image handling.
 
 ## Getting Started
 Four steps to get Imagex running:
