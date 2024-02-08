@@ -190,7 +190,7 @@ $options = [
     'lazy' => [
       // extend `shared` attributes in lazy loading mode
     ],
-    // Do not add `src`, `srcset`, `sizes` or `loading` or their equivalents for lazy loading (like `data-src`) here.
+    // Do not add `src`, `srcset` or `loading` or their equivalents for lazy loading (like `data-src`) here.
     // These attributes are handled automatically by Imagex and adding them here will throw an exception.
   ],
   'srcsetName' => 'my-srcset',
