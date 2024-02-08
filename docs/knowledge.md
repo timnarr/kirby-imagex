@@ -1,6 +1,6 @@
 # Collection of Helpful Links
 
-## Responsice & Art Directed Images
+## Responsive & Art Directed Images
 - https://web.dev/learn/images/responsive-images
 - https://web.dev/patterns/web-vitals-patterns/images/responsive-images
 
