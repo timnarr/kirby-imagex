@@ -1,4 +1,4 @@
-name: PHPunit
+name: PHP - PHP CS Fixer & PHPUnit
 
 on:
   push:
@@ -10,10 +10,8 @@ permissions:
   contents: read
 
 jobs:
-  build:
-
+  lintAndTest:
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v3
 
@@ -34,8 +32,8 @@ jobs:
     - name: Install dependencies
       run: composer install --prefer-dist --no-progress
 
-    # Add a test script to composer.json, for instance: "test": "vendor/bin/phpunit"
-    # Docs: https://getcomposer.org/doc/articles/scripts.md
+    - name: Run lint
+      run: composer run-script lint
 
     - name: Run tests
       run: composer run-script test
