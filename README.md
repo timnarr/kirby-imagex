@@ -91,7 +91,7 @@ The quality settings for the modern formats cannot simply be taken from the init
 ```
 
 ## Snippet Configuration and Usage
-Pass the file object of your image and other options to the imagex snippet as follows:
+Pass the file object of your image and other options to the Imagex snippet as follows:
 
 ```php
 // Define your options and pass them to the `imagex` snippet
@@ -103,10 +103,10 @@ $options = [
       'class' => 'my-image',
       'decoding' => 'async',
       'style' => ['background: red;'],
+      'sizes' => '100vw',
     ],
   ],
   'ratio' => '16/9',
-  'sizes' => '100vw',
   'srcsetName' => 'my-srcset',
   'critical' => false,
 ];
@@ -115,7 +115,7 @@ $options = [
 <?php snippet('imagex', $options) ?>
 ```
 
-Imagex outputs a `<picture>` element with multiple `<source>` elements and one `<img>`. If you need extra HTML you can wrap the imagex snippet accordingly. Handle `svg` or `gif` files differently as needed!
+Imagex outputs a `<picture>` element with multiple `<source>` elements and one `<img>`. If you need extra HTML you can wrap the Imagex snippet accordingly. Handle `svg` or `gif` files differently as needed!
 
 ```php
 <?php
@@ -138,7 +138,7 @@ $options = [
 ```
 
 ### Snippet Options
-You can choose from many options to customize your images and pass them to the imagex snippet. At first it might look heavy, but it's just very flexible and actually only `image` is required and everything else can be omitted, while Imagex is providing some sane defaults.
+You can choose from many options to customize your images and pass them to the Imagex snippet. At first it might look heavy, but it's just very flexible and actually only `image` is required and everything else can be omitted, while Imagex is providing some sane defaults.
 
 For each HTML element of the picture element you can add attributes, like CSS classes, inline-styles, data-attributes and so on. You only need to add your attributes to one of these three attribute categories, I call them loading modes: `shared`, `eager` and `lazy`. `shared` is for attributes that should exists always, no matter what loading mode the image is. If you have attributes that should only be used in `eager` or `lazy` loading mode you can add them to one of it. Imagex will merge the `shared` attributes with the attributes of the current loading mode automatically. The attributes of the non-applicable loading mode will have no effect then.
 
@@ -148,7 +148,6 @@ For each HTML element of the picture element you can add attributes, like CSS cl
 | `pictureAttributes` | `['shared' => [], 'eager' => [], 'lazy' => []]` | Array | HTML attributes added to `<picture>`. Set `shared` attributes regardless of the loading mode. Extend `shared` attributes for a specific loading mode by setting `eager` and `lazy`. |
 | `imgAttributes` | `['shared' => [], 'eager' => [], 'lazy' => []]` | Array | HTML attributes added to `<img>`. Set `shared` attributes regardless of the loading mode. Extend `shared` attributes for a specific loading mode by setting `eager` and `lazy`. |
 | `srcsetName` | `'default'` | String | Name of the srcset preset, configured in [Kirby's config](#adjust-kirbys-thumbs-config-and-add-srcset-presets).  |
-| `sizes` | `'auto'` | String | Value of the `sizes` attribute. |
 | `critical` | `false` | Boolean | With this flag you can switch between `eager` and `lazy`. A critical image is placed "above-the-fold" and should be loaded in `eager` mode. If `critical` is `true` Imagex disables lazy loading and set `fetchpriority="high"` to the image. You can add your logic here to determine if an image is critical, for example: Let the editor choose in the panel by adding a toggle field or query the index of your image blocks and set `critical` to true if it's in your first two blocks. Or just set it to `true` if you know a specific image-block is only used above the fold. |
 | `ratio` | `'intrinsic'` | String | Set the desired aspect ratio here for not art-directed-images which is used for the thumbs in your `<img>` src and srcset and for non art directed sources or let the editor choose from a set of predefined ratios from the panel. Can be omitted, default is `intrinsic`, which means the ratio of the source-image is used. |
 | `sourcesAttributes` | `['shared' => [], 'eager' => [], 'lazy' => []]` | Array | HTML attributes added to non-art-directed `<source>` elements. Set `shared` attributes regardless of the loading mode. Extend `shared` attributes for a specific loading mode by setting `eager` and `lazy`. |
@@ -182,7 +181,8 @@ $options = [
       ],
       'alt' => $image->alt(),
       'style' => ['background-color: red;', 'object-fit: cover;', 'object-postion: ' . $image->focus() . ';'],
-      'data-attr' => 'my-img-attribute'
+      'data-attr' => 'my-img-attribute',
+      'sizes' => '760px',
     ],
     'eager' => [
       // extend `shared` attributes in eager loading mode
@@ -191,13 +191,12 @@ $options = [
       // extend `shared` attributes in lazy loading mode
     ],
     // Do not add `src`, `srcset`, `sizes` or `loading` or their equivalents for lazy loading (like `data-src`) here.
-    // These attributes are handled automatically by imagex and adding them here will throw an exception.
+    // These attributes are handled automatically by Imagex and adding them here will throw an exception.
   ],
   'srcsetName' => 'my-srcset',
-  'sizes' => '760px',
   'critical' => $isCritical ?? false,
   'ratio' => '1/1',
-  'sources' => [
+  'sourcesArtDirected' => [
     ['ratio' => '21/9', 'media' => '(min-width: 1200px)']
     ['media' => '(min-width: 820px)', 'image' => $artDirectedImage]
     ['ratio' => '16/9', 'media' => '(prefers-color-scheme: dark)', 'image' => $darkModeImage]
@@ -205,18 +204,18 @@ $options = [
   ],
 ];
 
-// Pass your options to the imagex snippet
+// Pass your options to the Imagex snippet
 <?php snippet('imagex', $options) ?>
 ```
 
 ## Cache
-Imagex will do some simple calculations per image, like calculating the height by the given width and ratio. Basically imagex get the srcset definition from the config file, calculate and set the height and output the final config. The result will be cached to reduce unnecessary calculations when you use the same combination of srcset-preset and ratio for other images.
+Imagex will do some simple calculations per image, like calculating the height by the given width and ratio. Basically Imagex get the srcset definition from the config file, calculate and set the height and output the final config. The result will be cached to reduce unnecessary calculations when you use the same combination of srcset-preset and ratio for other images.
 
 ## Performance Improvements for Critical Images
 Imagex provides features like Priority Hints for improving the loading times of critical images.
 
 ### With Priority Hints
-Imagex will set the priority hint `fetchpriority="high"` to critical images to get the browser to load it sooner. Imagex set this by default if you pass `'critical' => true` to the imagex snippet. Read more about [fetchpriority here](https://web.dev/articles/fetch-priority#the_fetchpriority_attribute).
+Imagex will set the priority hint `fetchpriority="high"` to critical images to get the browser to load it sooner. Imagex set this by default if you pass `'critical' => true` to the Imagex snippet. Read more about [fetchpriority here](https://web.dev/articles/fetch-priority#the_fetchpriority_attribute).
 
 ## Why Order Matters?
 ### Format Order and Media Attribute
