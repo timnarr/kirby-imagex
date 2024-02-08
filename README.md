@@ -18,6 +18,9 @@ Four steps to get Imagex running:
 3. [Adjust Kirby's thumbs config and add srcset presets](#adjust-kirbys-thumbs-config-and-add-srcset-presets)
 4. [Add a snippet where you configure and pass options to the Imagex snippet](#snippet-configuration-and-usage)
 
+### Examples for Different Configurations and HTML Output
+You'll find all examples in the [examples.md](/docs/examples/README.md).
+
 ## Installation via Composer
 ```
 composer require timnarr/kirby-imagex
@@ -227,9 +230,6 @@ The `media` attribute is also important for responsive designs or art directed i
 In some cases `avif` files can be larger than `webp` and you end up sending more HTML and also larger files to the user. If `formatSizeHandling` is set to true, this option enables a dynamic size comparison between the specified image formats. The comparison is based on the order of the formats listed in the format array of your configuration. With the default `formats` array, this option checks whether `avif` is smaller than `webp` and only outputs or creates files for `avif` if it's smaller. So again the order of your formats array matters for this feature. The size comparions is currently very basic and Imagex will only generate the middle item of your passed srcset preset and compare it's size with the next format. If the the more modern format will have a larger file the rest of the srcset preset is not generated and is also omitted in the HTML output.
 
 🚧 **This feature is currently pretty basic.** It only generates the middle item / width from the given srcset preset and check if the file size is smaller than the next less modern format. And currently this is only done for the initial image and not for the images of art directed sources.
-
-## Examples for Different Configurations and HTML Output
-You'll find all examples in the [examples.md](/docs/examples/README.md).
 
 ## Roadmap
 - [ ] Add tests for Imagex class
