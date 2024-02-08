@@ -231,5 +231,11 @@ In some cases `avif` files can be larger than `webp` and you end up sending more
 ## Examples for Different Configurations and HTML Output
 You'll find all examples in the [examples.md](/docs/examples/README.md).
 
+## Roadmap
+- [ ] Add tests for Imagex class
+- [ ] Use Preload Resource Hints?! See [feature-branch](https://github.com/timnarr/kirby-imagex/tree/feature/preload-links)
+- [ ] Improved determination of the smallest format, when using `formatSizeHandling`
+- [ ] Improve `formatSizeHandling` in combination with art-directed images
+
 ## License
 [MIT License](./LICENSE) Copyright © 2024-present Tim Narr
