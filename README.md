@@ -1,3 +1,5 @@
+![Kirby Imagex Banner](/.github/imagex-banner.png)
+
 # Kirby Imagex
 **Modern Images for Kirby CMS** – This plugin helps you orchestrate modern, responsive and performant images in Kirby.
 
