@@ -26,7 +26,7 @@ function normalizeFormat(string $format): string
  */
 function urlHandler(string $url, bool $useRelativeUrls = null, string $siteUrl = null): string
 {
-	$useRelativeUrls = $useRelativeUrls ?? kirby()->option('timnarr.imagex.useRelativeUrls');
+	$useRelativeUrls = $useRelativeUrls ?? kirby()->option('timnarr.imagex.relativeUrls');
 	$siteUrl = $siteUrl ?? site()->url();
 
 	return $useRelativeUrls ? Str::replace($url, $siteUrl, '') : $url;
