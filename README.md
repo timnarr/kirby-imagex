@@ -117,7 +117,7 @@ $options = [
 ];
 ?>
 
-<?php snippet('imagex', $options) ?>
+<?php snippet('imagex-picture', $options) ?>
 ```
 
 Imagex outputs a `<picture>` element with multiple `<source>` elements and one `<img>`. If you need extra HTML you can wrap the Imagex snippet accordingly. Handle `svg` or `gif` files differently as needed!
@@ -136,7 +136,7 @@ $options = [
   <?php if ($image->extension() === 'svg' || $image->extension() === 'gif'): ?>
     <?php snippet('svg-gif-image') ?> // handle svg and gif files differently
   <?php else: ?>
-    <?php snippet('imagex', $options) ?>
+    <?php snippet('imagex-picture', $options) ?>
   <?php endif; ?>
   <figcaption>Lorem ipsum</figcaption>
 </figure>
@@ -210,7 +210,7 @@ $options = [
 ];
 
 // Pass your options to the Imagex snippet
-<?php snippet('imagex', $options) ?>
+<?php snippet('imagex-picture', $options) ?>
 ```
 
 ## Cache

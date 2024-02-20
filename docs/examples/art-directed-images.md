@@ -40,7 +40,7 @@ $options = [
 ];
 ?>
 
-<?php snippet('imagex', $options) ?>
+<?php snippet('imagex-picture', $options) ?>
 ```
 
 ### Final HTML Output
@@ -101,7 +101,7 @@ $options = [
 ];
 ?>
 
-<?php snippet('imagex', $options) ?>
+<?php snippet('imagex-picture', $options) ?>
 ```
 
 ### Final HTML Output
