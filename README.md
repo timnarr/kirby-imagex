@@ -185,7 +185,7 @@ $options = [
         $setThisClassWhenTrue ? 'optional-class' : null
       ],
       'alt' => $image->alt(),
-      'style' => ['background-color: red;', 'object-fit: cover;', 'object-postion: ' . $image->focus() . ';'],
+      'style' => ['background-color: red;', 'object-fit: cover;', 'object-position: ' . $image->focus() . ';'],
       'data-attr' => 'my-img-attribute',
       'sizes' => '760px',
     ],
