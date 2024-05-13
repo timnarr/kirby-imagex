@@ -10,7 +10,7 @@
 		"responsive-images",
 		"modern-images"
   ],
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"license": "MIT",
 	"homepage": "https://github.com/timnarr/kirby-imagex",
 	"authors": [

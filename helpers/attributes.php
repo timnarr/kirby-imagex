@@ -49,7 +49,7 @@ function validateAttributes(array $options): void
 	$disallowedAttributes = [
 		'shared' => ['type', 'src', 'data-src', 'srcset', 'data-srcset', 'loading', 'width', 'height'],
 		'eager' => ['srcset', 'data-srcset', 'loading'],
-		'lazy' => ['srcset', 'data-srcset', 'loading'],
+		'lazy' => ['data-srcset', 'loading'],
 	];
 
 	$violations = [];
