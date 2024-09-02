@@ -308,7 +308,7 @@ class Imagex
 	{
 		$sources = [];
 
-		foreach($this->sourcesArtDirected as $source) {
+		foreach ($this->sourcesArtDirected as $source) {
 			$sourceRatio = $source['ratio'] ?? 'intrinsic';
 			$sourceImage = $source['image'] ?? null;
 
@@ -316,7 +316,7 @@ class Imagex
 			$srcsetValue = $this->getSrcsetValue($srcsetPreset[$format], $sourceImage);
 			$sourceAttributes = $this->getSourceAttributes($format, $srcsetValue, $srcsetPreset, $source);
 
-			$sources = array_merge($sources, $sourceAttributes);
+			$sources[] = $sourceAttributes;
 		}
 
 		return $sources;
@@ -361,7 +361,7 @@ class Imagex
 			}
 
 			if (!empty($this->sourcesArtDirected)) {
-				$sources[] = $this->getArtDirectedSourcesPerFormat($format);
+				$sources = array_merge($sources, $this->getArtDirectedSourcesPerFormat($format));
 			}
 
 			$sources[] = $this->getDefaultSourcesPerFormat($format);
