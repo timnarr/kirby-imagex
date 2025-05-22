@@ -24,7 +24,7 @@ function normalizeFormat(string $format): string
  * @param string|null $siteUrl Optionally override the default site URL.
  * @return string The URL, potentially converted to a relative path.
  */
-function urlHandler(string $url, bool $useRelativeUrls = null, string $siteUrl = null): string
+function urlHandler(string $url, bool|null $useRelativeUrls = null, string|null $siteUrl = null): string
 {
 	$useRelativeUrls = $useRelativeUrls ?? kirby()->option('timnarr.imagex.relativeUrls');
 	$siteUrl = $siteUrl ?? site()->url();

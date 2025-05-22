@@ -76,7 +76,7 @@ class Imagex
 	 * @param File|null $image Optional file object to determine format; defaults to main image.
 	 * @return string The image file format.
 	 */
-	private function getImageFormat(File $image = null): string
+	private function getImageFormat(File|null $image = null): string
 	{
 		$image = $image ?? $this->image;
 
@@ -123,7 +123,7 @@ class Imagex
 	 * @param File|null $image Optional file object; defaults to main image.
 	 * @return array Srcset preset with dynamic heights.
 	 */
-	private function getDynamicSrcsetPreset(string $ratio = null, File $image = null): array
+	private function getDynamicSrcsetPreset(string|null $ratio = null, File|null $image = null): array
 	{
 		$srcsetPreset = $this->getSrcsetPresetFromConfig();
 		['x' => $ratioX, 'y' => $ratioY] = getAspectRatio($ratio ?? $this->ratio, $image ?? $this->image);
@@ -148,7 +148,7 @@ class Imagex
 	 * @param File|null $image Optional file object; defaults to main image.
 	 * @return string Srcset value string.
 	 */
-	private function getSrcsetValue(array $srcsetPreset, File $image = null): string
+	private function getSrcsetValue(array $srcsetPreset, File|null $image = null): string
 	{
 		$image = $image ?? $this->image;
 
