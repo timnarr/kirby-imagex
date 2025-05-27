@@ -1,15 +1,15 @@
 {
 	"name": "timnarr/kirby-imagex",
 	"description": "Modern images for Kirby CMS – This plugin helps you orchestrate modern, responsive and performant images in Kirby",
-  "type": "kirby-plugin",
-  "keywords": [
-    "kirby",
-    "kirby-cms",
-    "kirby-plugin",
+	"type": "kirby-plugin",
+	"keywords": [
+		"kirby",
+		"kirby-cms",
+		"kirby-plugin",
 		"images",
 		"responsive-images",
 		"modern-images"
-  ],
+	],
 	"version": "0.1.3",
 	"license": "MIT",
 	"homepage": "https://github.com/timnarr/kirby-imagex",
