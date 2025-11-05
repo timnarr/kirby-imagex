@@ -39,48 +39,14 @@ function validateAttributeTypes(array $options): void
 }
 
 /**
- * Validates the attributes array against a set of disallowed attributes for each loading mode.
- *
- * @param array $options The attributes array to validate
- * @throws InvalidArgumentException If disallowed attributes are detected in any loading mode.
- */
-function validateAttributes(array $options): void
-{
-	$disallowedAttributes = [
-		'shared' => ['type', 'src', 'data-src', 'srcset', 'data-srcset', 'loading', 'width', 'height'],
-		'eager' => ['srcset', 'data-srcset', 'loading'],
-		'lazy' => ['data-srcset', 'loading'],
-	];
-
-	$violations = [];
-
-	foreach ($options as $loadingMode => $attributes) {
-		// Check if there are disallowed attributes defined for the current loading mode
-		if (!isset($disallowedAttributes[$loadingMode])) {
-			continue;
-		}
-
-		foreach ($attributes as $attribute => $value) {
-			// Check if the attribute is disallowed in the current loadingMode
-			if (in_array($attribute, $disallowedAttributes[$loadingMode])) {
-				$violations[] = "attribute \"$attribute\" in \"$loadingMode\"";
-			}
-		}
-	}
-
-	if (!empty($violations)) {
-		throw new InvalidArgumentException('[kirby-imagex] Disallowed attributes detected: ' . implode(', ', $violations) . '.');
-	}
-}
-
-/**
  * Merges HTML attributes for different loading modes with optional default values.
  *
+ * User attributes always override default attributes. Defaults are used as fallback.
  * Extend 'shared' by 'eager' or 'lazy' loading mode attributes.
  *
- * @param array $options Attributes structured by loading modes.
+ * @param array $attributes User-defined attributes structured by loading modes.
  * @param string $loadingMode The loading mode to merge attributes for.
- * @param array $defaultOptions Optional default attributes to apply before merging.
+ * @param array $defaultAttributes Optional default attributes to apply as fallback.
  * @return array Merged array of HTML attributes for specified loading mode.
  * @throws InvalidArgumentException If $loadingMode is invalid or missing.
  */
@@ -88,8 +54,6 @@ function mergeHTMLAttributes(array $attributes, string $loadingMode, array $defa
 {
 	validateAttributeTypes($defaultAttributes);
 	validateAttributeTypes($attributes);
-
-	validateAttributes($attributes);
 
 	if (!in_array($loadingMode, ['shared', 'eager', 'lazy'])) {
 		throw new InvalidArgumentException("[kirby-imagex] Invalid loadingMode: \"$loadingMode\".");
@@ -100,7 +64,7 @@ function mergeHTMLAttributes(array $attributes, string $loadingMode, array $defa
 	}
 
 	$mergableAttributes = ['class', 'style'];
-	$mergedAttributes = $defaultAttributes['shared'] ?? [];
+	$mergedAttributes = [];
 
 	// Function to merge attributes, handling both array and string values
 	$mergeAttributeValues = function ($key, $currentValue, $newValue) use ($mergableAttributes) {
@@ -118,21 +82,28 @@ function mergeHTMLAttributes(array $attributes, string $loadingMode, array $defa
 		}
 	};
 
-	// Merge default loading mode-specific attributes
+	// Step 1: Start with default 'shared' attributes
+	if (isset($defaultAttributes['shared'])) {
+		foreach ($defaultAttributes['shared'] as $attr => $value) {
+			$mergedAttributes[$attr] = $value;
+		}
+	}
+
+	// Step 2: Merge default loading mode-specific attributes
 	if (isset($defaultAttributes[$loadingMode])) {
 		foreach ($defaultAttributes[$loadingMode] as $attr => $value) {
 			$mergedAttributes[$attr] = $mergeAttributeValues($attr, $mergedAttributes[$attr] ?? '', $value);
 		}
 	}
 
-	// Merge shared source attributes
+	// Step 3: Merge/override with user 'shared' attributes (user attributes have priority)
 	if (isset($attributes['shared'])) {
 		foreach ($attributes['shared'] as $attr => $value) {
 			$mergedAttributes[$attr] = $mergeAttributeValues($attr, $mergedAttributes[$attr] ?? '', $value);
 		}
 	}
 
-	// Merge loading mode-specific source attributes
+	// Step 4: Merge/override with user loading mode-specific attributes (highest priority)
 	if (isset($attributes[$loadingMode])) {
 		foreach ($attributes[$loadingMode] as $attr => $value) {
 			$mergedAttributes[$attr] = $mergeAttributeValues($attr, $mergedAttributes[$attr] ?? '', $value);

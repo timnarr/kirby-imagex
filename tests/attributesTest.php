@@ -22,15 +22,17 @@ class HtmlAttributesTest extends TestCase
 		validateAttributes($options);
 	}
 
-	public function testValidateAttributesInvalidInput()
+	public function testValidateAttributesAllowsAllAttributes()
 	{
-		$this->expectExceptionMessage('[kirby-imagex] Disallowed attributes detected: attribute "type" in "shared", attribute "srcset" in "eager", attribute "loading" in "lazy".');
-
+		// All attributes are now allowed and can be overridden by users
 		$options = [
 			'shared' => ['type' => 'image/jpeg', 'data-attribute' => 'my-attr-value', 'style' => ['background: red;']],
 			'eager' => ['data-src' => 'image-eager.jpg', 'srcset' => 'image-eager.jpg'],
 			'lazy' => ['loading' => 'lazy', 'src' => 'image-lazy.jpg'],
 		];
+
+		// Expect no exception
+		$this->expectNotToPerformAssertions();
 
 		validateAttributes($options);
 	}
@@ -125,6 +127,47 @@ class HtmlAttributesTest extends TestCase
 		];
 
 		$result = mergeHTMLAttributes($options, $loadingMode, $defaultOptions);
+
+		$this->assertEquals($expected, $result);
+	}
+
+	public function testMergeHTMLAttributesUserOverridesDefaults()
+	{
+		// Test that user attributes override default attributes
+		$userAttributes = [
+			'shared' => [
+				'width' => 500,
+				'height' => 300,
+			],
+			'lazy' => [
+				'src' => 'custom-image.jpg',
+				'loading' => 'eager',
+			],
+		];
+		$loadingMode = 'lazy';
+		$defaultAttributes = [
+			'shared' => [
+				'width' => 1000,
+				'height' => 600,
+				'decoding' => 'async',
+			],
+			'lazy' => [
+				'src' => 'default-image.jpg',
+				'loading' => 'lazy',
+				'data-src' => 'default-data-image.jpg',
+			],
+		];
+
+		$expected = [
+			'width' => 500, // User override
+			'height' => 300, // User override
+			'decoding' => 'async', // From defaults
+			'src' => 'custom-image.jpg', // User override
+			'loading' => 'eager', // User override
+			'data-src' => 'default-data-image.jpg', // From defaults (not overridden by user)
+		];
+
+		$result = mergeHTMLAttributes($userAttributes, $loadingMode, $defaultAttributes);
 
 		$this->assertEquals($expected, $result);
 	}
