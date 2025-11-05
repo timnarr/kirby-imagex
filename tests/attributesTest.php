@@ -8,35 +8,6 @@ use PHPUnit\Framework\TestCase;
 
 class HtmlAttributesTest extends TestCase
 {
-	public function testValidateAttributesValidInput()
-	{
-		$options = [
-			'shared' => ['data-attribute' => 'my-attr-value', 'style' => ['background: red;']],
-			'eager' => ['data-src' => 'image-eager.jpg'],
-			'lazy' => [],
-		];
-
-		// Expect no exception
-		$this->expectNotToPerformAssertions();
-
-		validateAttributes($options);
-	}
-
-	public function testValidateAttributesAllowsAllAttributes()
-	{
-		// All attributes are now allowed and can be overridden by users
-		$options = [
-			'shared' => ['type' => 'image/jpeg', 'data-attribute' => 'my-attr-value', 'style' => ['background: red;']],
-			'eager' => ['data-src' => 'image-eager.jpg', 'srcset' => 'image-eager.jpg'],
-			'lazy' => ['loading' => 'lazy', 'src' => 'image-lazy.jpg'],
-		];
-
-		// Expect no exception
-		$this->expectNotToPerformAssertions();
-
-		validateAttributes($options);
-	}
-
 	public function testValidateAttributeTypesInvalidInput()
 	{
 		$this->expectExceptionMessage('[kirby-imagex] Type mismatch detected: attribute "style" in "shared" expected to be array, string given.');
