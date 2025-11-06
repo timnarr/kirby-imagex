@@ -248,6 +248,7 @@ $options = [
       'height' => 300, // Override default height
     ],
     'lazy' => [
+      'data-src' => null|false, // Use null or false to remove default attributes
       'src' => 'custom-placeholder.jpg', // Override default src
       'loading' => 'custom-lazy', // Override lazy loading behavior
     ],
