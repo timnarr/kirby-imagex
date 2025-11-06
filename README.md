@@ -142,6 +142,26 @@ $options = [
 </figure>
 ```
 
+
+### JSON Output
+If you need JSON output instead of HTML markup (for headless CMS setups, API endpoints, or JavaScript-driven rendering), use the `imagex-picture.json.php` snippet:
+
+```php
+<?php
+$options = [
+  'image' => $image->toFile(),
+  'ratio' => '16/9',
+  'srcsetName' => 'my-srcset',
+  // ... all other options work the same
+];
+
+$json = snippet('imagex-picture.json', $options, true);
+echo $json;
+?>
+```
+
+The JSON output contains structured data with `pictureAttributes`, `sources`, and `imgAttributes`. See the [JSON output example](/docs/examples/json-output.md) for more details.
+
 ### Snippet Options
 You can choose from many options to customize your images and pass them to the Imagex snippet. At first it might look heavy, but it's just very flexible and actually only `image` is required and everything else can be omitted, while Imagex is providing some sane defaults.
 
