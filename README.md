@@ -337,8 +337,8 @@ $options = [
   'ratio' => '3/2', // This ratio is now only used for generating the default thumbnails
 ];
 ```
+
 Note: In most cases, you should **not** need to override `width`, `height`, or `srcset`. Let Imagex handle these automatically based on your `ratio` parameter for best results.
-```
 
 ## Cache
 Imagex will do some simple calculations per image, like calculating the height by the given width and ratio. Basically Imagex get the srcset definition from the config file, calculate and set the height and output the final config. The result will be cached to reduce unnecessary calculations when you use the same combination of srcset-preset and ratio for other images.
