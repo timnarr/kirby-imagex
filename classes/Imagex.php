@@ -244,7 +244,10 @@ class Imagex
 			],
 		];
 
-		return mergeHTMLAttributes($userAttributes, $this->getLoadingMode(), $defaultAttributes);
+		$mergedAttributes = mergeHTMLAttributes($userAttributes, $this->getLoadingMode(), $defaultAttributes);
+
+		// Apply urlHandler to all URL-based attributes (handles user-overridden attributes)
+		return applyUrlHandlerToAttributes($mergedAttributes);
 	}
 
 	/**
@@ -295,7 +298,10 @@ class Imagex
 			],
 		];
 
-		return mergeHTMLAttributes($source['attributes'] ?? [], $this->getLoadingMode(), $defaultAttributes);
+		$mergedAttributes = mergeHTMLAttributes($source['attributes'] ?? [], $this->getLoadingMode(), $defaultAttributes);
+
+		// Apply urlHandler to all URL-based attributes (handles user-overridden attributes)
+		return applyUrlHandlerToAttributes($mergedAttributes);
 	}
 
 	/**

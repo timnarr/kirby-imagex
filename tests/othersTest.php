@@ -25,6 +25,12 @@ class OthersTest extends TestCase
 		$this->assertEquals('http://example.com/path/to/resource', urlHandler('http://example.com/path/to/resource', false, 'http://example.com'));
 	}
 
+	public function testUrlHandlerWithExternalUrl()
+	{
+		// External URLs should not be modified, even when relativeUrls is active
+		$this->assertEquals('https://external.com/image.jpg', urlHandler('https://external.com/image.jpg', true, 'http://example.com'));
+	}
+
 	public function testFindSmallestValueAndKey()
 	{
 		$array = ['large' => 3, 'small' => 1, 'medium' => 2];

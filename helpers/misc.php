@@ -18,8 +18,10 @@ function normalizeFormat(string $format): string
 
 /**
  * Optionally converts URLs to relative paths based on configuration settings.
+ * Only processes internal URLs (URLs that start with the site URL).
+ * For srcset strings with multiple URLs, processes each URL individually.
  *
- * @param string $url The URL to process.
+ * @param string $url The URL to process (can be a single URL or srcset string with multiple URLs).
  * @param bool|null $useRelativeUrls Optionally override the default setting for using relative URLs.
  * @param string|null $siteUrl Optionally override the default site URL.
  * @return string The URL, potentially converted to a relative path.
@@ -29,7 +31,14 @@ function urlHandler(string $url, bool|null $useRelativeUrls = null, string|null 
 	$useRelativeUrls = $useRelativeUrls ?? kirby()->option('timnarr.imagex.relativeUrls');
 	$siteUrl = $siteUrl ?? site()->url();
 
-	return $useRelativeUrls ? Str::replace($url, $siteUrl, '') : $url;
+	// Only apply relative URL conversion if the option is enabled
+	if (!$useRelativeUrls) {
+		return $url;
+	}
+
+	// Replace all occurrences of the site URL with relative paths
+	// This handles both single URLs and srcset strings with multiple URLs
+	return Str::replace($url, $siteUrl, '');
 }
 
 /**
@@ -80,6 +89,36 @@ function findMiddleArray(array $inputArray): array
 		'middleKey' => $middleKey,
 		'middleValue' => $inputArray[$middleKey],
 	];
+}
+
+/**
+ * Applies urlHandler to all URL-based attributes in an attributes array.
+ * Only processes if relativeUrls option is enabled.
+ *
+ * @param array $attributes The attributes array to process.
+ * @param bool|null $useRelativeUrls Optionally override the relativeUrls setting (primarily for testing).
+ * @param string|null $siteUrl Optionally override the site URL (primarily for testing).
+ * @return array The processed attributes array with relative URLs where applicable.
+ */
+function applyUrlHandlerToAttributes(array $attributes, bool|null $useRelativeUrls = null, string|null $siteUrl = null): array
+{
+	$useRelativeUrls = $useRelativeUrls ?? kirby()->option('timnarr.imagex.relativeUrls');
+
+	// Only process if relativeUrls option is enabled
+	if (!$useRelativeUrls) {
+		return $attributes;
+	}
+
+	// List of URL-based attributes that should be processed
+	$urlAttributes = ['src', 'srcset', 'data-src', 'data-srcset'];
+
+	foreach ($urlAttributes as $attr) {
+		if (isset($attributes[$attr]) && is_string($attributes[$attr])) {
+			$attributes[$attr] = urlHandler($attributes[$attr], $useRelativeUrls, $siteUrl);
+		}
+	}
+
+	return $attributes;
 }
 
 /**

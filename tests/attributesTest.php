@@ -142,4 +142,107 @@ class HtmlAttributesTest extends TestCase
 
 		$this->assertEquals($expected, $result);
 	}
+
+	public function testApplyUrlHandlerToAttributesWithRelativeUrlsActive()
+	{
+		// Test that URL attributes are converted to relative URLs when relativeUrls is active
+		$attributes = [
+			'src' => 'https://example.com/media/image.jpg',
+			'srcset' => 'https://example.com/media/image-400.jpg 400w, https://example.com/media/image-800.jpg 800w',
+			'data-src' => 'https://example.com/media/lazy-image.jpg',
+			'data-srcset' => 'https://example.com/media/lazy-400.jpg 400w',
+			'alt' => 'My Image',
+			'width' => 800,
+		];
+
+		$expected = [
+			'src' => '/media/image.jpg',
+			'srcset' => '/media/image-400.jpg 400w, /media/image-800.jpg 800w',
+			'data-src' => '/media/lazy-image.jpg',
+			'data-srcset' => '/media/lazy-400.jpg 400w',
+			'alt' => 'My Image',
+			'width' => 800,
+		];
+
+		// Explicitly enable relativeUrls for this test
+		$result = applyUrlHandlerToAttributes($attributes, true, 'https://example.com');
+
+		$this->assertEquals($expected, $result);
+	}
+
+	public function testApplyUrlHandlerToAttributesWithRelativeUrlsInactive()
+	{
+		// Test that URLs are not modified when relativeUrls is inactive
+		$attributes = [
+			'src' => 'https://example.com/media/image.jpg',
+			'srcset' => 'https://example.com/media/image-400.jpg 400w',
+			'data-src' => 'https://example.com/media/lazy-image.jpg',
+			'alt' => 'My Image',
+		];
+
+		// When relativeUrls is false, attributes should remain unchanged
+		$expected = $attributes;
+
+		// Explicitly disable relativeUrls for this test
+		$result = applyUrlHandlerToAttributes($attributes, false, 'https://example.com');
+
+		$this->assertEquals($expected, $result);
+	}
+
+	public function testApplyUrlHandlerToAttributesWithExternalUrls()
+	{
+		// Test that external URLs are not modified even when relativeUrls is active
+		$attributes = [
+			'src' => 'https://cdn.external.com/image.jpg',
+			'srcset' => 'https://cdn.external.com/image-400.jpg 400w',
+			'data-src' => 'https://example.com/media/internal.jpg', // Internal URL
+			'alt' => 'External Image',
+		];
+
+		$expected = [
+			'src' => 'https://cdn.external.com/image.jpg', // External, unchanged
+			'srcset' => 'https://cdn.external.com/image-400.jpg 400w', // External, unchanged
+			'data-src' => '/media/internal.jpg', // Internal, converted
+			'alt' => 'External Image',
+		];
+
+		// Enable relativeUrls and set siteUrl for this test
+		$result = applyUrlHandlerToAttributes($attributes, true, 'https://example.com');
+
+		$this->assertEquals($expected, $result);
+	}
+
+	public function testApplyUrlHandlerToAttributesWithMixedValues()
+	{
+		// Test that non-string values in URL attributes are not processed
+		$attributes = [
+			'src' => 'https://example.com/image.jpg',
+			'width' => 800, // Integer, should be ignored
+			'srcset' => null, // Null, should be ignored
+			'data-src' => false, // Boolean, should be ignored
+		];
+
+		$expected = [
+			'src' => '/image.jpg', // Only this should be processed
+			'width' => 800,
+			'srcset' => null,
+			'data-src' => false,
+		];
+
+		// Enable relativeUrls for this test
+		$result = applyUrlHandlerToAttributes($attributes, true, 'https://example.com');
+
+		$this->assertEquals($expected, $result);
+	}
+
+	public function testApplyUrlHandlerToAttributesEmptyArray()
+	{
+		// Test that empty array returns empty array
+		$attributes = [];
+		$expected = [];
+
+		$result = applyUrlHandlerToAttributes($attributes, true, 'https://example.com');
+
+		$this->assertEquals($expected, $result);
+	}
 }
