@@ -1,6 +1,6 @@
 <?php
 
-use TimNarr\Imagex;
+namespace TimNarr;
 
 $imagex = new Imagex([
 	'critical' => $critical ?? false,
@@ -20,4 +20,6 @@ $data = [
 	'imgAttributes' => $imagex->getImgAttributes(),
 ];
 
-return json_encode($data, JSON_PRETTY_PRINT);
+$data = transformForJson($data);
+
+echo json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);

@@ -144,7 +144,7 @@ $options = [
 
 
 ### JSON Output
-If you need JSON output instead of HTML markup (for headless CMS setups, API endpoints, or JavaScript-driven rendering), use the `imagex-picture.json.php` snippet:
+If you need JSON output instead of HTML markup (for headless CMS setups, API endpoints, or JavaScript-driven rendering), use the `imagex-picture-json.php` snippet:
 
 ```php
 <?php
@@ -155,7 +155,7 @@ $options = [
   // ... all other options work the same
 ];
 
-$json = snippet('imagex-picture.json', $options, true);
+$json = snippet('imagex-picture-json', $options, true);
 echo $json;
 ?>
 ```

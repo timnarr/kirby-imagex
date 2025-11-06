@@ -13,6 +13,6 @@ Kirby::plugin('timnarr/imagex', [
 	],
 	'snippets' => [
 		'imagex-picture' => __DIR__ . '/snippets/imagex-picture.php',
-		'imagex-picture-json' => __DIR__ . '/snippets/imagex-picture.json.php',
+		'imagex-picture-json' => __DIR__ . '/snippets/imagex-picture-json.php',
 	],
 ]);

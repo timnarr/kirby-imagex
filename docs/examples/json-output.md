@@ -1,6 +1,6 @@
 # Example: JSON Output
 
-The `imagex-picture.json` snippet provides JSON output instead of HTML markup. This is useful for:
+The `imagex-picture-json` snippet provides JSON output instead of HTML markup. This is useful for:
 - Headless CMS setups
 - API endpoints
 - JavaScript-driven rendering (SPA, React, Vue, etc.)
@@ -8,7 +8,7 @@ The `imagex-picture.json` snippet provides JSON output instead of HTML markup. T
 
 ## Usage
 
-The `imagex-picture.json` snippet accepts the same options as `imagex-picture` but returns JSON data instead of HTML.
+The `imagex-picture-json` snippet accepts the same options as `imagex-picture` but returns JSON data instead of HTML.
 
 ### Global Plugin Config
 ```php
@@ -48,7 +48,7 @@ $options = [
 ];
 
 // Important: Pass `true` as third parameter to return the snippet output
-$json = snippet('imagex-picture.json', $options, true);
+$json = snippet('imagex-picture-json', $options, true);
 
 // Output JSON
 header('Content-Type: application/json');
@@ -96,8 +96,8 @@ $data = json_decode($json, true);
 
 ## Notes
 
-- All options from `imagex-picture` work with `imagex-picture.json`
-- The third parameter (`true`) in `snippet('imagex-picture.json', $options, true)` is required to return the output instead of echoing it
+- All options from `imagex-picture` work with `imagex-picture-json`
+- The third parameter (`true`) in `snippet('imagex-picture-json', $options, true)` is required to return the output instead of echoing it
 - The JSON includes all calculated attributes, srcsets, and URLs
 - Art-directed sources are also included in the `sources` array with their media queries
 - Combine with Kirby's routing system to create custom API endpoints

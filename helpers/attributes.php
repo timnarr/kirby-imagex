@@ -42,12 +42,18 @@ function validateAttributeTypes(array $options): void
  * Merges HTML attributes for different loading modes with optional default values.
  *
  * User attributes always override default attributes. Defaults are used as fallback.
- * Extend 'shared' by 'eager' or 'lazy' loading mode attributes.
+ * Extends 'shared' attributes with 'eager' or 'lazy' loading mode-specific attributes.
+ *
+ * For 'class' and 'style' attributes: Arrays are merged and duplicates removed.
+ * For other attributes: New values override existing values.
+ *
+ * Note: Returns attributes with 'class' and 'style' as arrays. Use transformForJson()
+ * to convert them to strings for JSON output.
  *
  * @param array $attributes User-defined attributes structured by loading modes.
- * @param string $loadingMode The loading mode to merge attributes for.
+ * @param string $loadingMode The loading mode to merge attributes for ('shared', 'eager', or 'lazy').
  * @param array $defaultAttributes Optional default attributes to apply as fallback.
- * @return array Merged array of HTML attributes for specified loading mode.
+ * @return array Merged array of HTML attributes for specified loading mode (class/style as arrays).
  * @throws InvalidArgumentException If $loadingMode is invalid or missing.
  */
 function mergeHTMLAttributes(array $attributes, string $loadingMode, array $defaultAttributes = ['shared' => [], 'eager' => [], 'lazy' => []]): array
@@ -72,8 +78,11 @@ function mergeHTMLAttributes(array $attributes, string $loadingMode, array $defa
 			// Ensure both values are arrays
 			$currentValues = is_array($currentValue) ? $currentValue : explode(' ', $currentValue);
 			$newValues = is_array($newValue) ? $newValue : explode(' ', $newValue);
-			// Merge, remove duplicates, re-index and remove empty values
-			$mergedValues = array_filter(array_values(array_unique(array_merge($currentValues, $newValues))));
+			// Merge, remove duplicates, and remove empty strings (but keep null values)
+			$merged = array_unique(array_merge($currentValues, $newValues));
+			$filtered = array_filter($merged, fn ($val) => $val !== '' && $val !== null && $val !== false);
+			// Re-index array to ensure sequential keys starting from 0
+			$mergedValues = array_values($filtered);
 
 			return $mergedValues;
 		} else {
