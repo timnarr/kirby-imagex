@@ -233,14 +233,14 @@ class Imagex
 			],
 			'eager' => [
 				'src' => srcHandler($src, $userAttributes, 'eager'),
-				'srcset' => $useNoSrcsetInImg ? null : urlHandler($srcsetValue),
+				'srcset' => $useNoSrcsetInImg ? null : $srcsetValue,
 			],
 			'lazy' => [
 				'loading' => $customLazyloading ? null : ($isCritical ? null : 'lazy'),
-				'data-src' => $customLazyloading ? urlHandler($src) : null,
+				'data-src' => $customLazyloading ? $src : null,
 				'src' => srcHandler($src, $userAttributes, 'lazy'),
-				'data-srcset' => $useNoSrcsetInImg ? null : ($customLazyloading ? urlHandler($srcsetValue) : null),
-				'srcset' => $useNoSrcsetInImg ? null : (!$customLazyloading ? urlHandler($srcsetValue) : null),
+				'data-srcset' => $useNoSrcsetInImg ? null : ($customLazyloading ? $srcsetValue : null),
+				'srcset' => $useNoSrcsetInImg ? null : (!$customLazyloading ? $srcsetValue : null),
 			],
 		];
 
@@ -288,12 +288,12 @@ class Imagex
 				...($this->sourcesAttributes['shared'] ?? []),
 			],
 			'eager' => [
-				'srcset' => urlHandler($srcsetValue),
+				'srcset' => $srcsetValue,
 				...($this->sourcesAttributes['eager'] ?? []),
 			],
 			'lazy' => [
-				'srcset' => $customLazyloading ? null : urlHandler($srcsetValue),
-				'data-srcset' => $customLazyloading ? urlHandler($srcsetValue) : null,
+				'srcset' => $customLazyloading ? null : $srcsetValue,
+				'data-srcset' => $customLazyloading ? $srcsetValue : null,
 				...($this->sourcesAttributes['lazy'] ?? []),
 			],
 		];

@@ -134,12 +134,10 @@ function srcHandler(string $src, array $srcAttributes, string $loadingMode): str
 	$customLazyloading = kirby()->option('timnarr.imagex.customLazyloading');
 
 	if (isset($srcAttributes[$loadingMode]['src'])) {
-		$srcValue = urlHandler($srcAttributes[$loadingMode]['src']);
+		return $srcAttributes[$loadingMode]['src'];
 	} elseif (!$customLazyloading) {
-		$srcValue = urlHandler($src);
+		return $src;
 	} else {
-		$srcValue = null;
+		return null;
 	}
-
-	return $srcValue;
 }
