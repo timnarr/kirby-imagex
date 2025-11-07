@@ -20,7 +20,7 @@ class Imagex
 	protected array $sourcesArtDirected;
 	protected array $sourcesAttributes;
 	protected string $srcsetName;
-	protected string $formatSizeHandling;
+	protected bool $formatSizeHandling;
 
 	/**
 	 * Constructor to initialize Imagex with its options.
