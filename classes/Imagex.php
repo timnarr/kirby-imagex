@@ -21,6 +21,9 @@ class Imagex
 	protected array $sourcesAttributes;
 	protected string $srcsetName;
 	protected bool $formatSizeHandling;
+	protected bool $includeInitialFormat;
+	protected bool $noSrcsetInImg;
+	protected array $thumbsSrcsets;
 
 	/**
 	 * Constructor to initialize Imagex with its options.
@@ -40,9 +43,8 @@ class Imagex
 			throw new InvalidArgumentException("[kirby-imagex] Option 'image' must be an instance of Kirby\Cms\File");
 		}
 
+		// Assign options to properties
 		$this->critical = $options['critical'];
-		$this->customLazyloading = kirby()->option('timnarr.imagex.customLazyloading');
-		$this->formats = kirby()->option('timnarr.imagex.formats');
 		$this->image = $options['image'];
 		$this->imgAttributes = $options['imgAttributes'];
 		$this->pictureAttributes = $options['pictureAttributes'];
@@ -51,6 +53,14 @@ class Imagex
 		$this->sourcesAttributes = $options['sourcesAttributes'];
 		$this->srcsetName = $options['srcsetName'];
 		$this->formatSizeHandling = $options['formatSizeHandling'];
+
+		// Assign kirby options
+		$kirby = kirby();
+		$this->customLazyloading = $kirby->option('timnarr.imagex.customLazyloading');
+		$this->formats = $kirby->option('timnarr.imagex.formats');
+		$this->includeInitialFormat = $kirby->option('timnarr.imagex.includeInitialFormat');
+		$this->noSrcsetInImg = $kirby->option('timnarr.imagex.noSrcsetInImg');
+		$this->thumbsSrcsets = $kirby->option('thumbs.srcsets');
 	}
 
 	/**
@@ -71,8 +81,7 @@ class Imagex
 	private function getFormats(): array
 	{
 		$configFormats = $this->formats;
-		$includeInitialFormat = kirby()->option('timnarr.imagex.includeInitialFormat');
-		$formats = $includeInitialFormat ? A::append($configFormats, ['initialformat']) : $configFormats;
+		$formats = $this->includeInitialFormat ? A::append($configFormats, ['initialformat']) : $configFormats;
 
 		$formats = array_unique(array_map(function ($item) {
 			return normalizeFormat($item);
@@ -103,7 +112,7 @@ class Imagex
 	 */
 	private function getSrcsetPresetFromConfig(): array
 	{
-		$allSrcsetPresets = kirby()->option('thumbs.srcsets');
+		$allSrcsetPresets = $this->thumbsSrcsets;
 
 		if (!isset($allSrcsetPresets[$this->srcsetName])) {
 			throw new Exception("[kirby-imagex] Srcset configuration for '{$this->srcsetName}' not found.");
@@ -178,7 +187,6 @@ class Imagex
 		$formats = $this->getFormats();
 		$formatsCount = A::count($formats);
 		$formatSizeHandling = $this->formatSizeHandling;
-		$includeInitialFormat = kirby()->option('timnarr.imagex.includeInitialFormat');
 
 		// Throw an exception if formatSizeHandling is active and there are one or less formats
 		if ($formatSizeHandling && $formatsCount <= 1) {
@@ -186,7 +194,7 @@ class Imagex
 		}
 
 		// Check for the specific condition where only the 'initialformat' is present and includeInitialFormat is true.
-		if (!$formatSizeHandling && $formatsCount === 1 && A::has($formats, 'initialformat') && $includeInitialFormat) {
+		if (!$formatSizeHandling && $formatsCount === 1 && A::has($formats, 'initialformat') && $this->includeInitialFormat) {
 			return null;
 		}
 
@@ -229,7 +237,7 @@ class Imagex
 		$isCritical = $this->critical;
 		$userAttributes = $this->imgAttributes;
 		$customLazyloading = $this->customLazyloading;
-		$useNoSrcsetInImg = kirby()->option('timnarr.imagex.noSrcsetInImg');
+		$useNoSrcsetInImg = $this->noSrcsetInImg;
 
 		$firstItemInSrcsetConfig = A::first($srcsetPreset[$format]);
 		$src = $image->thumb($firstItemInSrcsetConfig)->url();
