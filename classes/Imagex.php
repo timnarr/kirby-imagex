@@ -116,7 +116,9 @@ class Imagex
 		$allSrcsetPresets = $this->thumbsSrcsets;
 
 		if (!isset($allSrcsetPresets[$this->srcsetName])) {
-			throw new Exception("[kirby-imagex] Srcset configuration for '{$this->srcsetName}' not found.");
+			$available = implode(', ', array_keys($allSrcsetPresets));
+
+			throw new Exception("[kirby-imagex] Srcset configuration '{$this->srcsetName}' not found. Available presets: {$available}");
 		}
 
 		$srcsetName = $this->srcsetName;
@@ -128,7 +130,9 @@ class Imagex
 			} else {
 				// Check if specific format configuration exists
 				if (!isset($allSrcsetPresets[$srcsetName . '-' . $format])) {
-					throw new Exception("[kirby-imagex] Srcset configuration for '{$srcsetName}-{$format}' not found.");
+					$available = implode(', ', array_keys($allSrcsetPresets));
+
+					throw new Exception("[kirby-imagex] Srcset configuration '{$srcsetName}-{$format}' not found. Available presets: {$available}");
 				}
 
 				$srcsetPreset[$format] = $allSrcsetPresets[$srcsetName . '-' . $format];
