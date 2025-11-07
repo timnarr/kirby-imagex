@@ -57,7 +57,7 @@ $options = [
 $options = [
   'image' => $image->toFile(), // let's assume: `image.jpg` and aspect ratio of 1/1
   'srcsetName' => 'imagex-demo',
-  'ratio' => '3/2' // and we set it to 3/2
+  'ratio' => '3/2', // and we set it to 3/2
   'sourcesArtDirected' => [
     [
       // but change it to 21/9 at `(min-width: 800px)`
