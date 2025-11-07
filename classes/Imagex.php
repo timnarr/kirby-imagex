@@ -4,6 +4,7 @@ namespace TimNarr;
 
 use Kirby\Cms\File;
 use Kirby\Exception\Exception;
+use Kirby\Exception\InvalidArgumentException;
 use Kirby\Filesystem\F;
 use Kirby\Toolkit\A;
 
@@ -25,9 +26,20 @@ class Imagex
 	 * Constructor to initialize Imagex with its options.
 	 *
 	 * @param array $options
+	 * @throws InvalidArgumentException If required options are missing or have invalid types.
 	 */
 	public function __construct(array $options)
 	{
+		// Validate required option: image
+		if (!isset($options['image'])) {
+			throw new InvalidArgumentException("[kirby-imagex] Missing required option: image");
+		}
+
+		// Type validation for image
+		if (!($options['image'] instanceof File)) {
+			throw new InvalidArgumentException("[kirby-imagex] Option 'image' must be an instance of Kirby\Cms\File");
+		}
+
 		$this->critical = $options['critical'];
 		$this->customLazyloading = kirby()->option('timnarr.imagex.customLazyloading');
 		$this->formats = kirby()->option('timnarr.imagex.formats');
