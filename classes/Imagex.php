@@ -24,6 +24,7 @@ class Imagex
 	protected bool $includeInitialFormat;
 	protected bool $noSrcsetInImg;
 	protected array $thumbsSrcsets;
+	protected $kirby;
 
 	/**
 	 * Constructor to initialize Imagex with its options.
@@ -54,13 +55,13 @@ class Imagex
 		$this->srcsetName = $options['srcsetName'];
 		$this->formatSizeHandling = $options['formatSizeHandling'];
 
-		// Assign kirby options
-		$kirby = kirby();
-		$this->customLazyloading = $kirby->option('timnarr.imagex.customLazyloading');
-		$this->formats = $kirby->option('timnarr.imagex.formats');
-		$this->includeInitialFormat = $kirby->option('timnarr.imagex.includeInitialFormat');
-		$this->noSrcsetInImg = $kirby->option('timnarr.imagex.noSrcsetInImg');
-		$this->thumbsSrcsets = $kirby->option('thumbs.srcsets');
+		// Cache kirby instance and assign options
+		$this->kirby = kirby();
+		$this->customLazyloading = $this->kirby->option('timnarr.imagex.customLazyloading');
+		$this->formats = $this->kirby->option('timnarr.imagex.formats');
+		$this->includeInitialFormat = $this->kirby->option('timnarr.imagex.includeInitialFormat');
+		$this->noSrcsetInImg = $this->kirby->option('timnarr.imagex.noSrcsetInImg');
+		$this->thumbsSrcsets = $this->kirby->option('thumbs.srcsets');
 	}
 
 	/**
@@ -150,9 +151,10 @@ class Imagex
 		['x' => $ratioX, 'y' => $ratioY] = getAspectRatio($ratio ?? $this->ratio, $image ?? $this->image);
 
 		// Cache settings
-		$version = kirby()->plugin('timnarr/imagex')->version();
-		$cache = kirby()->cache('timnarr.imagex');
-		$cacheId = 'srcset-config-' . hash('xxh3', $version . $ratioX . $ratioY . json_encode($srcsetPreset));
+		$version = $this->kirby->plugin('timnarr/imagex')->version();
+		$cache = $this->kirby->cache('timnarr.imagex');
+		$cacheKey = implode('-', [$version, $ratioX, $ratioY, $this->srcsetName]);
+		$cacheId = 'srcset-config-' . hash('xxh3', $cacheKey);
 
 		// Get srcsetPreset from cache or set it
 		$data = $cache->getOrSet($cacheId, function () use ($srcsetPreset, $ratioX, $ratioY) {
