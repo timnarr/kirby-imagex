@@ -32,7 +32,7 @@ class Imagex
 	{
 		// Validate required option: image
 		if (!isset($options['image'])) {
-			throw new InvalidArgumentException("[kirby-imagex] Missing required option: image");
+			throw new InvalidArgumentException('[kirby-imagex] Missing required option: image');
 		}
 
 		// Type validation for image
