@@ -152,7 +152,9 @@ class Imagex
 	private function getDynamicSrcsetPreset(string|null $ratio = null, File|null $image = null): array
 	{
 		$srcsetPreset = $this->getSrcsetPresetFromConfig();
-		['x' => $ratioX, 'y' => $ratioY] = getAspectRatio($ratio ?? $this->ratio, $image ?? $this->image);
+		$targetRatio = $ratio ?? $this->ratio;
+		$targetImage = $image ?? $this->image;
+		['x' => $ratioX, 'y' => $ratioY] = getAspectRatio($targetRatio, $targetImage);
 
 		// Cache settings
 		$version = $this->kirby->plugin('timnarr/imagex')->version();
