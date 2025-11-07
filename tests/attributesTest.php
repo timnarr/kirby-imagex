@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
 
 class HtmlAttributesTest extends TestCase
 {
-	public function testValidateAttributeTypesInvalidInput()
+	public function testValidateAttributeTypesInvalidStyleInput()
 	{
 		$this->expectExceptionMessage('[kirby-imagex] Type mismatch detected: attribute "style" in "shared" expected to be array, string given.');
 
@@ -21,15 +21,28 @@ class HtmlAttributesTest extends TestCase
 		validateAttributeTypes($options);
 	}
 
+	public function testValidateAttributeTypesInvalidClassInput()
+	{
+		$this->expectExceptionMessage('[kirby-imagex] Type mismatch detected: attribute "class" in "shared" expected to be array, string given.');
+
+		$options = [
+			'shared' => ['class' => 'my-class'],
+			'eager' => [],
+			'lazy' => [],
+		];
+
+		validateAttributeTypes($options);
+	}
+
 	public function testMergeHTMLAttributesEager()
 	{
 		$options = [
 			'shared' => [
-				'class' => 'my-image',
+				'class' => ['my-image'],
 				'style' => ['color: red;'],
 			],
 			'eager' => [
-				'class' => 'my-image--eager',
+				'class' => ['my-image--eager'],
 				'style' => [
 					'background-color: blue;',
 					'border: 1px solid red;',
@@ -67,7 +80,7 @@ class HtmlAttributesTest extends TestCase
 	{
 		$options = [
 			'shared' => [
-				'class' => 'my-image',
+				'class' => ['my-image'],
 				'style' => ['color: red;'],
 			],
 			'lazy' => [

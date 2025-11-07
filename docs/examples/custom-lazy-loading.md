@@ -29,14 +29,14 @@ $options = [
   'ratio' => '3/2',
   'imgAttributes' => [
     'shared' => [
-      'class' => 'my-img-component',
+      'class' => ['my-img-component'],
     ],
     'eager' => [
-      'class' => 'my-img-component--eager',
+      'class' => ['my-img-component--eager'],
       'sizes' => '400px'
     ],
     'lazy' => [
-      'class' => 'lazyload',
+      'class' => ['lazyload'],
       'data-sizes' => 'auto', // add lazysizes attributes to `lazy`
       'data-optimumx' => 'auto' // add lazysizes attributes to `lazy`
     ]

@@ -7,6 +7,9 @@ use Kirby\Exception\InvalidArgumentException;
 /**
  * Validates attribute value types in the options array against expected types.
  *
+ * Currently validates that 'style' and 'class' attributes are provided as arrays.
+ * These arrays will be merged during processing and converted to strings for output.
+ *
  * @param array $options Associative array of options with attributes by loading modes ('shared', 'eager', 'lazy').
  * @throws InvalidArgumentException If attribute types do not match expected types.
  */
@@ -15,6 +18,7 @@ function validateAttributeTypes(array $options): void
 	$expectedTypes = [
 		// Attribute as key and expected type as value
 		'style' => 'array',
+		'class' => 'array',
 	];
 
 	$violations = [];

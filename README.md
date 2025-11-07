@@ -105,7 +105,7 @@ $options = [
   'image' => $image->toFile(),
   'imgAttributes' => [
     'shared' => [
-      'class' => 'my-image',
+      'class' => ['my-image'],
       'decoding' => 'async',
       'style' => ['background: red;'],
       'sizes' => '100vw',
@@ -190,16 +190,16 @@ $options = [
   'image' => $image,
   'pictureAttributes' => [
     'shared' => [
-      'class' => 'my-picture-class',
+      'class' => ['my-picture-class'],
       'data-attr' => 'my-picture-attribute'
     ],
     'eager' => [
       // extend `shared` attributes in eager loading mode
-      'class' => 'my-picture-class--eager'
+      'class' => ['my-picture-class--eager']
     ],
     'lazy' => [
       // extend `shared` attributes in lazy loading mode
-      'class' => 'my-picture-class--lazy js-image'
+      'class' => ['my-picture-class--lazy', 'js-image']
     ],
   ],
   'imgAttributes' => [

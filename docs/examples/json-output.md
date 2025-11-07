@@ -36,12 +36,12 @@ $options = [
     'shared' => [
       'alt' => $image->toFile()->alt(),
       'sizes' => '(min-width: 800px) 400px, 100vw',
-      'class' => 'my-image',
+      'class' => ['my-image'],
     ],
   ],
   'pictureAttributes' => [
     'shared' => [
-      'class' => 'my-picture',
+      'class' => ['my-picture'],
       'data-component' => 'responsive-image'
     ]
   ]

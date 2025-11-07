@@ -32,14 +32,14 @@ $options = [
   'ratio' => '3/2',
   'imgAttributes' => [
     'shared' => [
-      'class' => 'my-img-component',
+      'class' => ['my-img-component'],
       'sizes' => '400px'
     ],
     'eager' => [
-      'class' => 'my-img-component--eager',
+      'class' => ['my-img-component--eager'],
     ],
     'lazy' => [
-      'class' => 'my-img-component--lazy',
+      'class' => ['my-img-component--lazy'],
     ]
   ],
   'sourcesAttributes' => [
