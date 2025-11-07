@@ -85,4 +85,64 @@ class OthersTest extends TestCase
 		// Setup mocks or similar for kirby()->option calls
 		$this->assertEquals('default.jpg', srcHandler($src, $srcAttributes, $loadingMode));
 	}
+
+	public function testUrlHandlerWithSrcsetString()
+	{
+		// Test handling of srcset strings with multiple URLs
+		$srcset = 'http://example.com/image-400w.jpg 400w, http://example.com/image-800w.jpg 800w';
+		$expected = '/image-400w.jpg 400w, /image-800w.jpg 800w';
+		$this->assertEquals($expected, urlHandler($srcset, true, 'http://example.com'));
+	}
+
+	public function testTransformForJsonWithNestedArrays()
+	{
+		// Test with nested arrays containing class and style
+		$data = [
+			'pictureAttributes' => [
+				'class' => ['foo', 'bar'],
+				'data-test' => 'value',
+			],
+			'sources' => [
+				[
+					'srcset' => 'image.jpg',
+					'class' => ['baz'],
+				],
+			],
+		];
+
+		$expected = [
+			'pictureAttributes' => [
+				'class' => 'foo bar',
+				'data-test' => 'value',
+			],
+			'sources' => [
+				[
+					'srcset' => 'image.jpg',
+					'class' => 'baz',
+				],
+			],
+		];
+
+		$this->assertEquals($expected, transformForJson($data));
+	}
+
+	public function testTransformForJsonRemovesNullAndEmpty()
+	{
+		// Test that null values and empty strings are removed
+		$data = [
+			'valid' => 'value',
+			'null' => null,
+			'empty' => '',
+			'zero' => 0,
+			'false' => false,
+		];
+
+		$expected = [
+			'valid' => 'value',
+			'zero' => 0,
+			'false' => false,
+		];
+
+		$this->assertEquals($expected, transformForJson($data));
+	}
 }
