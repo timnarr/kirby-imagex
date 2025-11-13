@@ -159,7 +159,7 @@ class Imagex
 		// Cache settings
 		$version = $this->kirby->plugin('timnarr/imagex')->version();
 		$cache = $this->kirby->cache('timnarr.imagex');
-		$cacheKey = implode('-', [$version, $ratioX, $ratioY, $this->srcsetName]);
+		$cacheKey = implode('-', [$version, $ratioX, $ratioY, json_encode($srcsetPreset)]);
 		$cacheId = 'srcset-config-' . hash('xxh3', $cacheKey);
 
 		// Get srcsetPreset from cache or set it
