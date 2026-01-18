@@ -258,4 +258,53 @@ class HtmlAttributesTest extends TestCase
 
 		$this->assertEquals($expected, $result);
 	}
+
+	public function testNormalizeAttributesStructureFlat()
+	{
+		// Test that flat attributes are converted to shared structure
+		$input = ['alt' => 'text', 'class' => ['my-class'], 'width' => 800];
+		$expected = [
+			'shared' => ['alt' => 'text', 'class' => ['my-class'], 'width' => 800],
+			'eager' => [],
+			'lazy' => [],
+		];
+
+		$result = normalizeAttributesStructure($input);
+
+		$this->assertEquals($expected, $result);
+	}
+
+	public function testNormalizeAttributesStructureAlreadyStructured()
+	{
+		// Test that already structured attributes pass through with missing keys filled
+		$input = [
+			'shared' => ['alt' => 'text'],
+			'eager' => ['class' => ['eager-class']],
+		];
+		$expected = [
+			'shared' => ['alt' => 'text'],
+			'eager' => ['class' => ['eager-class']],
+			'lazy' => [],
+		];
+
+		$result = normalizeAttributesStructure($input);
+
+		$this->assertEquals($expected, $result);
+	}
+
+	public function testNormalizeAttributesStructureEmpty()
+	{
+		// Test that empty array returns empty structure
+		$input = [];
+		$expected = [
+			'shared' => [],
+			'eager' => [],
+			'lazy' => [],
+		];
+
+		$result = normalizeAttributesStructure($input);
+
+		$this->assertEquals($expected, $result);
+	}
+
 }

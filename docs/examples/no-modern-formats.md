@@ -22,7 +22,7 @@ return [
 <?php
 $options = [
   'image' => $image->toFile(), // let's assume: `image.jpg` and aspect ratio of 1/1
-  'srcsetName' => 'imagex-demo',
+  'srcset' => 'imagex-demo',
   'ratio' => '3/2'
 ];
 ?>
@@ -56,13 +56,13 @@ $options = [
 <?php
 $options = [
   'image' => $image->toFile(), // let's assume: `image.jpg` and aspect ratio of 1/1
-  'srcsetName' => 'imagex-demo',
+  'srcset' => 'imagex-demo',
   'ratio' => '3/2', // and we set it to 3/2
-  'sourcesArtDirected' => [
+  'artDirection' => [
     [
       // but change it to 21/9 at `(min-width: 800px)`
-      'ratio' => '21/9',
       'media' => '(min-width: 800px)',
+      'ratio' => '21/9',
       'image' => $mySecondImage->toFile() // let's assume: `different-image.png`
     ]
   ]

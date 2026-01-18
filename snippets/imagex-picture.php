@@ -3,15 +3,13 @@
 use TimNarr\Imagex;
 
 $imagex = new Imagex([
-	'critical' => $critical ?? false,
+	'loading' => $loading ?? 'lazy',
 	'image' => $image,
-	'imgAttributes' => $imgAttributes ?? ['shared' =>  [], 'eager' =>  [], 'lazy' => []],
-	'pictureAttributes' => $pictureAttributes ?? ['shared' =>  [], 'eager' =>  [], 'lazy' => []],
+	'attributes' => $attributes ?? [],
 	'ratio' => $ratio ?? 'intrinsic',
-	'sourcesAttributes' => $sourcesAttributes ?? ['shared' =>  [], 'eager' =>  [], 'lazy' => []],
-	'sourcesArtDirected' => $sourcesArtDirected ?? [],
-	'srcsetName' => $srcsetName ?? 'default',
-	'formatSizeHandling' => $formatSizeHandling ?? false,
+	'artDirection' => $artDirection ?? [],
+	'srcset' => $srcset ?? 'default',
+	'compareFormats' => $compareFormats ?? false,
 ]);
 
 $pictureAttributes = $imagex->getPictureAttributes();

@@ -1,8 +1,8 @@
 # Examples: Loading modes `eager` and `lazy`
 
-Imagex will use native lazy loadig (`loading="lazy"`) by default. See [Custom Lazy Loading](https://github.com/timnarr/kirby-imagex/blob/main/docs/examples/custom-lazy-loading.md) when you use a JS lazy loading library.
+Imagex will use native lazy loading (`loading="lazy"`) by default. See [Custom Lazy Loading](https://github.com/timnarr/kirby-imagex/blob/main/docs/examples/custom-lazy-loading.md) when you use a JS lazy loading library.
 
-A image can be in `eager` or `lazy` loading mode. You can set attributes for these two modes and they will then extend `shared` attributes, if defined.
+An image can be in `eager` or `lazy` loading mode. You can set attributes for these two modes and they will then extend `shared` attributes, if defined.
 
 ## Global Plugin Config
 These are all default values, so you don't need to set them explicitly and I've only added them here for the demo.
@@ -27,23 +27,23 @@ return [
 <?php
 $options = [
   'image' => $image,
-  'critical' => false, // false is the deafult - will set the `lazy` loading mode, true will set it to `eager`
-  'srcsetName' => 'imagex-demo',
+  'loading' => 'lazy', // 'lazy' is the default, 'eager' for above-the-fold images
+  'srcset' => 'imagex-demo',
   'ratio' => '3/2',
-  'imgAttributes' => [
-    'shared' => [
-      'class' => ['my-img-component'],
-      'sizes' => '400px'
+  'attributes' => [
+    'img' => [
+      'shared' => [
+        'class' => ['my-img-component'],
+        'sizes' => '400px'
+      ],
+      'eager' => [
+        'class' => ['my-img-component--eager'],
+      ],
+      'lazy' => [
+        'class' => ['my-img-component--lazy'],
+      ]
     ],
-    'eager' => [
-      'class' => ['my-img-component--eager'],
-    ],
-    'lazy' => [
-      'class' => ['my-img-component--lazy'],
-    ]
-  ],
-  'sourcesAttributes' => [
-    'shared' => [
+    'sources' => [
       'sizes' => '400px'
     ],
   ],
@@ -76,7 +76,7 @@ $options = [
 </picture>
 ```
 
-If we now use the same image and config and switch this image to a critical (`'critical' => true`) one, because it is displayed above the fold or a editor decided to do so, then the image will switch from `lazy` to `eager` and prdouces this HTML:
+If we now use the same image and config and switch this image to eager (`'loading' => 'eager'`), because it is displayed above the fold or an editor decided to do so, then the image will switch from `lazy` to `eager` and produces this HTML:
 
 ```html
 <picture>
@@ -90,8 +90,8 @@ If we now use the same image and config and switch this image to a critical (`'c
     srcset="
       https://example.com/image-400x267-crop-52-65-q75-sharpen10.webp 400w,
       https://example.com/image-800x533-crop-52-65-q75-sharpen10.webp 800w">
-  <!-- fetchpriority is added to `critical` images by default -->
-  <!-- You can disable it by setting `'fetchpriority' => null` to imgAttributes['eager'] -->
+  <!-- fetchpriority="high" is added automatically when loading='eager' -->
+  <!-- You can override it by setting 'fetchpriority' => null in attributes.img -->
   <img
     width="400" height="267" class="my-img-component my-img-component--eager"
     decoding="async" fetchpriority="high" sizes="400px"
@@ -105,18 +105,18 @@ If we now use the same image and config and switch this image to a critical (`'c
 You can also use `eager` and `lazy` attributes with art-directed images like this:
 
 ```php
-'sourcesArtDirected' => [
+'artDirection' => [
   [
-    'ratio' => '21/9',
     'media' => '(min-width: 800px)',
+    'ratio' => '21/9',
     'image' => $block->imagetwo()->toFile(),
     'attributes' => [
       'shared' => [
         'attribute' => 'value'
-      ]
+      ],
       'eager' => [
         'attribute' => 'value'
-      ]
+      ],
       'lazy' => [
         'attribute' => 'value'
       ]

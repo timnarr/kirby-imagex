@@ -10,17 +10,17 @@ use Kirby\Toolkit\A;
 
 class Imagex
 {
-	protected bool $critical;
+	protected string $loading;
 	protected bool $customLazyloading;
 	protected array $formats;
 	protected File $image;
 	protected array $imgAttributes;
 	protected array $pictureAttributes;
 	protected string $ratio;
-	protected array $sourcesArtDirected;
+	protected array $artDirection;
 	protected array $sourcesAttributes;
-	protected string $srcsetName;
-	protected bool $formatSizeHandling;
+	protected string $srcset;
+	protected bool $compareFormats;
 	protected bool $includeInitialFormat;
 	protected bool $noSrcsetInImg;
 	protected array $thumbsSrcsets;
@@ -44,16 +44,27 @@ class Imagex
 			throw new InvalidArgumentException("[kirby-imagex] Option 'image' must be an instance of Kirby\Cms\File");
 		}
 
+		// Validate loading option
+		$loading = $options['loading'] ?? 'lazy';
+		if (!in_array($loading, ['eager', 'lazy'])) {
+			throw new InvalidArgumentException("[kirby-imagex] Option 'loading' must be 'eager' or 'lazy'. Got: '{$loading}'");
+		}
+
 		// Assign options to properties
-		$this->critical = $options['critical'];
+		$this->loading = $loading;
 		$this->image = $options['image'];
-		$this->imgAttributes = $options['imgAttributes'];
-		$this->pictureAttributes = $options['pictureAttributes'];
 		$this->ratio = $options['ratio'];
-		$this->sourcesArtDirected = $options['sourcesArtDirected'];
-		$this->sourcesAttributes = $options['sourcesAttributes'];
-		$this->srcsetName = $options['srcsetName'];
-		$this->formatSizeHandling = $options['formatSizeHandling'];
+		$this->srcset = $options['srcset'];
+		$this->compareFormats = $options['compareFormats'];
+
+		// Normalize and assign attributes
+		$attributes = $options['attributes'] ?? [];
+		$this->imgAttributes = normalizeAttributesStructure($attributes['img'] ?? []);
+		$this->pictureAttributes = normalizeAttributesStructure($attributes['picture'] ?? []);
+		$this->sourcesAttributes = normalizeAttributesStructure($attributes['sources'] ?? []);
+
+		// Assign art direction
+		$this->artDirection = $options['artDirection'] ?? [];
 
 		// Cache kirby instance and assign options
 		$this->kirby = kirby();
@@ -65,13 +76,13 @@ class Imagex
 	}
 
 	/**
-	 * Determines the loading mode based on the critical flag.
+	 * Determines the loading mode based on the loading option.
 	 *
 	 * @return string The loading mode - 'eager' or 'lazy'
 	 */
 	private function getLoadingMode(): string
 	{
-		return $this->critical ? 'eager' : 'lazy';
+		return $this->loading;
 	}
 
 	/**
@@ -115,13 +126,13 @@ class Imagex
 	{
 		$allSrcsetPresets = $this->thumbsSrcsets;
 
-		if (!isset($allSrcsetPresets[$this->srcsetName])) {
+		if (!isset($allSrcsetPresets[$this->srcset])) {
 			$available = implode(', ', array_keys($allSrcsetPresets));
 
-			throw new Exception("[kirby-imagex] Srcset configuration '{$this->srcsetName}' not found. Available presets: {$available}");
+			throw new Exception("[kirby-imagex] Srcset configuration '{$this->srcset}' not found. Available presets: {$available}");
 		}
 
-		$srcsetName = $this->srcsetName;
+		$srcsetName = $this->srcset;
 		$srcsetPreset[$this->getImageFormat()] = $allSrcsetPresets[$srcsetName];
 
 		foreach ($this->getFormats() as $format) {
@@ -194,20 +205,20 @@ class Imagex
 	{
 		$formats = $this->getFormats();
 		$formatsCount = A::count($formats);
-		$formatSizeHandling = $this->formatSizeHandling;
+		$compareFormats = $this->compareFormats;
 
-		// Throw an exception if formatSizeHandling is active and there are one or less formats
-		if ($formatSizeHandling && $formatsCount <= 1) {
-			throw new Exception('[kirby-imagex] Not enough formats to determine the smallest. Please set "formatSizeHandling" to false or add at least two formats in the configuration.');
+		// Throw an exception if compareFormats is active and there are one or less formats
+		if ($compareFormats && $formatsCount <= 1) {
+			throw new Exception('[kirby-imagex] Not enough formats to determine the smallest. Please set "compareFormats" to false or add at least two formats in the configuration.');
 		}
 
 		// Check for the specific condition where only the 'initialformat' is present and includeInitialFormat is true.
-		if (!$formatSizeHandling && $formatsCount === 1 && A::has($formats, 'initialformat') && $this->includeInitialFormat) {
+		if (!$compareFormats && $formatsCount === 1 && A::has($formats, 'initialformat') && $this->includeInitialFormat) {
 			return null;
 		}
 
-		// Return the first format if there is only one format, regardless of formatSizeHandling's state.
-		if (!$formatSizeHandling || $formatsCount === 1) {
+		// Return the first format if there is only one format, regardless of compareFormats's state.
+		if (!$compareFormats || $formatsCount === 1) {
 			return A::first($formats);
 		}
 
@@ -242,7 +253,7 @@ class Imagex
 		$srcsetValue = $this->getSrcsetValue($srcsetPreset[$format]);
 
 		$image = $this->image;
-		$isCritical = $this->critical;
+		$isEager = $this->loading === 'eager';
 		$userAttributes = $this->imgAttributes;
 		$customLazyloading = $this->customLazyloading;
 		$useNoSrcsetInImg = $this->noSrcsetInImg;
@@ -257,14 +268,14 @@ class Imagex
 				'width' => $width,
 				'height' => $height,
 				'decoding' => 'async',
-				'fetchpriority' => $isCritical ? 'high' : null,
+				'fetchpriority' => $isEager ? 'high' : null,
 			],
 			'eager' => [
 				'src' => srcHandler($src, $userAttributes, 'eager'),
 				'srcset' => $useNoSrcsetInImg ? null : $srcsetValue,
 			],
 			'lazy' => [
-				'loading' => $customLazyloading ? null : ($isCritical ? null : 'lazy'),
+				'loading' => $customLazyloading ? null : 'lazy',
 				'data-src' => $customLazyloading ? $src : null,
 				'src' => srcHandler($src, $userAttributes, 'lazy'),
 				'data-srcset' => $useNoSrcsetInImg ? null : ($customLazyloading ? $srcsetValue : null),
@@ -342,7 +353,7 @@ class Imagex
 	{
 		$sources = [];
 
-		foreach ($this->sourcesArtDirected as $source) {
+		foreach ($this->artDirection as $source) {
 			$sourceRatio = $source['ratio'] ?? 'intrinsic';
 			$sourceImage = $source['image'] ?? null;
 
@@ -385,7 +396,7 @@ class Imagex
 		for ($i = 0; $i < count($formats); $i++) {
 			$format = $formats[$i];
 
-			// If formatSizeHandling is true, skip the current format if the next format is smaller
+			// If compareFormats is true, skip the current format if the next format is smaller
 			if ($smallestFormat && isset($formats[$i + 1])) {
 				$nextFormat = $formats[$i + 1];
 
@@ -394,7 +405,7 @@ class Imagex
 				}
 			}
 
-			if (!empty($this->sourcesArtDirected)) {
+			if (!empty($this->artDirection)) {
 				$sources = array_merge($sources, $this->getArtDirectedSourcesPerFormat($format));
 			}
 

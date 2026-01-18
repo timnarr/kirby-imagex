@@ -2,7 +2,7 @@
 
 1. [Modern Config](#example-1-modern-config)
 2. [Modern Config plus `noSrcsetInImg`](#example-2-modern-config-plus-nosrcsetinimg)
-3. [Modern Config plus `formatSizeHandling`](#example-3-modern-config-plus-formatsizehandling)
+3. [Modern Config plus `compareFormats`](#example-3-modern-config-plus-compareformats)
 4. [Modern Config plus `relativeUrls`](#example-4-modern-config-plus-relativeurls)
 
 ## Example 1. Modern Config
@@ -21,22 +21,20 @@ return [
 ### Snippet Options
 ```php
 'image' => $image,
-'srcsetName' => 'imagex-demo',
+'srcset' => 'imagex-demo',
 'ratio' => '3/2',
-'imgAttributes' => [
-  'shared' => [
+'attributes' => [
+  'img' => [
+    'sizes' => '400px'
+  ],
+  'sources' => [
     'sizes' => '400px'
   ],
 ],
-'sourcesAttributes' => [
-  'shared' => [
-    'sizes' => '400px'
-  ],
-],
-'sourcesArtDirected' => [
+'artDirection' => [
   [
-    'ratio' => '21/9',
     'media' => '(min-width: 800px)',
+    'ratio' => '21/9',
     'image' => $block->imagetwo()->toFile(), // let's assume: `different-image.png`
   ]
 ],
@@ -124,8 +122,8 @@ return [
 </picture>
 ```
 
-## Example 3. Modern Config plus `formatSizeHandling`
-`formatSizeHandling` will compare file sizes per image and will test if the most modern format is also the smallest. In this demo setup `avif` is checked if it's smaller as `webp` and if it's not smaller Imagex will omit it.
+## Example 3. Modern Config plus `compareFormats`
+`compareFormats` will compare file sizes per image and will test if the most modern format is also the smallest. In this demo setup `avif` is checked if it's smaller as `webp` and if it's not smaller Imagex will omit it.
 
 🚧 **This feature is currently pretty basic.** It only generates the middle item / width from the given srcset preset and check if the file size is smaller than the next less modern format. And currently this is only done for the initial image and not for the images of art directed sources.
 
@@ -144,8 +142,8 @@ return [
 ### Snippet Config
 ```php
 // same as above, except...
-  'formatSizeHandling' => true, // skip most modern format if larger
-  'sourcesArtDirected' => [], // `'formatSizeHandling' => true` should only be used without art directed images at the moment
+  'compareFormats' => true, // skip most modern format if larger
+  'artDirection' => [], // `'compareFormats' => true` should only be used without art directed images at the moment
 ```
 
 ### Final HTML Output

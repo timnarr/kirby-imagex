@@ -3,21 +3,21 @@
 namespace TimNarr;
 
 $imagex = new Imagex([
-	'critical' => $critical ?? false,
+	'loading' => $loading ?? 'lazy',
 	'image' => $image,
-	'imgAttributes' => $imgAttributes ?? ['shared' =>  [], 'eager' =>  [], 'lazy' => []],
-	'pictureAttributes' => $pictureAttributes ?? ['shared' =>  [], 'eager' =>  [], 'lazy' => []],
+	'attributes' => $attributes ?? [],
 	'ratio' => $ratio ?? 'intrinsic',
-	'sourcesAttributes' => $sourcesAttributes ?? ['shared' =>  [], 'eager' =>  [], 'lazy' => []],
-	'sourcesArtDirected' => $sourcesArtDirected ?? [],
-	'srcsetName' => $srcsetName ?? 'default',
-	'formatSizeHandling' => $formatSizeHandling ?? false,
+	'artDirection' => $artDirection ?? [],
+	'srcset' => $srcset ?? 'default',
+	'compareFormats' => $compareFormats ?? false,
 ]);
 
 $data = [
-	'pictureAttributes' => $imagex->getPictureAttributes(),
-	'sources' => $imagex->getPictureSources(),
-	'imgAttributes' => $imagex->getImgAttributes(),
+	'picture' => [
+		...$imagex->getPictureAttributes(),
+		'sources' => $imagex->getPictureSources(),
+	],
+	'img' => $imagex->getImgAttributes(),
 ];
 
 $data = transformForJson($data);

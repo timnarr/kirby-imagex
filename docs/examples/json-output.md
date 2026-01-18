@@ -30,17 +30,15 @@ return [
 <?php
 $options = [
   'image' => $image->toFile(), // let's assume: `image.jpg` with 16/9 aspect ratio
-  'srcsetName' => 'imagex-demo',
+  'srcset' => 'imagex-demo',
   'ratio' => '16/9',
-  'imgAttributes' => [
-    'shared' => [
+  'attributes' => [
+    'img' => [
       'alt' => $image->toFile()->alt(),
       'sizes' => '(min-width: 800px) 400px, 100vw',
       'class' => ['my-image'],
     ],
-  ],
-  'pictureAttributes' => [
-    'shared' => [
+    'picture' => [
       'class' => ['my-picture'],
       'data-component' => 'responsive-image'
     ]
@@ -60,36 +58,87 @@ $data = json_decode($json, true);
 ```
 
 ### JSON Output
+The JSON structure groups `picture` attributes with `sources` nested inside, and `img` attributes separately. Note that `class` and `style` arrays are converted to strings in the JSON output.
+
 ```json
 {
-    "pictureAttributes": {
+    "picture": {
         "class": "my-picture",
-        "data-component": "responsive-image"
+        "data-component": "responsive-image",
+        "sources": [
+            {
+                "type": "image/avif",
+                "width": 400,
+                "height": 225,
+                "sizes": "(min-width: 800px) 400px, 100vw",
+                "srcset": "https://example.com/image-400x225-crop-52-65-q65-sharpen25.avif 400w, https://example.com/image-800x450-crop-52-65-q65-sharpen25.avif 800w"
+            },
+            {
+                "type": "image/webp",
+                "width": 400,
+                "height": 225,
+                "sizes": "(min-width: 800px) 400px, 100vw",
+                "srcset": "https://example.com/image-400x225-crop-52-65-q75-sharpen10.webp 400w, https://example.com/image-800x450-crop-52-65-q75-sharpen10.webp 800w"
+            }
+        ]
     },
-    "sources": [
-        {
-            "width": 400,
-            "height": 225,
-            "type": "image/avif",
-            "srcset": "https://example.com/image-400x225-crop-52-65-q65-sharpen25.avif 400w, https://example.com/image-800x450-crop-52-65-q65-sharpen25.avif 800w"
-        },
-        {
-            "width": 400,
-            "height": 225,
-            "type": "image/webp",
-            "srcset": "https://example.com/image-400x225-crop-52-65-q75-sharpen10.webp 400w, https://example.com/image-800x450-crop-52-65-q75-sharpen10.webp 800w"
-        }
-    ],
-    "imgAttributes": {
-        "class": "my-image",
-        "sizes": "(min-width: 800px) 400px, 100vw",
-        "alt": "A cat sits in the sun in front of yellow flowers.",
+    "img": {
+        "src": "https://example.com/image-400x225-crop-52-65-q80-sharpen10.jpg",
         "width": 400,
         "height": 225,
         "decoding": "async",
         "loading": "lazy",
-        "src": "https://example.com/image-400x225-crop-52-65-q80-sharpen10.jpg",
-        "srcset": "https://example.com/image-400x225-crop-52-65-q80-sharpen10.jpg 400w, https://example.com/image-800x450-crop-52-65-q80-sharpen10.jpg 800w"
+        "srcset": "https://example.com/image-400x225-crop-52-65-q80-sharpen10.jpg 400w, https://example.com/image-800x450-crop-52-65-q80-sharpen10.jpg 800w",
+        "class": "my-image",
+        "sizes": "(min-width: 800px) 400px, 100vw",
+        "alt": "A cat sits in the sun in front of yellow flowers."
+    }
+}
+```
+
+### JSON Output with Art Direction
+When using `artDirection`, the sources array includes entries with `media` attributes:
+
+```php
+$options = [
+  'image' => $image->toFile(),
+  'srcset' => 'imagex-demo',
+  'ratio' => '3/2',
+  'artDirection' => [
+    [
+      'media' => '(min-width: 800px)',
+      'ratio' => '21/9',
+    ]
+  ]
+];
+```
+
+```json
+{
+    "picture": {
+        "sources": [
+            {
+                "type": "image/avif",
+                "width": 400,
+                "height": 171,
+                "media": "(min-width: 800px)",
+                "srcset": "https://example.com/image-400x171-crop-52-65-q65-sharpen25.avif 400w, ..."
+            },
+            {
+                "type": "image/avif",
+                "width": 400,
+                "height": 267,
+                "srcset": "https://example.com/image-400x267-crop-52-65-q65-sharpen25.avif 400w, ..."
+            }
+        ]
+    },
+    "img": {
+        "src": "https://example.com/image-400x267-crop-52-65-q80-sharpen10.jpg",
+        "width": 400,
+        "height": 267,
+        "decoding": "async",
+        "loading": "lazy",
+        "srcset": "..."
     }
 }
 ```

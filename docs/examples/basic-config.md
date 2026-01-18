@@ -29,7 +29,7 @@ return [
 <?php
 $options = [
   'image' => $image->toFile(), // let's assume: `image.jpg` and aspect ratio of 1/1
-  'srcsetName' => 'imagex-demo',
+  'srcset' => 'imagex-demo',
 ];
 ?>
 
@@ -70,10 +70,10 @@ $options = [
 <?php
 $options = [
   'image' => $image->toFile(), // let's assume: `image.jpg` and aspect ratio of 1/1
-  'srcsetName' => 'imagex-demo',
+  'srcset' => 'imagex-demo',
   'ratio' => '16/9',
-  'imgAttributes' => [
-    'shared' => [
+  'attributes' => [
+    'img' => [
       'alt' => $image->toFile()->alt(),
       'sizes' => '(min-width: 800px) 400px, 100vw',
       'class' => [
@@ -129,10 +129,10 @@ $options = [
 <?php
 $options = [
   'image' => $image->toFile(), // let's assume: `image.jpg` and aspect ratio of 1/1
-  'srcsetName' => 'imagex-demo',
+  'srcset' => 'imagex-demo',
   'ratio' => '16/9',
-  'imgAttributes' => [
-    'shared' => [
+  'attributes' => [
+    'img' => [
       'alt' => $image->toFile()->alt(),
       'sizes' => '(min-width: 800px) 400px, 100vw',
       'class' => ['my-image'],
@@ -141,9 +141,7 @@ $options = [
         'object-position: ' . $image->toFile()->focus() . ';'
       ]
     ],
-  ],
-  'pictureAttributes' => [
-    'shared' => [
+    'picture' => [
       'class' => ['my-picture'],
       'data-attr' => 'some-data-attribute'
     ]

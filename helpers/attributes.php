@@ -125,3 +125,41 @@ function mergeHTMLAttributes(array $attributes, string $loadingMode, array $defa
 
 	return $mergedAttributes;
 }
+
+/**
+ * Normalizes user-provided attributes to the internal shared/eager/lazy structure.
+ *
+ * Converts flat attribute arrays to the shared structure:
+ * ['alt' => 'text', 'class' => ['my-class']]
+ * becomes
+ * ['shared' => ['alt' => 'text', 'class' => ['my-class']], 'eager' => [], 'lazy' => []]
+ *
+ * If the array already has 'shared', 'eager', or 'lazy' keys, it's returned as-is
+ * with missing keys filled in as empty arrays.
+ *
+ * @param array $attributes User-provided attributes (flat or structured)
+ * @return array Normalized attributes with shared/eager/lazy structure
+ */
+function normalizeAttributesStructure(array $attributes): array
+{
+	$loadingModeKeys = ['shared', 'eager', 'lazy'];
+
+	// Check if any loading mode keys exist
+	$hasLoadingModeKeys = !empty(array_intersect(array_keys($attributes), $loadingModeKeys));
+
+	if ($hasLoadingModeKeys) {
+		// Already structured, just ensure all keys exist
+		return [
+			'shared' => $attributes['shared'] ?? [],
+			'eager' => $attributes['eager'] ?? [],
+			'lazy' => $attributes['lazy'] ?? [],
+		];
+	}
+
+	// Flat structure - wrap in 'shared'
+	return [
+		'shared' => $attributes,
+		'eager' => [],
+		'lazy' => [],
+	];
+}

@@ -1,6 +1,6 @@
 # Examples: Custom Lazy Loading using `lazysizes`
 
-Let's have a look how to configure Imagex to work with JS lazy loading libraries like [`lazysizes`](https://github.com/aFarkas/lazysizes). A image can be in `eager` or `lazy` loading mode. You can set attributes for these two modes and they will then extend `shared` attributes, if defined.
+Let's have a look how to configure Imagex to work with JS lazy loading libraries like [`lazysizes`](https://github.com/aFarkas/lazysizes). An image can be in `eager` or `lazy` loading mode. You can set attributes for these two modes and they will then extend `shared` attributes, if defined.
 
 1. [Custom Lazy Loading for Non-Art-Directed Images](#example-1-custom-lazy-loading-for-non-art-directed-images)
 2. [Custom Lazy Loading for Art-Directed Images](#example-2-custom-lazy-loading-for-art-directed-images)
@@ -24,36 +24,38 @@ return [
 <?php
 $options = [
   'image' => $image,
-  'critical' => false, // false will set the `lazy` loading mode, true will set it to `eager`
-  'srcsetName' => 'imagex-demo',
+  'loading' => 'lazy', // 'lazy' will use data-src/data-srcset, 'eager' uses src/srcset
+  'srcset' => 'imagex-demo',
   'ratio' => '3/2',
-  'imgAttributes' => [
-    'shared' => [
-      'class' => ['my-img-component'],
+  'attributes' => [
+    'img' => [
+      'shared' => [
+        'class' => ['my-img-component'],
+      ],
+      'eager' => [
+        'class' => ['my-img-component--eager'],
+        'sizes' => '400px'
+      ],
+      'lazy' => [
+        'class' => ['lazyload'],
+        'data-sizes' => 'auto', // add lazysizes attributes to `lazy`
+        'data-optimumx' => 'auto' // add lazysizes attributes to `lazy`
+      ]
     ],
-    'eager' => [
-      'class' => ['my-img-component--eager'],
-      'sizes' => '400px'
+    'sources' => [
+      'eager' => [
+        'sizes' => '400px'
+      ],
+      'lazy' => [
+        'data-sizes' => 'auto', // add lazysizes attributes to `lazy`
+        'data-aspectratio' => '3/2' // add lazysizes attributes to `lazy`
+      ]
     ],
-    'lazy' => [
-      'class' => ['lazyload'],
-      'data-sizes' => 'auto', // add lazysizes attributes to `lazy`
-      'data-optimumx' => 'auto' // add lazysizes attributes to `lazy`
-    ]
   ],
-  'sourcesAttributes' => [
-    'eager' => [
-      'sizes' => '400px'
-    ],
-    'lazy' => [
-      'data-sizes' => 'auto', // add lazysizes attributes to `lazy`
-      'data-aspectratio' => '3/2' // add lazysizes attributes to `lazy`
-    ]
-  ],
-  'sourcesArtDirected' => [
+  'artDirection' => [
     [
-      'ratio' => '21/9',
       'media' => '(min-width: 800px)',
+      'ratio' => '21/9',
       'image' => $block->imagetwo()->toFile(), // let's assume: `different-image.png`
     ]
   ],
@@ -86,7 +88,7 @@ $options = [
 </picture>
 ```
 
-If we now use the same image and config and switch this image to a critical (`'critical' => true`) one, because it is displayed above the fold or a editor decided to do so, then the image will switch from `lazy` to `eager` and prdouces this HTML:
+If we now use the same image and config and switch this image to eager (`'loading' => 'eager'`), because it is displayed above the fold or an editor decided to do so, then the image will switch from `lazy` to `eager` and produces this HTML:
 
 ```html
 <picture>
@@ -100,8 +102,8 @@ If we now use the same image and config and switch this image to a critical (`'c
     srcset="
       https://example.com/image-400x267-crop-52-65-q75-sharpen10.webp 400w,
       https://example.com/image-800x533-crop-52-65-q75-sharpen10.webp 800w">
-    <!-- fetchpriority is added to `critical` images by default -->
-    <!-- You can disable it by setting `'fetchpriority' => null` to imgAttributes['eager'] -->
+    <!-- fetchpriority="high" is added automatically when loading='eager' -->
+    <!-- You can override it by setting 'fetchpriority' => null in attributes.img -->
     <img
       width="400" height="267" class="my-img-component my-img-component--eager" sizes="400px" decoding="async"
       fetchpriority="high"
@@ -127,19 +129,21 @@ Lazysizes suggests to use the `data-aspectratio` attribute for `<sources>` that 
 <?php
 $options = [
   // ... like above
-  'sourcesAttributes' => [
-    'eager' => [
-      'sizes' => '400px'
+  'attributes' => [
+    'sources' => [
+      'eager' => [
+        'sizes' => '400px'
+      ],
+      'lazy' => [
+        'data-sizes' => 'auto', // add lazysizes attributes to `lazy`
+        'data-aspectratio' => '3/2' // add lazysizes attributes to `lazy`
+      ]
     ],
-    'lazy' => [
-      'data-sizes' => 'auto', // add lazysizes attributes to `lazy`
-      'data-aspectratio' => '3/2' // add lazysizes attributes to `lazy`
-    ]
   ],
-  'sourcesArtDirected' => [
+  'artDirection' => [
     [
-      'ratio' => '21/9',
       'media' => '(min-width: 800px)',
+      'ratio' => '21/9',
       'image' => $block->imagetwo()->toFile(), // let's assume: `different-image.png`
       'attributes' => [
         'lazy' => [
