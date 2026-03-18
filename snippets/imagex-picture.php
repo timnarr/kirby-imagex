@@ -18,9 +18,9 @@ $imgAttributes = $imagex->getImgAttributes();
 ?>
 
 <picture <?= attr($pictureAttributes) ?>>
-<?php foreach ($pictureSources as $source): ?>
-	<source <?= attr($source) ?> />
-<?php endforeach; ?>
+	<?php foreach ($pictureSources as $source): ?>
+		<source <?= attr($source) ?> />
+	<?php endforeach; ?>
 
 	<img <?= attr($imgAttributes) ?>>
 </picture>
