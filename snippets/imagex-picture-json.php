@@ -1,6 +1,6 @@
 <?php
 
-namespace TimNarr;
+use TimNarr\Imagex;
 
 $imagex = new Imagex([
 	'loading' => $loading ?? 'lazy',
