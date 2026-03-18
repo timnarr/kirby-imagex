@@ -15,7 +15,7 @@ class SrcsetTest extends TestCase
 				'100w'  => ['width' => 100, 'crop' => true, 'quality' => 100, 'sharpen' => 10],
 				'200w'  => ['width' => 200, 'crop' => true, 'quality' => 80],
 				'300w'  => ['width' => 300, 'crop' => true],
-				'400w'  => ['width' => 400],
+				'400w'  => ['width' => 400, 'crop' => true],
 			],
 		];
 
@@ -27,7 +27,7 @@ class SrcsetTest extends TestCase
 				'100w'  => ['width' => 100, 'height' => 56,  'crop' => true, 'quality' => 100, 'sharpen' => 10], // 56.25
 				'200w'  => ['width' => 200, 'height' => 113, 'crop' => true, 'quality' => 80], // 112.5
 				'300w'  => ['width' => 300, 'height' => 169, 'crop' => true], // 168.75
-				'400w'  => ['width' => 400, 'height' => 225],
+				'400w'  => ['width' => 400, 'height' => 225, 'crop' => true],
 			],
 		];
 
