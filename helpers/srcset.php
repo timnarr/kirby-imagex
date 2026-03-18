@@ -21,6 +21,10 @@ function addRatioBasedHeightToSrcsetPreset(array $srcsetPreset, int $ratioX, int
 		foreach ($srcset as $key => $src) {
 			$width = (int)$src['width'];
 			$srcsetPreset[$format][$key]['height'] = (int)(round($width * $ratio));
+			// 'crop' option must be enabled when height is ratio calculated; explicit false is invalid in this context
+			if (empty($srcsetPreset[$format][$key]['crop'])) {
+				$srcsetPreset[$format][$key]['crop'] = true;
+			}
 		}
 	}
 
