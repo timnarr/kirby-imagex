@@ -381,9 +381,8 @@ class Imagex
 	{
 		$srcsetPreset = $this->getDynamicSrcsetPreset();
 		$srcsetValue = $this->getSrcsetValue($srcsetPreset[$format]);
-		$attributes = $this->getSourceAttributes($format, $srcsetValue, $srcsetPreset);
 
-		return $attributes;
+		return $this->getSourceAttributes($format, $srcsetValue, $srcsetPreset);
 	}
 
 	/**
