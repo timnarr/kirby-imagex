@@ -3,7 +3,6 @@
 namespace TimNarr;
 
 use Kirby\Exception\InvalidArgumentException;
-use Kirby\Toolkit\Str;
 
 /**
  * Normalizes an image format.
@@ -38,7 +37,7 @@ function urlHandler(string $url, bool|null $useRelativeUrls = null, string|null 
 
 	// Replace all occurrences of the site URL with relative paths
 	// This handles both single URLs and srcset strings with multiple URLs
-	return Str::replace($url, $siteUrl, '');
+	return str_replace($siteUrl, '', $url);
 }
 
 /**
