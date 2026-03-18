@@ -126,6 +126,10 @@ class Imagex
 	{
 		$allSrcsetPresets = $this->thumbsSrcsets;
 
+		if (!is_array($allSrcsetPresets) || empty($allSrcsetPresets)) {
+			throw new Exception('[kirby-imagex] No srcset presets found. Please configure "thumbs.srcsets" in your config.');
+		}
+
 		if (!isset($allSrcsetPresets[$this->srcset])) {
 			$available = implode(', ', array_keys($allSrcsetPresets));
 
