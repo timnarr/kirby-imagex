@@ -394,10 +394,11 @@ class Imagex
 	public function getPictureSources(): array
 	{
 		$formats = $this->getFormats();
+		$formatsCount = count($formats);
 		$smallestFormat = $this->getSmallestFormat();
 		$sources = [];
 
-		for ($i = 0; $i < count($formats); $i++) {
+		for ($i = 0; $i < $formatsCount; $i++) {
 			$format = $formats[$i];
 
 			// If compareFormats is true, skip the current format if the next format is smaller
