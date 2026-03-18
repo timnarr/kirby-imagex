@@ -3,13 +3,13 @@
 use TimNarr\Imagex;
 
 $imagex = new Imagex([
-	'loading' => $loading ?? 'lazy',
-	'image' => $image,
-	'attributes' => $attributes ?? [],
-	'ratio' => $ratio ?? 'intrinsic',
 	'artDirection' => $artDirection ?? [],
-	'srcset' => $srcset ?? 'default',
+	'attributes' => $attributes ?? [],
 	'compareFormats' => $compareFormats ?? false,
+	'image' => $image,
+	'loading' => $loading ?? 'lazy',
+	'ratio' => $ratio ?? 'intrinsic',
+	'srcset' => $srcset ?? 'default',
 ]);
 
 $data = [
