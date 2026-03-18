@@ -1,7 +1,8 @@
 ![Kirby Imagex Banner](/.github/imagex-banner.png)
 
 # Kirby Imagex
-**Modern Images for Kirby CMS** – This plugin helps you orchestrate modern, responsive and performant images in Kirby.
+**Modern Images for Kirby CMS** – Imagex helps you orchestrate modern, responsive and performant images in Kirby.
+
 
 ## Features
 - 🌠 Dynamic generation of image srcsets for art-directed or media-condition-based images.
@@ -55,7 +56,7 @@ return [
 ## Adjust Kirby's Thumbs Config and Add Srcset Presets
 The srcset configuration is still set up as you know it from Kirby, [like described here](https://getkirby.com/docs/reference/objects/cms/file/srcset#define-presets__extended-example).
 
-Set your srcset preset, like `my-srcset` and just define the width and other configs here. I leave out the `height` in my settings and only define the `width`. This makes working with images easier and more predictable, because it allows you to quickly and easily change the ratio of a image component or add a new ratio without having to create a new srcset preset to your config. The `height` is later calulated by Imagex based on the ratio. This first srcset preset is used for `jpeg` or `png` images.
+Set your srcset preset, like `my-srcset`, and define only the `width` — no `height` needed. Imagex calculates the height from the `ratio` you pass to the snippet, so one preset works for any aspect ratio. Switching from `16/9` to `1/1` is a one-line change, no new presets needed. This first srcset preset is used for `jpeg` or `png` images.
 
 ```php
 // config.php
@@ -71,7 +72,7 @@ Set your srcset preset, like `my-srcset` and just define the width and other con
 
 If you use `avif` and/or `webp`, you must have a separate srcset preset for these formats. Copy the preset and append `-{format}` to the name and then set the `format` and other options for this preset. This is necessary to have full control and to define different quality values or other options for each modern format.
 
-The quality settings for the modern formats shouldn't simply be taken from the initial preset. To really benefit from smaller image files due to modern formats, you should slightly adjust your quality settings. My rule of thumb is to subtract 5 from the jpeg/png quality for webp and to substract 15 for avif. Here is a good [read](https://www.industrialempathy.com/posts/avif-webp-quality-settings/) with more detail, but I've also noticed that this isn't completely applicable to images in Kirby.
+The quality settings for the modern formats shouldn't simply be taken from the initial preset. To really benefit from smaller image files due to modern formats, you should slightly adjust your quality settings. My rule of thumb is to subtract 5 from the jpeg/png quality for webp and to subtract 15 for avif. Here is a good [read](https://www.industrialempathy.com/posts/avif-webp-quality-settings/) with more detail, but I've also noticed that this isn't completely applicable to images in Kirby.
 
 ```php
 // config.php
@@ -379,7 +380,7 @@ $options = [
 Note: In most cases, you should **not** need to override `width`, `height`, or `srcset`. Let Imagex handle these automatically based on your `ratio` parameter for best results.
 
 ## Cache
-Imagex will do some simple calculations per image, like calculating the height by the given width and ratio. Basically Imagex get the srcset definition from the config file, calculate and set the height and output the final config. The result will be cached to reduce unnecessary calculations when you use the same combination of srcset-preset and ratio for other images.
+Imagex calculates the height for each srcset entry based on the given width and ratio and caches the resulting srcset config. This way repeated use of the same preset/ratio combination avoids redundant calculations.
 
 ## Performance Improvements for Critical Images
 Imagex provides features like Priority Hints for improving the loading times of critical images.
