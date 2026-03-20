@@ -51,9 +51,9 @@ return [
 | ------ | ------- | ---- | ----------- |
 | `cache` | `true` | Boolean | Imagex will cache some calculations. Read more about it here: "[Cache](#cache)" |
 | `compareFormatsWeights` | `'mobile'` | String or Array | Controls the weighting used when comparing format sizes via `compareFormats`. Preset strings: `'mobile'` (50/30/20), `'desktop'` (20/30/50), `'balanced'` (34/33/33). For custom weights pass an array: `['small' => 0.4, 'medium' => 0.4, 'large' => 0.2]` — values must sum to `1.0`. Read more: "[Dynamic Format Size Handling](#dynamic-format-size-handling)". |
-| `customLazyloading` | `false` | Boolean | Imagex will initially use native lazy loading with the `loading` attribute. Enable this option if you want to use a custom lazy loading library like lazysizes or any other JS-based solution. Imagex will then automatically use `data-src` and `data-srcset`. If you need something like `data-sizes="auto"` please use the snippet config to add it as a lazy HTML attribute. |
-| `formats` | `['avif', 'webp']` | Array with Strings | Define the modern file formats you want to use. ⚠️ Order matters here! You should go from the most to less modern format. The order in this array also affects the `compareFormats` snippet-option. [Read more about why the correct order is important](#why-order-matters). You **shouldn't add the initial image format here** like `png` or `jpeg`. |
-| `includeInitialFormat` | `false` | Boolean | If active the format of the uploaded image (normally jpeg or png) will be treated as a modern format, which means Imagex will create `<source>` tags for it. This is especially useful when you can't use modern formats, but want to use art directed images. |
+| `customLazyloading` | `false` | Boolean | Imagex will initially use native lazy loading with the `loading` attribute. Enable this option if you want to use a custom lazy loading library like lazysizes or any other JS-based solution. Imagex will then automatically use `data-src` and `data-srcset`. If you need something like `data-sizes="auto"` please use the snippet options to add it as a lazy HTML attribute. |
+| `formats` | `['avif', 'webp']` | Array with Strings | Define the modern image formats you want to use. ⚠️ Order matters here! You should go from the most to less modern format. The order in this array also affects the `compareFormats` snippet-option. [Read more about why the correct order is important](#why-order-matters). You **shouldn't add the initial image format here** like `png` or `jpeg`. |
+| `includeInitialFormat` | `false` | Boolean | If active the format of the uploaded image (normally jpeg or png) will be treated as a modern format, which means Imagex will create `<source>` tags for it. This is especially useful when you can't use modern formats, but want to use art-directed images. |
 | `noSrcsetInImg` | `false` | Boolean | If active this will only output the `src` attribute in the `<img>` tag. The smallest size from the given srcset-preset is used and the `srcset` attribute is omitted. |
 | `relativeUrls` | `false` | Boolean | Output relative image URLs everywhere when active. |
 
@@ -165,7 +165,7 @@ Only `image` is required — everything else has sane defaults.
 | ------ | ------- | ---- | ----------- |
 | `image` | – | File-Object | Required. Your initial image. Be sure to return a file object here: `$imageField->toFile()`. |
 | `loading` | `'lazy'` | String | Set to `'eager'` or `'lazy'`. If an image is placed "above-the-fold" it should use `'eager'`. When `'eager'`, Imagex disables lazy loading and sets `fetchpriority="high"` automatically. You can add your logic here to determine if an image is critical, for example: Let the editor choose in the panel by adding a toggle field or query the index of your image blocks. |
-| `srcset` | `'default'` | String | Name of the srcset preset (e.g. `'my-srcset'`, without format-appendix), configured in [Kirby's config](#adjust-kirbys-thumbs-config-and-add-srcset-presets). Imagex automatically resolves the format-specific variants (`my-srcset-webp`, `my-srcset-avif`) — you only pass the base name. |
+| `srcset` | `'default'` | String | Name of the srcset preset (e.g. `'my-srcset'`, without format suffix), configured in [Kirby's config](#adjust-kirbys-thumbs-config-and-add-srcset-presets). Imagex automatically resolves the format-specific variants (`my-srcset-webp`, `my-srcset-avif`) — you only pass the base name. |
 | `ratio` | `'intrinsic'` | String | Set the desired aspect ratio here. Can be omitted, default is `intrinsic`, which means the ratio of the provided image is used. Pass your ratio in this format: `x/y`. |
 | `attributes` | `[]` | Array | HTML attributes grouped by element: `picture`, `img`, `sources`. Each can be flat (auto-converted to `shared`) or use the full `shared`/`eager`/`lazy` structure for loading-mode-specific attributes. |
 | `artDirection` | `[]` | Array | Art-directed sources with `media`, `ratio`, `image`, and `attributes` options. Order matters! Browsers use the first `<source>` with a matching media condition. Order length-based media queries from large to small. Per entry: `image` is optional — Imagex falls back to the main `image`. `ratio` is optional — falls back to `'intrinsic'` (not the base `ratio`). |
@@ -174,7 +174,7 @@ Only `image` is required — everything else has sane defaults.
 ```php
 <?php
 $options = [
-  'image' => $image,
+  'image' => $image->toFile(),
   'loading' => $isCritical ? 'eager' : 'lazy',
   'srcset' => 'my-srcset',
   'ratio' => '1/1',
@@ -244,7 +244,7 @@ Common reasons to override: provide a larger `src` for crawlers/SEO (they only r
 <?php
 // Provide a larger image for crawlers while keeping optimized srcset for browsers
 $options = [
-  'image' => $image,
+  'image' => $image->toFile(),
   'attributes' => [
     'img' => [
       'src' => $image->thumb(['width' => 1200, 'quality' => 85])->url(), // large image for crawlers
@@ -323,7 +323,7 @@ Imagex will set the priority hint `fetchpriority="high"` to critical images to g
 ### Format Order and Media Attribute
 The order of `<source>` elements in a `<picture>` element is essential, as browsers select the first matching source based on supported formats and media conditions. Modern formats like `avif` should be listed first, falling back to formats like `webp` or `jpeg`. Imagex will follow the order of the formats defined in the config and you should go from the most to less modern format: `'formats' => ['avif', 'webp']`.
 
-The `media` attribute is also important for responsive designs or art directed images. With the media attribute you can specify the conditions under which each source should be used. This is important if you want to switch the ratio or the complete image at a specific media condition. You have to take care about the ordering of your `sources` array in the plugin options that you pass to the Imagex snippet. Imagex will create for each format all defined sources.
+The `media` attribute is also important for responsive designs or art-directed images. With the media attribute you can specify the conditions under which each source should be used. This is important if you want to switch the ratio or the complete image at a specific media condition. You have to take care about the ordering of your `sources` array in the plugin options that you pass to the Imagex snippet. Imagex will create for each format all defined sources.
 
 ## Dynamic Format Size Handling
 In some cases `avif` files can be larger than `webp` and you end up sending larger files and more HTML to the user. If `compareFormats` is set to true, this option enables a dynamic size comparison between the specified image formats. The comparison is based on the order of the formats listed in the format array of your configuration. With the default `formats` array, this option checks whether `avif` is smaller than `webp` and only outputs or creates files for `avif` if it's smaller. So again the order of your formats array matters for this feature.
