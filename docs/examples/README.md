@@ -11,3 +11,4 @@ Every example is using the same `thumbs` config you can [see here](/docs/example
 5. [Art-Directed Images](/docs/examples/art-directed-images.md)
 6. [Modern Configuration](/docs/examples/modern-config.md)
 7. [JSON Output](/docs/examples/json-output.md)
+8. [`thumbRatio()` File Method](/docs/examples/thumb-ratio.md)

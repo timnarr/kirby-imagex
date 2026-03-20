@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 [0.2.0]: https://github.com/timnarr/kirby-imagex/compare/0.1.4...HEAD
 
 ### Added
+- New `thumbRatio()` file method — generates a thumb with dimensions derived from an aspect ratio string (e.g. `'16/9'`) or `'intrinsic'`. Accepts an optional array of thumb options (`width`, `quality`, `format`, etc.). `crop` defaults to `true`. Useful for overriding the `src` attribute in Imagex while keeping the ratio consistent with the rest of the image.
 - New `loading` option with values `'eager'` or `'lazy'` (replaces `critical`)
 - Automatic `fetchpriority="high"` when `loading: 'eager'` (overridable via `attributes.img`)
 - Default `decoding="async"` attribute (overridable via `attributes.img`)

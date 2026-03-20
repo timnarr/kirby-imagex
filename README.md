@@ -383,6 +383,62 @@ $options = [
 
 Note: In most cases, you should **not** need to override `width`, `height`, or `srcset`. Let Imagex handle these automatically based on your `ratio` parameter for best results.
 
+## File Methods
+
+Imagex registers additional methods on Kirby's `File` object.
+
+### `thumbRatio(string $ratio, array $options = [])`
+
+Generates a thumb whose dimensions are derived from an aspect ratio string instead of having to calculate the height manually.
+
+| Parameter | Type | Description |
+| --------- | ---- | ----------- |
+| `$ratio` | String | Aspect ratio in `'x/y'` format (e.g. `'16/9'`), or `'intrinsic'` to use the image's natural ratio. |
+| `$options` | Array | Standard Kirby thumb options (`width`, `quality`, `format`, …). `crop` defaults to `true`. |
+
+**Returns** the thumb `File` object, so you can chain `->url()`, `->width()`, etc.
+
+#### Use Case: Consistent `src` Override
+
+The primary use case is overriding the `src` attribute inside Imagex while keeping the ratio consistent with the rest of the picture element — for example for SEO-optimised fallback images or custom lazy-loading placeholders:
+
+```php
+<?php
+$ratio = '16/9';
+
+$options = [
+  'image' => $image->toFile(),
+  'ratio' => $ratio,
+  'srcset' => 'my-srcset',
+  'attributes' => [
+    'img' => [
+      'shared' => [
+        'class' => $classImage ?? [],
+        // Override src with a ratio-consistent, high-quality thumb for crawlers
+        'src' => $image->toFile()->thumbRatio($ratio, ['width' => 1200])->url(),
+      ],
+    ],
+  ],
+];
+?>
+
+<?php snippet('imagex-picture', $options) ?>
+```
+
+Because `thumbRatio` accepts the same `$ratio` variable you already pass to Imagex, the fallback `src` and the srcset images always have the same aspect ratio — no manual height calculation needed.
+
+#### Further Examples
+
+```php
+// 16:9 thumb at 800px width (crop: true by default)
+$image->toFile()->thumbRatio('16/9', ['width' => 800])->url()
+
+// 1:1 thumb with custom quality and webp format
+$image->toFile()->thumbRatio('1/1', ['width' => 600, 'quality' => 85, 'format' => 'webp'])->url()
+```
+
+See the [thumbRatio example](/docs/examples/thumb-ratio.md) for more details.
+
 ## Cache
 Imagex caches two types of expensive calculations:
 
