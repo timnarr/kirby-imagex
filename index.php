@@ -5,6 +5,7 @@
 Kirby::plugin('timnarr/imagex', [
 	'options' => [
 		'cache' => true,
+		'compareFormatsWeights' => 'mobile',
 		'customLazyloading' => false,
 		'formats' => ['avif', 'webp'],
 		'includeInitialFormat' => false,

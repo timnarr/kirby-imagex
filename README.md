@@ -35,6 +35,7 @@ Configure global settings in your `config.php` file:
 return [
   'timnarr.imagex' => [
     'cache' => true,
+    'compareFormatsWeights' => 'mobile',
     'customLazyloading' => false,
     'formats' => ['avif', 'webp'],
     'includeInitialFormat' => false,
@@ -47,6 +48,7 @@ return [
 | Option | Default | Type | Description |
 | ------ | ------- | ---- | ----------- |
 | `cache` | `true` | Boolean | Imagex will cache some calculations. Read more about it here: "[Cache](#cache)" |
+| `compareFormatsWeights` | `'mobile'` | String or Array | Controls the weighting used when comparing format sizes via `compareFormats`. Preset strings: `'mobile'` (50/30/20), `'desktop'` (20/30/50), `'balanced'` (34/33/33). For custom weights pass an array: `['small' => 0.4, 'medium' => 0.4, 'large' => 0.2]` — values must sum to `1.0`. Read more: "[Dynamic Format Size Handling](#dynamic-format-size-handling)". |
 | `customLazyloading` | `false` | Boolean | Imagex will initially use native lazy loading with the `loading` attribute. Enable this option if you want to use a custom lazy loading library like lazysizes or any other JS-based solution. Imagex will then automatically use `data-src` and `data-srcset`. If you need something like `data-sizes="auto"` please use the snippet config to add it as a lazy HTML attribute. |
 | `formats` | `['avif', 'webp']` | Array with Strings | Define the modern file formats you want to use. ⚠️ Order matters here! You should go from the most to less modern format. The order in this array also affects the `compareFormats` snippet-option. [Read more about why the correct order is important](#why-order-matters). You shouldn't add the initial image format like `png` or `jpeg` here. |
 | `includeInitialFormat` | `false` | Boolean | If active the format of the uploaded image (normally jpeg or png) will be treated as a modern format, which means Imagex will create `<source>` tags for it. This is especially useful when you can't use modern formats, but want to use art directed images. |
@@ -380,10 +382,19 @@ $options = [
 Note: In most cases, you should **not** need to override `width`, `height`, or `srcset`. Let Imagex handle these automatically based on your `ratio` parameter for best results.
 
 ## Cache
-Imagex calculates the height for each srcset entry based on the given width and ratio and caches the resulting srcset config. This way repeated use of the same preset/ratio combination avoids redundant calculations.
+Imagex caches two types of expensive calculations:
+
+- **Srcset config**: The calculated heights per srcset entry (based on width and ratio) are cached so repeated use of the same preset/ratio combination avoids redundant work.
+- **Format comparison**: When `compareFormats` is enabled, the result of the weighted format size comparison is cached per image. The cache key includes the image ID, its last-modified timestamp, the ratio, the srcset preset, and the active formats — so the cache automatically invalidates whenever the image is replaced or updated.
 
 ## Performance Improvements for Critical Images
 Imagex provides features like Priority Hints for improving the loading times of critical images.
+
+### Automatic Width & Height (CLS Prevention)
+Imagex automatically sets `width` and `height` attributes on every `<img>` and `<source>` element. The values are derived from the srcset preset and the `ratio` you pass to the snippet — no manual configuration needed. This lets the browser reserve the correct amount of space before the image loads, preventing [Cumulative Layout Shift (CLS)](https://web.dev/articles/cls).
+
+### Async Decoding
+Imagex sets `decoding="async"` on every `<img>` by default. This allows the browser to decode the image off the main thread, keeping interactions smooth. You can override this via `attributes.img` if needed.
 
 ### Priority Hints
 Imagex will set the priority hint `fetchpriority="high"` to critical images to get the browser to load it sooner. Imagex sets this automatically when you use `'loading' => 'eager'`. You can override this behavior via `attributes.img`. Read more about [fetchpriority here](https://web.dev/articles/fetch-priority#the_fetchpriority_attribute).
@@ -406,10 +417,11 @@ Imagex uses a **weighted multi-sample approach** to determine the smallest forma
    - Middle
    - Last (largest width)
 
-2. **Mobile-First Weighting**: The samples are weighted to prioritize smaller sizes (mobile-first):
-   - 50% weight for smallest width
-   - 30% weight for middle width
-   - 20% weight for largest width
+2. **Configurable Weighting**: The samples are weighted to reflect your audience's typical screen sizes. Configure this globally via `compareFormatsWeights` in your `config.php`. Available presets:
+   - `'mobile'` (default) — 50% smallest, 30% middle, 20% largest
+   - `'desktop'` — 20% smallest, 30% middle, 50% largest
+   - `'balanced'` — roughly equal weight across all three
+   - Custom array — `['small' => 0.4, 'medium' => 0.4, 'large' => 0.2]`
 
 3. **Per-Image Comparison for Art Direction**: When using `artDirection` with different source images, each image is compared individually. This means one art-directed image might use `avif` while another uses `webp`, depending on which format is smaller for each specific image.
 

@@ -147,6 +147,49 @@ class OthersTest extends TestCase
 		$this->assertEquals($expected, urlHandler($srcset, true, 'http://example.com'));
 	}
 
+	public function testResolveCompareFormatsWeightsMobilePreset()
+	{
+		$result = resolveCompareFormatsWeights('mobile');
+		$this->assertEquals(['small' => 0.5, 'medium' => 0.3, 'large' => 0.2], $result);
+	}
+
+	public function testResolveCompareFormatsWeightsDesktopPreset()
+	{
+		$result = resolveCompareFormatsWeights('desktop');
+		$this->assertEquals(['small' => 0.2, 'medium' => 0.3, 'large' => 0.5], $result);
+	}
+
+	public function testResolveCompareFormatsWeightsBalancedPreset()
+	{
+		$result = resolveCompareFormatsWeights('balanced');
+		$this->assertEquals(['small' => 0.34, 'medium' => 0.33, 'large' => 0.33], $result);
+	}
+
+	public function testResolveCompareFormatsWeightsCustomArray()
+	{
+		$weights = ['small' => 0.4, 'medium' => 0.4, 'large' => 0.2];
+		$result = resolveCompareFormatsWeights($weights);
+		$this->assertEquals($weights, $result);
+	}
+
+	public function testResolveCompareFormatsWeightsInvalidPreset()
+	{
+		$this->expectExceptionMessage("[kirby-imagex] Invalid compareFormatsWeights preset 'invalid'. Available presets: mobile, desktop, balanced");
+		resolveCompareFormatsWeights('invalid');
+	}
+
+	public function testResolveCompareFormatsWeightsInvalidSum()
+	{
+		$this->expectExceptionMessage('[kirby-imagex] compareFormatsWeights values must sum to 1.0.');
+		resolveCompareFormatsWeights(['small' => 0.5, 'medium' => 0.5, 'large' => 0.5]);
+	}
+
+	public function testResolveCompareFormatsWeightsMissingKey()
+	{
+		$this->expectExceptionMessage("[kirby-imagex] compareFormatsWeights must have numeric 'small', 'medium', and 'large' keys.");
+		resolveCompareFormatsWeights(['small' => 0.5, 'medium' => 0.5]);
+	}
+
 	public function testTransformForJsonWithNestedArrays()
 	{
 		// Test with nested arrays containing class and style

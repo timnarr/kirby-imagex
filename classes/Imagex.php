@@ -21,6 +21,7 @@ class Imagex
 	protected array $sourcesAttributes;
 	protected string $srcset;
 	protected bool $compareFormats;
+	protected array $compareFormatsWeights;
 	protected bool $includeInitialFormat;
 	protected bool $noSrcsetInImg;
 	protected array $thumbsSrcsets;
@@ -69,6 +70,7 @@ class Imagex
 		// Cache kirby instance and assign options
 		$this->kirby = kirby();
 		$this->customLazyloading = $this->kirby->option('timnarr.imagex.customLazyloading');
+		$this->compareFormatsWeights = resolveCompareFormatsWeights($this->kirby->option('timnarr.imagex.compareFormatsWeights'));
 		$this->formats = $this->kirby->option('timnarr.imagex.formats');
 		$this->includeInitialFormat = $this->kirby->option('timnarr.imagex.includeInitialFormat');
 		$this->noSrcsetInImg = $this->kirby->option('timnarr.imagex.noSrcsetInImg');
@@ -232,22 +234,33 @@ class Imagex
 			return A::first($formats);
 		}
 
-		$srcsets = $this->getDynamicSrcsetPreset($ratio, $image);
-		$formatSizes = [];
+		// Cache the expensive format comparison result
+		$version = $this->kirby->plugin('timnarr/imagex')->version();
+		$cache = $this->kirby->cache('timnarr.imagex');
+		$cacheKey = implode('-', [
+			$version,
+			$image->id(),
+			(string)$image->modified(),
+			$ratio,
+			$this->srcset,
+			implode(',', $formats),
+		]);
+		$cacheId = 'compare-formats-' . hash('xxh3', $cacheKey);
 
-		foreach ($formats as $format) {
-			if (!isset($srcsets[$format])) {
-				throw new Exception("[kirby-imagex] No srcset configurations found for format: {$format}");
+		return $cache->getOrSet($cacheId, function () use ($image, $ratio, $formats) {
+			$srcsets = $this->getDynamicSrcsetPreset($ratio, $image);
+			$formatSizes = [];
+
+			foreach ($formats as $format) {
+				if (!isset($srcsets[$format])) {
+					throw new Exception("[kirby-imagex] No srcset configurations found for format: {$format}");
+				}
+
+				$formatSizes[$format] = calculateWeightedFormatSize($image, $srcsets[$format], $this->compareFormatsWeights);
 			}
 
-			// Use weighted calculation across multiple samples instead of just the middle element
-			$formatSizes[$format] = calculateWeightedFormatSize($image, $srcsets[$format]);
-		}
-
-		// Find the format with the smallest size
-		$smallestFormat = findSmallestValueAndKey($formatSizes);
-
-		return $smallestFormat;
+			return findSmallestValueAndKey($formatSizes);
+		});
 	}
 
 	/**

@@ -115,15 +115,55 @@ function getSampleElements(array $inputArray): array
 }
 
 /**
- * Calculates weighted format size using mobile-first weighting.
+ * Resolves the compareFormatsWeights option to a weights array.
+ * Accepts a preset string ('mobile', 'desktop', 'balanced') or a custom array
+ * with 'small', 'medium', and 'large' keys that must sum to 1.0.
+ *
+ * @param string|array $weights Preset name or custom weights array.
+ * @return array Resolved weights array with 'small', 'medium', 'large' keys.
+ * @throws InvalidArgumentException If the preset is unknown or the custom array is invalid.
+ */
+function resolveCompareFormatsWeights(string|array $weights): array
+{
+	$presets = [
+		'mobile'   => ['small' => 0.5,  'medium' => 0.3,  'large' => 0.2],
+		'desktop'  => ['small' => 0.2,  'medium' => 0.3,  'large' => 0.5],
+		'balanced' => ['small' => 0.34, 'medium' => 0.33, 'large' => 0.33],
+	];
+
+	if (is_string($weights)) {
+		if (!isset($presets[$weights])) {
+			$available = implode(', ', array_keys($presets));
+			throw new InvalidArgumentException("[kirby-imagex] Invalid compareFormatsWeights preset '{$weights}'. Available presets: {$available}");
+		}
+
+		return $presets[$weights];
+	}
+
+	foreach (['small', 'medium', 'large'] as $key) {
+		if (!isset($weights[$key]) || !is_numeric($weights[$key])) {
+			throw new InvalidArgumentException("[kirby-imagex] compareFormatsWeights must have numeric 'small', 'medium', and 'large' keys.");
+		}
+	}
+
+	$sum = $weights['small'] + $weights['medium'] + $weights['large'];
+	if (abs($sum - 1.0) > 0.01) {
+		throw new InvalidArgumentException("[kirby-imagex] compareFormatsWeights values must sum to 1.0. Got: {$sum}");
+	}
+
+	return $weights;
+}
+
+/**
+ * Calculates weighted format size using the provided weights.
  * Samples the first (smallest), middle, and last (largest) srcset widths.
- * Weights: 50% smallest, 30% middle, 20% largest
  *
  * @param mixed $image The image file to generate thumbnails from (Kirby\Cms\File).
  * @param array $srcsetPreset The srcset preset configuration for a format.
+ * @param array $weights Weights array with 'small', 'medium', 'large' keys (must sum to 1.0).
  * @return int Weighted total size in bytes.
  */
-function calculateWeightedFormatSize($image, array $srcsetPreset): int
+function calculateWeightedFormatSize($image, array $srcsetPreset, array $weights): int
 {
 	$samples = getSampleElements($srcsetPreset);
 
@@ -131,7 +171,7 @@ function calculateWeightedFormatSize($image, array $srcsetPreset): int
 	$sizeMiddle = $image->thumb($samples['middle'])->size();
 	$sizeLast = $image->thumb($samples['last'])->size();
 
-	return (int)(($sizeFirst * 0.5) + ($sizeMiddle * 0.3) + ($sizeLast * 0.2));
+	return (int)(($sizeFirst * $weights['small']) + ($sizeMiddle * $weights['medium']) + ($sizeLast * $weights['large']));
 }
 
 /**
