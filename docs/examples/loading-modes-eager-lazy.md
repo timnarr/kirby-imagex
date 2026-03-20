@@ -26,7 +26,7 @@ return [
 // Define your options and pass them to the `imagex` snippet
 <?php
 $options = [
-  'image' => $image,
+  'image' => $image->toFile(),
   'loading' => 'lazy', // 'lazy' is the default, 'eager' for above-the-fold images
   'srcset' => 'imagex-demo',
   'ratio' => '3/2',

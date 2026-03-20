@@ -23,7 +23,7 @@ return [
 // Define your options and pass them to the `imagex` snippet
 <?php
 $options = [
-  'image' => $image,
+  'image' => $image->toFile(),
   'loading' => 'lazy', // 'lazy' will use data-src/data-srcset, 'eager' uses src/srcset
   'srcset' => 'imagex-demo',
   'ratio' => '3/2',

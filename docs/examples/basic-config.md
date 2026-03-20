@@ -2,7 +2,7 @@
 
 1. [Minimal Configuration Based on Imagex Defaults](#example-1-minimal-configuration-based-on-imagex-defaults)
 2. [Change Ratio to `16/9` and Add HTML Attributes to `<img>`](#example-2-change-ratio-to-169-and-add-html-attributes-to-img)
-2. [Add HTML Attributes to `<picture>`](#example-3-add-html-attributes-to-picture)
+3. [Add HTML Attributes to `<picture>`](#example-3-add-html-attributes-to-picture)
 
 ## Example 1. Minimal Configuration Based on Imagex Defaults
 

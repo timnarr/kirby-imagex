@@ -22,7 +22,7 @@ return [
 
 ### Snippet Options
 ```php
-'image' => $image,
+'image' => $image->toFile(),
 'srcset' => 'imagex-demo',
 'ratio' => '3/2',
 'attributes' => [
@@ -143,7 +143,6 @@ return [
 ```php
 // same as above, except...
   'compareFormats' => true, // skip most modern format if larger
-  'artDirection' => [], // `'compareFormats' => true` should only be used without art directed images at the moment
 ```
 
 ### Final HTML Output

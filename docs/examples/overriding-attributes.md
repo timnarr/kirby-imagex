@@ -14,7 +14,7 @@ Use `null` or `false` to remove an attribute. Unspecified attributes (like `deco
 ```php
 <?php
 $options = [
-  'image' => $image,
+  'image' => $image->toFile(),
   'attributes' => [
     'img' => [
       'shared' => [
@@ -45,7 +45,7 @@ Modern browsers always prefer images from `srcset`/`<source>`, so overriding `sr
 ```php
 <?php
 $options = [
-  'image' => $image,
+  'image' => $image->toFile(),
   'attributes' => [
     'img' => [
       'src' => $image->thumb(['width' => 1200, 'quality' => 85])->url(), // large image for crawlers
@@ -69,7 +69,7 @@ You can supply a different ratio for crawlers via `src` without affecting browse
 ```php
 <?php
 $options = [
-  'image' => $image,
+  'image' => $image->toFile(),
   'ratio' => '16/9', // browsers get 16:9 via srcset
   'attributes' => [
     'img' => [
@@ -98,7 +98,7 @@ If you need to override dimensions, override all related attributes together:
 ```php
 <?php
 $options = [
-  'image' => $image,
+  'image' => $image->toFile(),
   'ratio' => '3/2',
   'attributes' => [
     'img' => [
