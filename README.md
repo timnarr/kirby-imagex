@@ -395,15 +395,27 @@ The order of `<source>` elements in a `<picture>` element is essential, as brows
 The `media` attribute is also important for responsive designs or art directed images. With the media attribute you can specify the conditions under which each source should be used. This is important if you want to switch the ratio or the complete image at a specific media condition. You have to take care about the ordering of your `sources` array in the plugin options that you pass to the Imagex snippet. Imagex will create for each format all defined sources.
 
 ## Dynamic Format Size Handling
-In some cases `avif` files can be larger than `webp` and you end up sending more HTML and also larger files to the user. If `compareFormats` is set to true, this option enables a dynamic size comparison between the specified image formats. The comparison is based on the order of the formats listed in the format array of your configuration. With the default `formats` array, this option checks whether `avif` is smaller than `webp` and only outputs or creates files for `avif` if it's smaller. So again the order of your formats array matters for this feature. The size comparison is currently very basic and Imagex will only generate the middle item of your passed srcset preset and compare its size with the next format. If the more modern format will have a larger file the rest of the srcset preset is not generated and is also omitted in the HTML output.
+In some cases `avif` files can be larger than `webp` and you end up sending more HTML and also larger files to the user. If `compareFormats` is set to true, this option enables a dynamic size comparison between the specified image formats. The comparison is based on the order of the formats listed in the format array of your configuration. With the default `formats` array, this option checks whether `avif` is smaller than `webp` and only outputs or creates files for `avif` if it's smaller. So again the order of your formats array matters for this feature.
 
-🚧 **This feature is currently pretty basic.** It only generates the middle item / width from the given srcset preset and check if the file size is smaller than the next less modern format. And currently this is only done for the initial image and not for the images of art directed sources.
+### How Format Comparison Works
+
+Imagex uses a **weighted multi-sample approach** to determine the smallest format:
+
+1. **Multiple Samples**: Instead of checking just one size, Imagex samples three srcset widths:
+   - First (smallest width)
+   - Middle
+   - Last (largest width)
+
+2. **Mobile-First Weighting**: The samples are weighted to prioritize smaller sizes (mobile-first):
+   - 50% weight for smallest width
+   - 30% weight for middle width
+   - 20% weight for largest width
+
+3. **Per-Image Comparison for Art Direction**: When using `artDirection` with different source images, each image is compared individually. This means one art-directed image might use `avif` while another uses `webp`, depending on which format is smaller for each specific image.
 
 ## Roadmap / Ideas
 - [ ] Add tests for Imagex class
 - [ ] Use Preload Resource Hints?! See [feature-branch](https://github.com/timnarr/kirby-imagex/tree/feature/preload-links)
-- [ ] Improved determination of the smallest format, when using `compareFormats`
-- [ ] Improve `compareFormats` in combination with art-directed images
 
 ## License
 [MIT License](./LICENSE) Copyright © 2024-present Tim Narr

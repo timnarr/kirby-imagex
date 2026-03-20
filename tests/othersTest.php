@@ -64,6 +64,59 @@ class OthersTest extends TestCase
 		findMiddleArray([]);
 	}
 
+	public function testGetSampleElementsWithThreeElements()
+	{
+		$array = ['400w' => ['width' => 400], '800w' => ['width' => 800], '1200w' => ['width' => 1200]];
+		$result = getSampleElements($array);
+
+		$this->assertEquals(['width' => 400], $result['first']);
+		$this->assertEquals(['width' => 800], $result['middle']);
+		$this->assertEquals(['width' => 1200], $result['last']);
+	}
+
+	public function testGetSampleElementsWithFiveElements()
+	{
+		$array = [
+			'400w' => ['width' => 400],
+			'600w' => ['width' => 600],
+			'800w' => ['width' => 800],
+			'1000w' => ['width' => 1000],
+			'1200w' => ['width' => 1200],
+		];
+		$result = getSampleElements($array);
+
+		$this->assertEquals(['width' => 400], $result['first']);
+		$this->assertEquals(['width' => 800], $result['middle']);
+		$this->assertEquals(['width' => 1200], $result['last']);
+	}
+
+	public function testGetSampleElementsWithSingleElement()
+	{
+		$array = ['400w' => ['width' => 400]];
+		$result = getSampleElements($array);
+
+		// With a single element, all samples should be the same
+		$this->assertEquals(['width' => 400], $result['first']);
+		$this->assertEquals(['width' => 400], $result['middle']);
+		$this->assertEquals(['width' => 400], $result['last']);
+	}
+
+	public function testGetSampleElementsWithTwoElements()
+	{
+		$array = ['400w' => ['width' => 400], '1200w' => ['width' => 1200]];
+		$result = getSampleElements($array);
+
+		$this->assertEquals(['width' => 400], $result['first']);
+		$this->assertEquals(['width' => 1200], $result['middle']); // Middle index is 1 for 2 elements
+		$this->assertEquals(['width' => 1200], $result['last']);
+	}
+
+	public function testGetSampleElementsEmpty()
+	{
+		$this->expectExceptionMessage('[kirby-imagex] Input array cannot be empty.');
+		getSampleElements([]);
+	}
+
 	public function testSrcHandlerInLazyMode()
 	{
 		// Assuming customLazyloading option is true and srcAttributes define a 'lazy' loading mode

@@ -91,6 +91,50 @@ function findMiddleArray(array $inputArray): array
 }
 
 /**
+ * Gets first, middle, and last elements from an array.
+ * Used for sampling srcset presets at different widths.
+ *
+ * @param array $inputArray The array to process.
+ * @return array Associative array with 'first', 'middle', and 'last' elements.
+ * @throws InvalidArgumentException If the array is empty.
+ */
+function getSampleElements(array $inputArray): array
+{
+	if (empty($inputArray)) {
+		throw new InvalidArgumentException('[kirby-imagex] Input array cannot be empty.');
+	}
+
+	$keys = array_keys($inputArray);
+	$count = count($keys);
+
+	return [
+		'first' => $inputArray[$keys[0]],
+		'middle' => $inputArray[$keys[intdiv($count, 2)]],
+		'last' => $inputArray[$keys[$count - 1]],
+	];
+}
+
+/**
+ * Calculates weighted format size using mobile-first weighting.
+ * Samples the first (smallest), middle, and last (largest) srcset widths.
+ * Weights: 50% smallest, 30% middle, 20% largest
+ *
+ * @param mixed $image The image file to generate thumbnails from (Kirby\Cms\File).
+ * @param array $srcsetPreset The srcset preset configuration for a format.
+ * @return int Weighted total size in bytes.
+ */
+function calculateWeightedFormatSize($image, array $srcsetPreset): int
+{
+	$samples = getSampleElements($srcsetPreset);
+
+	$sizeFirst = $image->thumb($samples['first'])->size();
+	$sizeMiddle = $image->thumb($samples['middle'])->size();
+	$sizeLast = $image->thumb($samples['last'])->size();
+
+	return (int)(($sizeFirst * 0.5) + ($sizeMiddle * 0.3) + ($sizeLast * 0.2));
+}
+
+/**
  * Applies urlHandler to all URL-based attributes in an attributes array.
  * Only processes if relativeUrls option is enabled.
  *

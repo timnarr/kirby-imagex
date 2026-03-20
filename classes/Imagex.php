@@ -200,13 +200,19 @@ class Imagex
 	}
 
 	/**
-	 * Get the smallest image format based on file size.
+	 * Get the smallest image format based on weighted file size comparison.
+	 * Uses mobile-first weighting across multiple srcset samples.
 	 *
+	 * @param File|null $image Optional file object; defaults to main image.
+	 * @param string|null $ratio Optional aspect ratio; defaults to object's ratio.
 	 * @return string|null Format of the smallest format or null if unable to determine.
 	 * @throws Exception If not enough formats are provided for comparison.
 	 */
-	public function getSmallestFormat(): string|null
+	public function getSmallestFormatForImage(File|null $image = null, string|null $ratio = null): string|null
 	{
+		$image = $image ?? $this->image;
+		$ratio = $ratio ?? $this->ratio;
+
 		$formats = $this->getFormats();
 		$formatsCount = A::count($formats);
 		$compareFormats = $this->compareFormats;
@@ -226,8 +232,7 @@ class Imagex
 			return A::first($formats);
 		}
 
-		$image = $this->image;
-		$srcsets = $this->getDynamicSrcsetPreset();
+		$srcsets = $this->getDynamicSrcsetPreset($ratio, $image);
 		$formatSizes = [];
 
 		foreach ($formats as $format) {
@@ -235,14 +240,25 @@ class Imagex
 				throw new Exception("[kirby-imagex] No srcset configurations found for format: {$format}");
 			}
 
-			$midSizedsrcsetValue = findMiddleArray($srcsets[$format])['middleValue'];
-			$formatSizes[$format] = $image->thumb($midSizedsrcsetValue)->size();
+			// Use weighted calculation across multiple samples instead of just the middle element
+			$formatSizes[$format] = calculateWeightedFormatSize($image, $srcsets[$format]);
 		}
 
 		// Find the format with the smallest size
 		$smallestFormat = findSmallestValueAndKey($formatSizes);
 
 		return $smallestFormat;
+	}
+
+	/**
+	 * Get the smallest image format based on file size (wrapper for backwards compatibility).
+	 *
+	 * @return string|null Format of the smallest format or null if unable to determine.
+	 * @throws Exception If not enough formats are provided for comparison.
+	 */
+	public function getSmallestFormat(): string|null
+	{
+		return $this->getSmallestFormatForImage();
 	}
 
 	/**
@@ -349,6 +365,8 @@ class Imagex
 
 	/**
 	 * Get art-directed picture sources for a specific format.
+	 * When compareFormats is enabled and a different image is used,
+	 * performs per-image format comparison.
 	 *
 	 * @param string $format Image format.
 	 * @return array HTML attributes for art-directed picture sources.
@@ -356,10 +374,28 @@ class Imagex
 	private function getArtDirectedSourcesPerFormat(string $format): array
 	{
 		$sources = [];
+		$formats = $this->getFormats();
 
 		foreach ($this->artDirection as $source) {
 			$sourceRatio = $source['ratio'] ?? 'intrinsic';
 			$sourceImage = $source['image'] ?? null;
+
+			// Per-image format decision when using a different image
+			if ($this->compareFormats && $sourceImage !== null) {
+				$sourceSmallestFormat = $this->getSmallestFormatForImage($sourceImage, $sourceRatio);
+
+				// Skip if this format is not the smallest for this specific image
+				if ($sourceSmallestFormat && $format !== $sourceSmallestFormat) {
+					// Only skip if we're not the smallest format
+					// and a smaller format exists in the array
+					$formatIndex = array_search($format, $formats);
+					$smallestIndex = array_search($sourceSmallestFormat, $formats);
+
+					if ($formatIndex < $smallestIndex) {
+						continue;
+					}
+				}
+			}
 
 			$srcsetPreset = $this->getDynamicSrcsetPreset($sourceRatio, $sourceImage);
 			$srcsetValue = $this->getSrcsetValue($srcsetPreset[$format], $sourceImage);
@@ -394,22 +430,23 @@ class Imagex
 	{
 		$formats = $this->getFormats();
 		$formatsCount = count($formats);
-		$smallestFormat = $this->getSmallestFormat();
 		$sources = [];
+
+		// Determine smallest format for main image
+		$mainSmallestFormat = $this->compareFormats
+			? $this->getSmallestFormatForImage()
+			: null;
 
 		for ($i = 0; $i < $formatsCount; $i++) {
 			$format = $formats[$i];
 
-			// If compareFormats is true, skip the current format if the next format is smaller
-			if ($smallestFormat && isset($formats[$i + 1])) {
-				$nextFormat = $formats[$i + 1];
-
-				if ($smallestFormat === $nextFormat) {
-					continue;
-				}
+			// Skip format if a smaller format exists for main image
+			if ($mainSmallestFormat && $this->shouldSkipFormat($format, $formats, $i, $mainSmallestFormat)) {
+				continue;
 			}
 
 			if (!empty($this->artDirection)) {
+				// Per-source format decision for art-directed images
 				$sources = array_merge($sources, $this->getArtDirectedSourcesPerFormat($format));
 			}
 
@@ -417,5 +454,27 @@ class Imagex
 		}
 
 		return $sources;
+	}
+
+	/**
+	 * Determines if a format should be skipped based on smallest format comparison.
+	 *
+	 * @param string $format Current format being processed.
+	 * @param array $formats All available formats.
+	 * @param int $index Current index in formats array.
+	 * @param string $smallestFormat The determined smallest format.
+	 * @return bool True if format should be skipped.
+	 */
+	private function shouldSkipFormat(string $format, array $formats, int $index, string $smallestFormat): bool
+	{
+		if (!$smallestFormat) {
+			return false;
+		}
+
+		if (!isset($formats[$index + 1])) {
+			return false;
+		}
+
+		return $smallestFormat === $formats[$index + 1];
 	}
 }
