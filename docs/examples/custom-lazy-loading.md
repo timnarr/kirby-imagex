@@ -52,13 +52,6 @@ $options = [
       ]
     ],
   ],
-  'artDirection' => [
-    [
-      'media' => '(min-width: 800px)',
-      'ratio' => '21/9',
-      'image' => $block->imagetwo()->toFile(), // let's assume: `different-image.png`
-    ]
-  ],
 ];
 ?>
 
