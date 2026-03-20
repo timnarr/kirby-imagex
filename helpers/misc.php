@@ -63,34 +63,6 @@ function findSmallestValueAndKey(array $array): string
 }
 
 /**
- * Finds and returns the middle element and its key from an array.
- *
- * @param array $inputArray The array to process.
- * @return array|null Associative array with 'middleKey' and 'middleValue', or null if array is empty.
- * @throws InvalidArgumentException If the array is empty.
- */
-function findMiddleArray(array $inputArray): array
-{
-	if (empty($inputArray)) {
-		throw new InvalidArgumentException('[kirby-imagex] Input array cannot be empty.');
-	}
-
-	// Calculate the middle index of the array keys
-	// For arrays with an even number of elements, the function selects the lower middle element as the "middle" one.
-	$keys = array_keys($inputArray);
-	$middleIndex = intdiv(count($keys), 2);
-
-	// Get the key corresponding to the middle index
-	$middleKey = $keys[$middleIndex];
-
-	// Return the 'middle' element of the array
-	return [
-		'middleKey' => $middleKey,
-		'middleValue' => $inputArray[$middleKey],
-	];
-}
-
-/**
  * Gets first, middle, and last elements from an array.
  * Used for sampling srcset presets at different widths.
  *

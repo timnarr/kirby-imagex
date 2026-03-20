@@ -44,26 +44,6 @@ class OthersTest extends TestCase
 		findSmallestValueAndKey([]);
 	}
 
-	public function testFindMiddleArrayOdd()
-	{
-		$array = ['1' => 1, '2' => 2, '3' => 3] ;
-		$expected = ['middleKey' => '2', 'middleValue' => 2];
-		$this->assertEquals($expected, findMiddleArray($array));
-	}
-
-	public function testFindMiddleArrayEven()
-	{
-		$array = ['1' => 1, '2' => 2, '3' => 3, '4' => 4];
-		$expected = ['middleKey' => '3', 'middleValue' => 3];
-		$this->assertEquals($expected, findMiddleArray($array));
-	}
-
-	public function testFindMiddleArrayEmpty()
-	{
-		$this->expectExceptionMessage('[kirby-imagex] Input array cannot be empty.');
-		findMiddleArray([]);
-	}
-
 	public function testGetSampleElementsWithThreeElements()
 	{
 		$array = ['400w' => ['width' => 400], '800w' => ['width' => 800], '1200w' => ['width' => 1200]];
