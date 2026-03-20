@@ -75,6 +75,50 @@ class Imagex
 		$this->includeInitialFormat = $this->kirby->option('timnarr.imagex.includeInitialFormat');
 		$this->noSrcsetInImg = $this->kirby->option('timnarr.imagex.noSrcsetInImg');
 		$this->thumbsSrcsets = $this->kirby->option('thumbs.srcsets');
+
+		$this->validateSrcsetPresets();
+	}
+
+	/**
+	 * Validates that all required srcset presets exist in the Kirby thumbs config.
+	 *
+	 * Checks the base preset and all format-specific variants (e.g. 'my-srcset-webp',
+	 * 'my-srcset-avif') up front so misconfiguration is caught immediately with a
+	 * helpful error message rather than failing silently later during rendering.
+	 *
+	 * @throws InvalidArgumentException If required presets are missing.
+	 */
+	private function validateSrcsetPresets(): void
+	{
+		if (!is_array($this->thumbsSrcsets) || empty($this->thumbsSrcsets)) {
+			// getSrcsetPresetFromConfig() will handle the detailed error at render time
+			return;
+		}
+
+		if (!isset($this->thumbsSrcsets[$this->srcset])) {
+			$available = implode(', ', array_keys($this->thumbsSrcsets));
+			throw new InvalidArgumentException("[kirby-imagex] Srcset preset '{$this->srcset}' not found in 'thumbs.srcsets'. Available: {$available}");
+		}
+
+		$missing = [];
+
+		foreach ($this->getFormats() as $format) {
+			if ($format === 'initialformat') {
+				continue;
+			}
+
+			$key = $this->srcset . '-' . $format;
+
+			if (!isset($this->thumbsSrcsets[$key])) {
+				$missing[] = "'{$key}'";
+			}
+		}
+
+		if (!empty($missing)) {
+			$available = implode(', ', array_keys($this->thumbsSrcsets));
+			$missingList = implode(', ', $missing);
+			throw new InvalidArgumentException("[kirby-imagex] Missing srcset preset(s) for active formats: {$missingList}. Add them to 'thumbs.srcsets' in config.php, or remove the corresponding format from 'timnarr.imagex.formats'. Available presets: {$available}");
+		}
 	}
 
 	/**
