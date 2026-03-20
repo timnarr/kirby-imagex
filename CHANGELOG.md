@@ -24,6 +24,8 @@ All notable changes to this project will be documented in this file.
 - Exception is now thrown when `thumbs.srcsets` is not configured in `config.php`
 - New `imagex-picture-json` snippet that returns a JSON structure instead of HTML — useful for headless CMS setups, API endpoints, and JavaScript-driven rendering (accepts the same options as `imagex-picture`)
 - New unit tests: 3 tests for `normalizeAttributesStructure()`, 7 tests for `resolveCompareFormatsWeights()`, additional edge case tests for helper functions
+- New `coerceClassStyleToArrays()` helper — `class` and `style` attributes now accept both strings and arrays; strings are automatically converted (`class: 'foo bar'` → `['foo', 'bar']`)
+- Early srcset preset validation in the `Imagex` constructor — missing format-specific presets (e.g. `my-srcset-avif`) are now detected immediately with a clear error message listing which presets are missing and which are available
 
 ### Changed
 - **BREAKING:** `critical` option renamed to `loading` with string values `'eager'`/`'lazy'` instead of boolean
@@ -31,7 +33,7 @@ All notable changes to this project will be documented in this file.
 - **BREAKING:** `formatSizeHandling` option renamed to `compareFormats`
 - **BREAKING:** `imgAttributes`, `pictureAttributes`, `sourcesAttributes` merged into single `attributes` option with `img`, `picture`, `sources` keys
 - **BREAKING:** `sourcesArtDirected` renamed to `artDirection`
-- **BREAKING:** `class` attribute must now be an array, no longer accepts strings
+- `class` and `style` attributes now accept strings in addition to arrays — strings are silently converted (was a hard error before)
 - Improved error messages with available options when invalid values are passed
 - User-defined attributes always take precedence over Imagex-generated defaults for all attributes — including `src`, `srcset`, `width`, `height`, `loading`, `fetchpriority`, and `decoding`
 - `relativeUrls` now also processes user-defined URL attributes (previously only applied to Imagex-generated URLs)
@@ -152,17 +154,15 @@ All notable changes to this project will be documented in this file.
 ],
 ```
 
-**8. Convert `class` attribute from string to array**
+**8. `class` attribute — strings are now auto-converted**
 
-The `class` attribute must now be an array. This allows for easier conditional classes and merging.
+The `class` attribute accepts both strings and arrays. Strings are automatically split by whitespace, so no migration is required. Arrays are still recommended for conditional classes:
 ```php
-// Before
+// Both work
 'class' => 'my-image another-class',
-
-// After
 'class' => ['my-image', 'another-class'],
 
-// Conditional classes are now cleaner
+// Arrays are still the better choice for conditional classes
 'class' => [
   'my-image',
   $isActive ? 'is-active' : null,  // null values are filtered out

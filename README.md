@@ -158,7 +158,7 @@ Only `image` is required — everything else has sane defaults.
 
 - **Flat attribute syntax:** Attributes passed directly to `picture`/`img`/`sources` are auto-treated as `shared`. Use the full `shared`/`eager`/`lazy` structure when you need loading-mode-specific values.
 - **Override anything:** Developer-defined attributes always win. `class` and `style` are merged; all others are replaced. Defaults: `loading: 'eager'` → `fetchpriority: 'high'`; `decoding: 'async'`.
-- **`null`/`false` in `class` arrays are filtered out automatically** — useful for conditional classes: `$condition ? 'my-class' : null`.
+- **`class` and `style` accept strings or arrays** — strings are auto-converted (`'foo bar'` → `['foo', 'bar']`). `null`/`false` values inside arrays are filtered out automatically, useful for conditional classes: `$condition ? 'my-class' : null`.
 - ⚠️ When overriding `width`, `height`, `src`, or `srcset`, you are responsible for keeping dimensions consistent with your ratio. [See details here](#overriding-default-attributes).
 
 | Option | Default | Type | Description |
