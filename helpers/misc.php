@@ -134,6 +134,7 @@ function resolveCompareFormatsWeights(string|array $weights): array
 	if (is_string($weights)) {
 		if (!isset($presets[$weights])) {
 			$available = implode(', ', array_keys($presets));
+
 			throw new InvalidArgumentException("[kirby-imagex] Invalid compareFormatsWeights preset '{$weights}'. Available presets: {$available}");
 		}
 
