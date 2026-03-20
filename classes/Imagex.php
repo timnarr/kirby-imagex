@@ -97,6 +97,7 @@ class Imagex
 
 		if (!isset($this->thumbsSrcsets[$this->srcset])) {
 			$available = implode(', ', array_keys($this->thumbsSrcsets));
+
 			throw new InvalidArgumentException("[kirby-imagex] Srcset preset '{$this->srcset}' not found in 'thumbs.srcsets'. Available: {$available}");
 		}
 
@@ -117,6 +118,7 @@ class Imagex
 		if (!empty($missing)) {
 			$available = implode(', ', array_keys($this->thumbsSrcsets));
 			$missingList = implode(', ', $missing);
+
 			throw new InvalidArgumentException("[kirby-imagex] Missing srcset preset(s) for active formats: {$missingList}. Add them to 'thumbs.srcsets' in config.php, or remove the corresponding format from 'timnarr.imagex.formats'. Available presets: {$available}");
 		}
 	}

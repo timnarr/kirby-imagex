@@ -24,10 +24,10 @@ Kirby::plugin('timnarr/imagex', [
 		 * @param array $options Additional thumb options (e.g. width, quality, format). 'crop' defaults to true.
 		 * @return \Kirby\Cms\File The generated thumb file object.
 		 */
-		'thumbRatio' => function (string $ratio, array $options = []) : \Kirby\Cms\File {
+		'thumbRatio' => function (string $ratio, array $options = []): \Kirby\Cms\File {
 			['x' => $ratioX, 'y' => $ratioY] = \TimNarr\getAspectRatio($ratio, $this);
 			$width = $options['width'] ?? $this->width();
-			$height = (int) round($width * $ratioY / $ratioX);
+			$height = (int)round($width * $ratioY / $ratioX);
 
 			return $this->thumb([
 				...$options,
