@@ -5,10 +5,34 @@ namespace TimNarr;
 use Kirby\Exception\InvalidArgumentException;
 
 /**
+ * Converts 'class' and 'style' string values to arrays in a flat attribute array.
+ *
+ * 'class' strings are split by whitespace into individual class names.
+ * 'style' strings are wrapped in a single-element array to preserve CSS values
+ * that contain spaces (e.g. 'background-color: red').
+ *
+ * @param array $attributes Flat attribute array (not structured by loading mode).
+ * @return array Attribute array with 'class' and 'style' coerced to arrays.
+ */
+function coerceClassStyleToArrays(array $attributes): array
+{
+	if (isset($attributes['class']) && is_string($attributes['class'])) {
+		$attributes['class'] = array_values(array_filter(explode(' ', $attributes['class'])));
+	}
+
+	if (isset($attributes['style']) && is_string($attributes['style'])) {
+		$attributes['style'] = [$attributes['style']];
+	}
+
+	return $attributes;
+}
+
+/**
  * Validates attribute value types in the options array against expected types.
  *
- * Currently validates that 'style' and 'class' attributes are provided as arrays.
- * These arrays will be merged during processing and converted to strings for output.
+ * Validates that 'style' and 'class' attributes are provided as arrays.
+ * String values are auto-converted to arrays in normalizeAttributesStructure(),
+ * so this acts as a safety net for other unexpected types (e.g. integers).
  *
  * @param array $options Associative array of options with attributes by loading modes ('shared', 'eager', 'lazy').
  * @throws InvalidArgumentException If attribute types do not match expected types.
@@ -137,6 +161,10 @@ function mergeHTMLAttributes(array $attributes, string $loadingMode, array $defa
  * If the array already has 'shared', 'eager', or 'lazy' keys, it's returned as-is
  * with missing keys filled in as empty arrays.
  *
+ * 'class' and 'style' strings are auto-converted to arrays:
+ * - 'class' => 'foo bar'  becomes  'class' => ['foo', 'bar']
+ * - 'style' => 'color: red'  becomes  'style' => ['color: red']
+ *
  * @param array $attributes User-provided attributes (flat or structured)
  * @return array Normalized attributes with shared/eager/lazy structure
  */
@@ -148,17 +176,17 @@ function normalizeAttributesStructure(array $attributes): array
 	$hasLoadingModeKeys = !empty(array_intersect(array_keys($attributes), $loadingModeKeys));
 
 	if ($hasLoadingModeKeys) {
-		// Already structured, just ensure all keys exist
+		// Already structured, just ensure all keys exist and coerce class/style
 		return [
-			'shared' => $attributes['shared'] ?? [],
-			'eager' => $attributes['eager'] ?? [],
-			'lazy' => $attributes['lazy'] ?? [],
+			'shared' => coerceClassStyleToArrays($attributes['shared'] ?? []),
+			'eager' => coerceClassStyleToArrays($attributes['eager'] ?? []),
+			'lazy' => coerceClassStyleToArrays($attributes['lazy'] ?? []),
 		];
 	}
 
 	// Flat structure - wrap in 'shared'
 	return [
-		'shared' => $attributes,
+		'shared' => coerceClassStyleToArrays($attributes),
 		'eager' => [],
 		'lazy' => [],
 	];
