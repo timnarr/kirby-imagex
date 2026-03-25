@@ -288,8 +288,9 @@ class Imagex
 			$image->id(),
 			(string)$image->modified(),
 			$ratio,
-			$this->srcset,
+			json_encode($this->getSrcsetPresetFromConfig()),
 			implode(',', $formats),
+			json_encode($this->compareFormatsWeights),
 		]);
 		$cacheId = 'compare-formats-' . hash('xxh3', $cacheKey);
 
