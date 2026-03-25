@@ -10,7 +10,7 @@
 return [
   'timnarr.imagex' => [
     'formats' => [],
-    'includeInitialFormat' => true,
+    'addOriginalFormatAsSource' => true,
     'noSrcsetInImg' => true,
   ],
 ];

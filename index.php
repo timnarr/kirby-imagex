@@ -8,7 +8,7 @@ Kirby::plugin('timnarr/imagex', [
 		'compareFormatsWeights' => 'mobile',
 		'customLazyloading' => false,
 		'formats' => ['avif', 'webp'],
-		'includeInitialFormat' => false,
+		'addOriginalFormatAsSource' => false,
 		'noSrcsetInImg' => false,
 		'relativeUrls' => false,
 	],

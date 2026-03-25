@@ -22,7 +22,7 @@ class Imagex
 	protected string $srcset;
 	protected bool $compareFormats;
 	protected array $compareFormatsWeights;
-	protected bool $includeInitialFormat;
+	protected bool $addOriginalFormatAsSource;
 	protected bool $noSrcsetInImg;
 	protected array $thumbsSrcsets;
 	protected $kirby;
@@ -72,7 +72,7 @@ class Imagex
 		$this->customLazyloading = $this->kirby->option('timnarr.imagex.customLazyloading');
 		$this->compareFormatsWeights = resolveCompareFormatsWeights($this->kirby->option('timnarr.imagex.compareFormatsWeights'));
 		$this->formats = $this->kirby->option('timnarr.imagex.formats');
-		$this->includeInitialFormat = $this->kirby->option('timnarr.imagex.includeInitialFormat');
+		$this->addOriginalFormatAsSource = $this->kirby->option('timnarr.imagex.addOriginalFormatAsSource');
 		$this->noSrcsetInImg = $this->kirby->option('timnarr.imagex.noSrcsetInImg');
 		$this->thumbsSrcsets = $this->kirby->option('thumbs.srcsets');
 
@@ -141,7 +141,7 @@ class Imagex
 	private function getFormats(): array
 	{
 		$configFormats = $this->formats;
-		$formats = $this->includeInitialFormat ? A::append($configFormats, ['initialformat']) : $configFormats;
+		$formats = $this->addOriginalFormatAsSource ? A::append($configFormats, ['initialformat']) : $configFormats;
 
 		$formats = array_unique(array_map(function ($item) {
 			return normalizeFormat($item);
@@ -270,8 +270,8 @@ class Imagex
 			throw new Exception('[kirby-imagex] Not enough formats to determine the smallest. Please set "compareFormats" to false or add at least two formats in the configuration.');
 		}
 
-		// Check for the specific condition where only the 'initialformat' is present and includeInitialFormat is true.
-		if (!$compareFormats && $formatsCount === 1 && A::has($formats, 'initialformat') && $this->includeInitialFormat) {
+		// Check for the specific condition where only the 'initialformat' is present and addOriginalFormatAsSource is true.
+		if (!$compareFormats && $formatsCount === 1 && A::has($formats, 'initialformat') && $this->addOriginalFormatAsSource) {
 			return null;
 		}
 

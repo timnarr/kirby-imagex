@@ -34,6 +34,8 @@ All notable changes to this project will be documented in this file.
 - **BREAKING:** `imgAttributes`, `pictureAttributes`, `sourcesAttributes` merged into single `attributes` option with `img`, `picture`, `sources` keys
 - **BREAKING:** `sourcesArtDirected` renamed to `artDirection`
 - `class` and `style` attributes now accept strings in addition to arrays — strings are silently converted (was a hard error before)
+- **BREAKING:** `includeInitialFormat` option renamed to `addOriginalFormatAsSource` for clarity — the new name makes explicit that a `<source>` element is added for the image's original format (e.g. `jpeg`, `png`)
+
 - Improved error messages with available options when invalid values are passed
 - User-defined attributes always take precedence over Imagex-generated defaults for all attributes — including `src`, `srcset`, `width`, `height`, `loading`, `fetchpriority`, and `decoding`
 - `relativeUrls` now also processes user-defined URL attributes (previously only applied to Imagex-generated URLs)

@@ -14,7 +14,7 @@ return [
     'cache' => true,
     'customLazyloading' => false,
     'formats' => ['avif', 'webp'],
-    'includeInitialFormat' => false,
+    'addOriginalFormatAsSource' => false,
     'noSrcsetInImg' => false,
     'relativeUrls' => false,
   ],

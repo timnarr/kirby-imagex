@@ -38,7 +38,7 @@ return [
     'compareFormatsWeights' => 'mobile',
     'customLazyloading' => false,
     'formats' => ['avif', 'webp'],
-    'includeInitialFormat' => false,
+    'addOriginalFormatAsSource' => false,
     'noSrcsetInImg' => false,
     'relativeUrls' => false,
   ],
@@ -53,7 +53,7 @@ return [
 | `compareFormatsWeights` | `'mobile'` | String or Array | Controls the weighting used when comparing format sizes via `compareFormats`. Preset strings: `'mobile'` (50/30/20), `'desktop'` (20/30/50), `'balanced'` (34/33/33). For custom weights pass an array: `['small' => 0.4, 'medium' => 0.4, 'large' => 0.2]` — values must sum to `1.0`. Read more: "[Dynamic Format Size Handling](#dynamic-format-size-handling)". |
 | `customLazyloading` | `false` | Boolean | Imagex will initially use native lazy loading with the `loading` attribute. Enable this option if you want to use a custom lazy loading library like lazysizes or any other JS-based solution. Imagex will then automatically use `data-src` and `data-srcset`. If you need something like `data-sizes="auto"` please use the snippet options to add it as a lazy HTML attribute. |
 | `formats` | `['avif', 'webp']` | Array with Strings | Define the modern image formats you want to use. ⚠️ Order matters here! You should go from the most to less modern format. The order in this array also affects the `compareFormats` snippet-option. [Read more about why the correct order is important](#why-order-matters). You **shouldn't add the initial image format here** like `png` or `jpeg`. |
-| `includeInitialFormat` | `false` | Boolean | If active the format of the uploaded image (normally jpeg or png) will be treated as a modern format, which means Imagex will create `<source>` tags for it. This is especially useful when you can't use modern formats, but want to use art-directed images. |
+| `addOriginalFormatAsSource` | `false` | Boolean | Adds a `<source>` element for the image's original format (e.g. `jpeg`, `png`). Useful when modern formats like avif or webp can't be used, but you still need art-directed picture sources at different breakpoints / media conditions. |
 | `noSrcsetInImg` | `false` | Boolean | If active this will only output the `src` attribute in the `<img>` tag. The smallest size from the given srcset-preset is used and the `srcset` attribute is omitted. |
 | `relativeUrls` | `false` | Boolean | Output relative image URLs everywhere when active. |
 
