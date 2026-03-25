@@ -9,7 +9,7 @@
 - 📐 Helps you easily change the aspect ratio without the need to define new srcset presets.
 - 😴 Supports native lazy loading and is customizable for JavaScript lazy loading libraries.
 - 🚀 Improve the performance of your critical LCP (Largest Contentful Paint) images, utilizing `Priority Hints`.
-- ⚡️ Supports multiple modern image formats, like `avif` and `webp`.
+- ⚡️ Supports multiple modern image formats, like AVIF and WebP.
 - 🧩 Can easily be integrated as a snippet into existing blocks/projects.
 - 🪄 Uses only Kirby's core capabilities for image handling.
 
@@ -52,8 +52,8 @@ return [
 | `cache` | `true` | Boolean | Imagex will cache some calculations. Read more about it here: "[Cache](#cache)" |
 | `compareFormatsWeights` | `'mobile'` | String or Array | Controls the weighting used when comparing format sizes via `compareFormats`. Preset strings: `'mobile'` (50/30/20), `'desktop'` (20/30/50), `'balanced'` (34/33/33). For custom weights pass an array: `['small' => 0.4, 'medium' => 0.4, 'large' => 0.2]` — values must sum to `1.0`. Read more: "[Dynamic Format Size Handling](#dynamic-format-size-handling)". |
 | `customLazyloading` | `false` | Boolean | Imagex will initially use native lazy loading with the `loading` attribute. Enable this option if you want to use a custom lazy loading library like lazysizes or any other JS-based solution. Imagex will then automatically use `data-src` and `data-srcset`. If you need something like `data-sizes="auto"` please use the snippet options to add it as a lazy HTML attribute. |
-| `formats` | `['avif', 'webp']` | Array with Strings | Define the modern image formats you want to use. ⚠️ Order matters here! You should go from the most to less modern format. The order in this array also affects the `compareFormats` snippet-option. [Read more about why the correct order is important](#why-order-matters). You **shouldn't add the initial image format here** like `png` or `jpeg`. |
-| `addOriginalFormatAsSource` | `false` | Boolean | Adds a `<source>` element for the image's original format (e.g. `jpeg`, `png`). Useful when modern formats like avif or webp can't be used, but you still need art-directed picture sources at different breakpoints / media conditions. |
+| `formats` | `['avif', 'webp']` | Array with Strings | Define the modern image formats you want to use. ⚠️ Order matters here! You should go from the most to less modern format. The order in this array also affects the `compareFormats` snippet-option. [Read more about why the correct order is important](#why-order-matters). You **shouldn't add the original image format here** like PNG or JPEG. |
+| `addOriginalFormatAsSource` | `false` | Boolean | Adds a `<source>` element for the image's original format (e.g. JPEG, PNG). Useful when modern formats like AVIF or WebP can't be used, but you still need art-directed picture sources at different breakpoints / media conditions. |
 | `noSrcsetInImg` | `false` | Boolean | If active this will only output the `src` attribute in the `<img>` tag. The smallest size from the given srcset-preset is used and the `srcset` attribute is omitted. |
 | `relativeUrls` | `false` | Boolean | Output relative image URLs everywhere when active. |
 
@@ -62,15 +62,15 @@ The srcset configuration is still set up as you know it from Kirby, [like descri
 
 Set your srcset preset, like `my-srcset`, and define only the `width` — no `height` needed. Imagex calculates the height from the `ratio` you pass to the snippet, so one preset works for any aspect ratio. Switching from `16/9` to `1/1` is a one-line change, no new presets needed.
 
-If you use `avif` and/or `webp`, add a separate preset per format by copying the base preset, appending `-{format}` to the name, and setting the `format` option. This gives you full control over quality per format.
+If you use AVIF and/or WebP, add a separate preset per format by copying the base preset, appending `-{format}` to the name, and setting the `format` option. This gives you full control over quality per format.
 
-The quality settings for the modern formats shouldn't simply be taken from the initial preset. To really benefit from smaller image files due to modern formats, you should slightly adjust your quality settings. My rule of thumb is to take the quality value from jpeg/png and reduce it by 5 for webp and 15 for avif. Here is a good [read](https://www.industrialempathy.com/posts/avif-webp-quality-settings/) with more detail, but I've also noticed that this isn't completely applicable to images in Kirby.
+The quality settings for the modern formats shouldn't simply be taken from the default preset. To really benefit from smaller image files due to modern formats, you should slightly adjust your quality settings. My rule of thumb is to take the quality value from JPEG/PNG and reduce it by 5 for WebP and 15 for AVIF. Here is a good [read](https://www.industrialempathy.com/posts/avif-webp-quality-settings/) with more detail, but I've also noticed that this isn't completely applicable to images in Kirby.
 
 ```php
 // config.php
 'thumbs' => [
   'srcsets' => [
-    'my-srcset' => [ // preset for jpeg and png
+    'my-srcset' => [ // preset for JPEG and PNG
       '400w'  => ['width' =>  400, 'crop' => true, 'quality' => 80],
       '800w'  => ['width' =>  800, 'crop' => true, 'quality' => 80],
       '1200w' => ['width' => 1200, 'crop' => true, 'quality' => 80],
@@ -169,7 +169,7 @@ Only `image` is required — everything else has sane defaults.
 | `ratio` | `'intrinsic'` | String | Set the desired aspect ratio here. Can be omitted, default is `intrinsic`, which means the ratio of the provided image is used. Pass your ratio in this format: `x/y`. |
 | `attributes` | `[]` | Array | HTML attributes grouped by element: `picture`, `img`, `sources`. Each can be flat (auto-converted to `shared`) or use the full `shared`/`eager`/`lazy` structure for loading-mode-specific attributes. |
 | `artDirection` | `[]` | Array | Art-directed sources with `media`, `ratio`, `image`, and `attributes` options. Order matters! Browsers use the first `<source>` with a matching media condition. Order length-based media queries from large to small. Per entry: `image` is optional — omit it to reuse the main `image` at a different ratio without needing a second file. `ratio` is optional — falls back to `'intrinsic'` (not the base `ratio`). |
-| `compareFormats` | `false` | Boolean | In some cases `avif` files can be larger than `webp`. If this option is set to true, it enables a dynamic size comparison between the specified image formats. ⚠️ The `formats` order in `config.php` matters here! The comparison weighting can be configured globally via `compareFormatsWeights`. [Read more about it here](#dynamic-format-size-handling). |
+| `compareFormats` | `false` | Boolean | In some cases AVIF files can be larger than WebP. If this option is set to true, it enables a dynamic size comparison between the specified image formats. ⚠️ The `formats` order in `config.php` matters here! The comparison weighting can be configured globally via `compareFormatsWeights`. [Read more about it here](#dynamic-format-size-handling). |
 
 ```php
 <?php
@@ -321,12 +321,12 @@ Imagex will set the priority hint `fetchpriority="high"` to critical images to g
 
 ## Why Order Matters?
 ### Format Order and Media Attribute
-The order of `<source>` elements in a `<picture>` element is essential, as browsers select the first matching source based on supported formats and media conditions. Modern formats like `avif` should be listed first, falling back to formats like `webp` or `jpeg`. Imagex will follow the order of the formats defined in the config and you should go from the most to less modern format: `'formats' => ['avif', 'webp']`.
+The order of `<source>` elements in a `<picture>` element is essential, as browsers select the first matching source based on supported formats and media conditions. Modern formats like AVIF should be listed first, falling back to formats like WebP or JPEG. Imagex will follow the order of the formats defined in the config and you should go from the most to less modern format: `'formats' => ['avif', 'webp']`.
 
 The `media` attribute is also important for responsive designs or art-directed images. With the media attribute you can specify the conditions under which each source should be used. This is important if you want to switch the ratio or the complete image at a specific media condition. You have to take care about the ordering of your `sources` array in the plugin options that you pass to the Imagex snippet. Imagex will create for each format all defined sources.
 
 ## Dynamic Format Size Handling
-In some cases `avif` files can be larger than `webp` and you end up sending larger files and more HTML to the user. If `compareFormats` is set to true, this option enables a dynamic size comparison between the specified image formats. The comparison is based on the order of the formats listed in the format array of your configuration. With the default `formats` array, this option checks whether `avif` is smaller than `webp` and only outputs or creates files for `avif` if it's smaller. So again the order of your formats array matters for this feature.
+In some cases AVIF files can be larger than WebP and you end up sending larger files and more HTML to the user. If `compareFormats` is set to true, this option enables a dynamic size comparison between the specified image formats. The comparison is based on the order of the formats listed in the format array of your configuration. With the default `formats` array, this option checks whether AVIF is smaller than WebP and only outputs or creates files for AVIF if it's smaller. So again the order of your formats array matters for this feature.
 
 ### How Format Comparison Works
 
@@ -343,7 +343,7 @@ Imagex uses a **weighted multi-sample approach** to determine the smallest forma
    - `'balanced'` — roughly equal weight across all three
    - Custom array — `['small' => 0.4, 'medium' => 0.4, 'large' => 0.2]`
 
-3. **Per-Image Comparison for Art Direction**: When using `artDirection` with different source images, each image is compared individually. This means one art-directed image might use `avif` while another uses `webp`, depending on which format is smaller for each specific image.
+3. **Per-Image Comparison for Art Direction**: When using `artDirection` with different source images, each image is compared individually. This means one art-directed image might use AVIF while another uses WebP, depending on which format is smaller for each specific image.
 
 ## Roadmap / Ideas
 - [ ] Add tests for Imagex class
