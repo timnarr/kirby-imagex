@@ -345,6 +345,8 @@ Imagex uses a **weighted multi-sample approach** to determine the smallest forma
 
 3. **Per-Image Comparison for Art Direction**: When using `artDirection` with different source images, each image is compared individually. This means one art-directed image might use AVIF while another uses WebP, depending on which format is smaller for each specific image.
 
+4. **Combining with `addOriginalFormatAsSource`**: When `addOriginalFormatAsSource` is enabled, the original format (e.g. JPEG or PNG) is included in the comparison alongside the modern formats. This can be useful when your source images are already well-optimised and a modern format isn't guaranteed to be smaller. Note that the original format always uses the base srcset preset — make sure its quality settings are comparable to the modern format presets, otherwise the comparison may be skewed.
+
 ## Roadmap / Ideas
 - [ ] Add tests for Imagex class
 - [ ] Use Preload Resource Hints?! See [feature-branch](https://github.com/timnarr/kirby-imagex/tree/feature/preload-links)
