@@ -337,6 +337,10 @@ Imagex uses a **weighted multi-sample approach** to determine the smallest forma
    - Middle
    - Last (largest width)
 
+   ⚠️ **This requires Kirby to generate up to three thumbs per format on the first request.** Kirby needs to create the thumb files on disk before their file sizes can be measured, and the comparison result is then stored in the Imagex cache. Subsequent requests are served from cache, but the initial render can be slow — especially with many formats or art-directed images using different source files. Make sure caching is enabled.
+
+   ⚠️ **At least three srcset entries are recommended** for meaningful weighting. With only two entries, the middle and last sample are identical, so the `medium` and `large` weights effectively collapse into one. With a single entry all three samples are the same and weighting has no effect at all.
+
 2. **Configurable Weighting**: The samples are weighted to reflect your audience's typical screen sizes. Configure this globally via `compareFormatsWeights` in your `config.php`. Available presets:
    - `'mobile'` (default) — 50% smallest, 30% middle, 20% largest
    - `'desktop'` — 20% smallest, 30% middle, 50% largest
