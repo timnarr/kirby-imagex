@@ -7,6 +7,7 @@ use Kirby\Exception\Exception;
 use Kirby\Exception\InvalidArgumentException;
 use Kirby\Filesystem\F;
 use Kirby\Toolkit\A;
+use Kirby\Toolkit\Str;
 
 class Imagex
 {
@@ -292,7 +293,8 @@ class Imagex
 			implode(',', $formats),
 			json_encode($this->compareFormatsWeights),
 		]);
-		$cacheId = 'compare-formats-' . hash('xxh3', $cacheKey);
+		$imageSlug = Str::slug($image->id());
+		$cacheId = 'compare-formats-' . $imageSlug . '-' . hash('xxh3', $cacheKey);
 
 		return $cache->getOrSet($cacheId, function () use ($image, $ratio, $formats) {
 			$srcsets = $this->getDynamicSrcsetPreset($ratio, $image);
