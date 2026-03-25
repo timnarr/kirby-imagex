@@ -104,7 +104,7 @@ class Imagex
 		$missing = [];
 
 		foreach ($this->getFormats() as $format) {
-			if ($format === 'initialformat') {
+			if ($format === 'originalformat') {
 				continue;
 			}
 
@@ -141,7 +141,7 @@ class Imagex
 	private function getFormats(): array
 	{
 		$configFormats = $this->formats;
-		$formats = $this->addOriginalFormatAsSource ? A::append($configFormats, ['initialformat']) : $configFormats;
+		$formats = $this->addOriginalFormatAsSource ? A::append($configFormats, ['originalformat']) : $configFormats;
 
 		$formats = array_unique(array_map(function ($item) {
 			return normalizeFormat($item);
@@ -188,7 +188,7 @@ class Imagex
 		$srcsetPreset[$this->getImageFormat()] = $allSrcsetPresets[$srcsetName];
 
 		foreach ($this->getFormats() as $format) {
-			if ($format === 'initialformat') {
+			if ($format === 'originalformat') {
 				$srcsetPreset[$format] = $allSrcsetPresets[$srcsetName];
 			} else {
 				// Check if specific format configuration exists
@@ -270,8 +270,8 @@ class Imagex
 			throw new Exception('[kirby-imagex] Not enough formats to determine the smallest. Please set "compareFormats" to false or add at least two formats in the configuration.');
 		}
 
-		// Check for the specific condition where only the 'initialformat' is present and addOriginalFormatAsSource is true.
-		if (!$compareFormats && $formatsCount === 1 && A::has($formats, 'initialformat') && $this->addOriginalFormatAsSource) {
+		// Check for the specific condition where only the 'originalformat' is present and addOriginalFormatAsSource is true.
+		if (!$compareFormats && $formatsCount === 1 && A::has($formats, 'originalformat') && $this->addOriginalFormatAsSource) {
 			return null;
 		}
 
@@ -391,7 +391,7 @@ class Imagex
 	{
 		['width' => $width, 'height' => $height] = A::first($srcsetPreset[$format]);
 
-		if ($format === 'initialformat') {
+		if ($format === 'originalformat') {
 			$image = $source['image'] ?? $this->image;
 			$format = $this->getImageFormat($image);
 		}
