@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.2.0] - unreleased
+## [0.2.0] - April 06, 2026
 [0.2.0]: https://github.com/timnarr/kirby-imagex/compare/0.1.4...HEAD
 
 ### Added
