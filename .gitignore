@@ -2,3 +2,4 @@
 *.cache
 composer.lock
 /vendor
+CLAUDE.md
