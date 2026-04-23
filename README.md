@@ -10,6 +10,7 @@
 - 😴 Supports native lazy loading and is customizable for JavaScript lazy loading libraries.
 - 🚀 Improve the performance of your critical LCP (Largest Contentful Paint) images, utilizing `Priority Hints`.
 - ⚡️ Supports multiple modern image formats, like AVIF and WebP.
+- 🔀 Supports server-side content negotiation. Generates AVIF/WebP variants while outputting less HTML with extension-less URLs.
 - 🧩 Can easily be integrated as a snippet into existing blocks/projects.
 - 🪄 Uses only Kirby's core capabilities for image handling.
 
@@ -36,6 +37,7 @@ return [
   'timnarr.imagex' => [
     'cache' => true,
     'compareFormatsWeights' => 'mobile',
+    'contentNegotiation' => false,
     'customLazyloading' => false,
     'formats' => ['avif', 'webp'],
     'addOriginalFormatAsSource' => false,
@@ -51,6 +53,7 @@ return [
 | ------ | ------- | ---- | ----------- |
 | `cache` | `true` | Boolean | Imagex will cache some calculations. Read more about it here: "[Cache](#cache)" |
 | `compareFormatsWeights` | `'mobile'` | String or Array | Controls the weighting used when comparing format sizes via `compareFormats`. Preset strings: `'mobile'` (50/30/20), `'desktop'` (20/30/50), `'balanced'` (34/33/33). For custom weights pass an array: `['small' => 0.4, 'medium' => 0.4, 'large' => 0.2]` — values must sum to `1.0`. Read more: "[Dynamic Format Size Handling](#dynamic-format-size-handling)". |
+| `contentNegotiation` | `false` | Boolean | Delegates format selection to the web server instead of the browser. When enabled, all format variants (AVIF, WebP) are generated on disk but the HTML output contains only the original format — no `<source type="...">` elements. The server inspects the browser's `Accept` header and serves the best available file transparently. Art direction remains fully supported. Cannot be combined with `compareFormats`. **Requires web server configuration** (Apache, Nginx, or Caddy rewrite rules). Read more: "[Content Negotiation](#content-negotiation)". |
 | `customLazyloading` | `false` | Boolean | Imagex will initially use native lazy loading with the `loading` attribute. Enable this option if you want to use a custom lazy loading library like lazysizes or any other JS-based solution. Imagex will then automatically use `data-src` and `data-srcset`. If you need something like `data-sizes="auto"` please use the snippet options to add it as a lazy HTML attribute. |
 | `formats` | `['avif', 'webp']` | Array with Strings | Define the modern image formats you want to use. ⚠️ Order matters here! You should go from the most to less modern format. The order in this array also affects the `compareFormats` snippet-option. [Read more about why the correct order is important](#why-order-matters). You **shouldn't add the original image format here** like PNG or JPEG. |
 | `addOriginalFormatAsSource` | `false` | Boolean | Adds a `<source>` element for the image's original format (e.g. JPEG, PNG). Useful when modern formats like AVIF or WebP can't be used, but you still need art-directed picture sources at different breakpoints / media conditions. |
@@ -350,6 +353,61 @@ Imagex uses a **weighted multi-sample approach** to determine the smallest forma
 3. **Per-Image Comparison for Art Direction**: When using `artDirection` with different source images, each image is compared individually. This means one art-directed image might use AVIF while another uses WebP, depending on which format is smaller for each specific image.
 
 4. **Combining with `addOriginalFormatAsSource`**: When `addOriginalFormatAsSource` is enabled, the original format (e.g. JPEG or PNG) is included in the comparison alongside the modern formats. This can be useful when your source images are already well-optimised and a modern format isn't guaranteed to be smaller. Note that the original format always uses the base srcset preset — make sure its quality settings are comparable to the modern format presets, otherwise the comparison may be skewed.
+
+## Content Negotiation
+Content negotiation is an alternative to `<picture>`/`<source>` format switching. Instead of the browser choosing from a list of `<source type="image/avif">` and `<source type="image/webp">` elements, the web server reads the browser's `Accept` header and transparently serves the best available file — AVIF, WebP, or JPEG — for every image URL.
+
+Enable it globally in `config.php`:
+```php
+'timnarr.imagex' => [
+  'contentNegotiation' => true,
+  'formats' => ['avif', 'webp'], // still generated on disk, not output in HTML
+],
+```
+
+When active:
+- All format variants are still generated on disk as a side-effect (Kirby's thumb pipeline runs for every configured format).
+- The HTML output contains no format-based `<source>` elements and no `type` attributes.
+- Art direction (`artDirection`) continues to work — one `<source media="...">` per breakpoint is output instead of one per format per breakpoint.
+- Cannot be combined with `compareFormats: true` — format selection is the server's responsibility.
+
+**⚠️ Requires web server configuration.** Imagex outputs extension-less URLs (e.g. `/media/image-400x267`). Your server resolves these to the best available format. Example rules for Apache `.htaccess`:
+
+```apache
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  RewriteCond %{REQUEST_URI} ^/media/
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{HTTP_ACCEPT} image/avif
+  RewriteCond %{DOCUMENT_ROOT}%{REQUEST_URI}.avif -f
+  RewriteRule ^(.+)$ $1.avif [T=image/avif,L,E=img_neg:1]
+
+  RewriteCond %{REQUEST_URI} ^/media/
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{HTTP_ACCEPT} image/webp
+  RewriteCond %{DOCUMENT_ROOT}%{REQUEST_URI}.webp -f
+  RewriteRule ^(.+)$ $1.webp [T=image/webp,L,E=img_neg:1]
+
+  RewriteCond %{REQUEST_URI} ^/media/
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{DOCUMENT_ROOT}%{REQUEST_URI}.jpg -f
+  RewriteRule ^(.+)$ $1.jpg [T=image/jpeg,L]
+
+  RewriteCond %{REQUEST_URI} ^/media/
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{DOCUMENT_ROOT}%{REQUEST_URI}.png -f
+  RewriteRule ^(.+)$ $1.png [T=image/png,L]
+</IfModule>
+
+<IfModule mod_headers.c>
+  Header append Vary Accept env=img_neg
+</IfModule>
+```
+
+Always set `Vary: Accept` so CDNs and shared caches store separate responses per accepted format.
+
+See the [Content Negotiation example](/docs/examples/content-negotiation.md) for full examples including Nginx and Caddy configurations.
 
 ## Roadmap / Ideas
 - [ ] Add tests for Imagex class

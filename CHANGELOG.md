@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+- New `timnarr.imagex.contentNegotiation` global config option (default: `false`) — when enabled, outputs a simplified `<picture>` element without format-based `<source>` elements and without `type` attributes. All configured format variants (e.g. WebP, AVIF) are still generated as a side-effect so the server can serve the best format via `Accept` header negotiation. Art direction (`artDirection`) remains fully supported; one `<source>` per breakpoint is output instead of one per format per breakpoint. Throws an exception if used together with `compareFormats: true`.
+
+---
+
 ## [0.2.0] - April 06, 2026
 [0.2.0]: https://github.com/timnarr/kirby-imagex/compare/0.1.4...HEAD
 

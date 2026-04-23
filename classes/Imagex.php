@@ -23,6 +23,7 @@ class Imagex
 	protected string $srcset;
 	protected bool $compareFormats;
 	protected array $compareFormatsWeights;
+	protected bool $contentNegotiation;
 	protected bool $addOriginalFormatAsSource;
 	protected bool $noSrcsetInImg;
 	protected array $thumbsSrcsets;
@@ -72,10 +73,15 @@ class Imagex
 		$this->kirby = kirby();
 		$this->customLazyloading = $this->kirby->option('timnarr.imagex.customLazyloading');
 		$this->compareFormatsWeights = resolveCompareFormatsWeights($this->kirby->option('timnarr.imagex.compareFormatsWeights'));
+		$this->contentNegotiation = $this->kirby->option('timnarr.imagex.contentNegotiation');
 		$this->formats = $this->kirby->option('timnarr.imagex.formats');
 		$this->addOriginalFormatAsSource = $this->kirby->option('timnarr.imagex.addOriginalFormatAsSource');
 		$this->noSrcsetInImg = $this->kirby->option('timnarr.imagex.noSrcsetInImg');
 		$this->thumbsSrcsets = $this->kirby->option('thumbs.srcsets');
+
+		if ($this->contentNegotiation && $this->compareFormats) {
+			throw new InvalidArgumentException("[kirby-imagex] 'compareFormats' cannot be used when 'timnarr.imagex.contentNegotiation' is enabled. Content negotiation delegates format selection to the server.");
+		}
 
 		$this->validateSrcsetPresets();
 	}
@@ -344,6 +350,11 @@ class Imagex
 		$src = $image->thumb($firstItemInSrcsetConfig)->url();
 		['width' => $width, 'height' => $height] = $firstItemInSrcsetConfig;
 
+		if ($this->contentNegotiation) {
+			$src = $this->stripExtensionFromUrl($src);
+			$srcsetValue = $this->stripExtensionsFromSrcset($srcsetValue);
+		}
+
 		$defaultAttributes = [
 			'shared' => [
 				'src' => srcHandler($src, $userAttributes, 'shared'),
@@ -388,9 +399,10 @@ class Imagex
 	 * @param string $srcsetValue Srcset definition string.
 	 * @param array $srcsetPreset Srcset configuration array.
 	 * @param array $source Additional source settings for art direction.
+	 * @param bool $includeType Whether to include the type attribute (omitted for content negotiation).
 	 * @return array HTML attributes for the source element.
 	 */
-	private function getSourceAttributes(string $format, string $srcsetValue, array $srcsetPreset, array $source = []): array
+	private function getSourceAttributes(string $format, string $srcsetValue, array $srcsetPreset, array $source = [], bool $includeType = true): array
 	{
 		['width' => $width, 'height' => $height] = A::first($srcsetPreset[$format]);
 
@@ -402,7 +414,7 @@ class Imagex
 		$customLazyloading = $this->customLazyloading;
 		$defaultAttributes = [
 			'shared' => [
-				'type' => F::extensionToMime($format),
+				'type' => $includeType ? F::extensionToMime($format) : null,
 				'width' => $width,
 				'height' => $height,
 				'media' => $source['media'] ?? null,
@@ -490,6 +502,10 @@ class Imagex
 	 */
 	public function getPictureSources(): array
 	{
+		if ($this->contentNegotiation) {
+			return $this->getContentNegotiationSources();
+		}
+
 		$formats = $this->getFormats();
 		$formatsCount = count($formats);
 		$sources = [];
@@ -516,6 +532,80 @@ class Imagex
 		}
 
 		return $sources;
+	}
+
+	/**
+	 * Generate thumbs for all configured formats as a side-effect (used for content negotiation).
+	 * Triggers Kirby's thumb generation pipeline without outputting anything.
+	 *
+	 * @param string|null $ratio Optional aspect ratio; defaults to object's ratio.
+	 * @param File|null $image Optional file object; defaults to main image.
+	 */
+	private function generateAllFormatThumbs(string|null $ratio = null, File|null $image = null): void
+	{
+		$srcsetPreset = $this->getDynamicSrcsetPreset($ratio, $image);
+
+		foreach ($this->getFormats() as $format) {
+			if (isset($srcsetPreset[$format])) {
+				$this->getSrcsetValue($srcsetPreset[$format], $image);
+			}
+		}
+	}
+
+	/**
+	 * Get picture sources for content negotiation mode.
+	 * Generates thumbs for all formats as a side-effect, but outputs only one <source>
+	 * per art-direction breakpoint without a type attribute — the server handles format selection.
+	 *
+	 * @return array Compiled data of all picture sources.
+	 */
+	private function getContentNegotiationSources(): array
+	{
+		$this->generateAllFormatThumbs();
+
+		$sources = [];
+
+		foreach ($this->artDirection as $source) {
+			$sourceRatio = $source['ratio'] ?? 'intrinsic';
+			$sourceImage = $source['image'] ?? null;
+
+			if ($sourceImage !== null) {
+				$this->generateAllFormatThumbs($sourceRatio, $sourceImage);
+			}
+
+			$srcsetPreset = $this->getDynamicSrcsetPreset($sourceRatio, $sourceImage);
+			$originalFormat = $this->getImageFormat($sourceImage ?? $this->image);
+			$srcsetValue = $this->stripExtensionsFromSrcset(
+				$this->getSrcsetValue($srcsetPreset[$originalFormat], $sourceImage)
+			);
+
+			$sources[] = $this->getSourceAttributes($originalFormat, $srcsetValue, $srcsetPreset, $source, false);
+		}
+
+		return $sources;
+	}
+
+	/**
+	 * Strips the file extension from a single URL.
+	 *
+	 * @param string $url A fully qualified or relative image URL.
+	 * @return string The URL without its file extension.
+	 */
+	private function stripExtensionFromUrl(string $url): string
+	{
+		return preg_replace('/\.[a-z0-9]+$/i', '', $url);
+	}
+
+	/**
+	 * Strips file extensions from all entries in a srcset string.
+	 * Transforms "image.jpg 400w, image.jpg 800w" into "image 400w, image 800w".
+	 *
+	 * @param string $srcset A srcset attribute value.
+	 * @return string The srcset string with all extensions removed.
+	 */
+	private function stripExtensionsFromSrcset(string $srcset): string
+	{
+		return preg_replace('/\.[a-z0-9]+(\s+[\d.]+[wx])/i', '$1', $srcset);
 	}
 
 	/**
