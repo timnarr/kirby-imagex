@@ -4,8 +4,6 @@ namespace TimNarr;
 
 use PHPUnit\Framework\TestCase;
 
-@include_once __DIR__ . '/vendor/autoload.php';
-
 class AspectRatioTest extends TestCase
 {
 	public function testGreatestCommonDivisor()
