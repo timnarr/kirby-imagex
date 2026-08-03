@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0] - August 03, 2026
+
+### Changed
+- **BREAKING:** Minimum PHP version raised from 8.1 to 8.2 — PHP 8.1 reached end of life in November 2025
+- Added PHP 8.5 to the supported version range and CI test matrix (now runs against 8.2, 8.3, 8.4, 8.5)
+- Update Dev-Dependencies
+
 ## [0.2.0] - April 06, 2026
 [0.2.0]: https://github.com/timnarr/kirby-imagex/compare/0.1.4...HEAD
 
