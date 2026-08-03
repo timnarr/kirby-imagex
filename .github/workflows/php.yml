@@ -15,18 +15,21 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php-version: ['8.2', '8.3', '8.4', '8.5']
+        # phpunit/phpunit ^13 requires PHP >=8.4.1, so the full dev toolchain
+        # (php-cs-fixer + phpunit) only installs on 8.4/8.5. Older supported
+        # versions are covered by the `compatibility` job below.
+        php-version: ['8.4', '8.5']
     steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
     - name: Setup PHP
-      uses: shivammathur/setup-php@7c071dfe9dc99bdf297fa79cb49ea005b9fcadbc # 2.37.1
+      uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
       with:
         php-version: ${{ matrix.php-version }}
 
     - name: Cache Composer packages
       id: composer-cache
-      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: vendor
         key: ${{ runner.os }}-php${{ matrix.php-version }}-${{ hashFiles('**/composer.lock') }}
@@ -41,3 +44,33 @@ jobs:
 
     - name: Run tests
       run: composer run-script test
+
+  compatibility:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Lower bound of the supported range — no dev tooling here (see note
+        # above), just confirm the plugin's own dependencies resolve and its
+        # source is syntactically valid on these PHP versions.
+        php-version: ['8.2', '8.3']
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+      with:
+        php-version: ${{ matrix.php-version }}
+
+    - name: Strip dev dependencies
+      # composer.lock isn't committed, so `install --no-dev` would still
+      # resolve require-dev (phpunit ^13, PHP >=8.4.1 only) to build the
+      # lock file before dropping it. Removing require-dev up front avoids
+      # that and tests only what a real consumer installs.
+      run: php -r '$c = json_decode(file_get_contents("composer.json"), true); unset($c["require-dev"]); file_put_contents("composer.json", json_encode($c, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");'
+
+    - name: Install dependencies
+      run: composer install --prefer-dist --no-progress
+
+    - name: Syntax check source
+      run: find classes helpers snippets index.php -name '*.php' -print0 | xargs -0 -n1 php -l

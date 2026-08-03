@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - **BREAKING:** Minimum PHP version raised from 8.1 to 8.2 — PHP 8.1 reached end of life in November 2025
-- Added PHP 8.5 to the supported version range and CI test matrix (now runs against 8.2, 8.3, 8.4, 8.5)
+- Added PHP 8.5 to the supported version range; CI now runs the full lint/test suite on 8.4–8.5 and a dependency-resolution/syntax compatibility check on 8.2–8.3 (phpunit ^13 itself requires PHP >=8.4)
 - Update Dev-Dependencies
 
 ## [0.2.0] - April 06, 2026
