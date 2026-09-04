@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Fixed
+- **Bug:** `compareFormats` could serve a larger, non-optimal format when 3+ formats were configured (e.g. `formats: ['avif', 'webp']` combined with `addOriginalFormatAsSource: true`). The format-skip logic only skipped the format immediately preceding the smallest one, not every format before it, so browsers could still pick a larger format listed earlier. Fixed by extracting the (already-correct) skip logic used for art-directed sources into a shared `isFormatSkippable()` helper, now used by both the default and art-directed source paths.
+- `Imagex` constructor now validates `ratio`, `srcset`, and `compareFormats` the same way it already validates `image` and `loading`, throwing a descriptive `InvalidArgumentException` instead of a generic `TypeError` when instantiated directly with missing/invalid options.
+
+### Changed
+- `srcHandler()` now accepts an optional `$customLazyloading` override parameter instead of always re-reading the `timnarr.imagex.customLazyloading` config option; `Imagex` passes its already-cached value.
+
 ## [0.3.0] - August 03, 2026
 
 ### Changed

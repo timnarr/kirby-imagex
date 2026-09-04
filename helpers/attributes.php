@@ -106,7 +106,7 @@ function mergeHTMLAttributes(array $attributes, string $loadingMode, array $defa
 			// Ensure both values are arrays
 			$currentValues = is_array($currentValue) ? $currentValue : explode(' ', $currentValue);
 			$newValues = is_array($newValue) ? $newValue : explode(' ', $newValue);
-			// Merge, remove duplicates, and remove empty strings (but keep null values)
+			// Merge, remove duplicates, and drop empty, null, and false entries
 			$merged = array_unique(array_merge($currentValues, $newValues));
 			$filtered = array_filter($merged, fn ($val) => $val !== '' && $val !== null && $val !== false);
 			// Re-index array to ensure sequential keys starting from 0

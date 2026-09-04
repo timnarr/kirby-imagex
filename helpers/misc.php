@@ -87,6 +87,33 @@ function getSampleElements(array $inputArray): array
 }
 
 /**
+ * Determines whether a format should be skipped in favor of a smaller format
+ * that appears later in the configured format order.
+ *
+ * Formats are listed in preference order (e.g. avif before webp), and browsers
+ * pick the first matching <source>. If a later format is determined to be smaller
+ * for a given image, every format preceding it in the list must be skipped so the
+ * smaller format is the one browsers actually select — not just the format
+ * immediately before it.
+ *
+ * @param string $format Current format being considered.
+ * @param array $formats All available formats in configured order.
+ * @param string $smallestFormat The determined smallest format.
+ * @return bool True if a smaller format precedes this one and this one should be skipped.
+ */
+function isFormatSkippable(string $format, array $formats, string $smallestFormat): bool
+{
+	if (!$smallestFormat || $format === $smallestFormat) {
+		return false;
+	}
+
+	$formatIndex = array_search($format, $formats);
+	$smallestIndex = array_search($smallestFormat, $formats);
+
+	return $formatIndex < $smallestIndex;
+}
+
+/**
  * Resolves the compareFormatsWeights option to a weights array.
  * Accepts a preset string ('mobile', 'desktop', 'balanced') or a custom array
  * with 'small', 'medium', and 'large' keys that must sum to 1.0.
@@ -183,11 +210,12 @@ function applyUrlHandlerToAttributes(array $attributes, bool|null $useRelativeUr
  * @param string $src The default source URL for the image.
  * @param array $srcAttributes Array of source attributes by loading mode.
  * @param string $loadingMode The loading mode to use for determining the 'src' attribute.
+ * @param bool|null $customLazyloading Optionally override the customLazyloading setting (primarily for testing).
  * @return string|null The determined 'src' value or null if not applicable.
  */
-function srcHandler(string $src, array $srcAttributes, string $loadingMode): string|null
+function srcHandler(string $src, array $srcAttributes, string $loadingMode, bool|null $customLazyloading = null): string|null
 {
-	$customLazyloading = kirby()->option('timnarr.imagex.customLazyloading');
+	$customLazyloading = $customLazyloading ?? kirby()->option('timnarr.imagex.customLazyloading');
 
 	if (isset($srcAttributes[$loadingMode]['src'])) {
 		return $srcAttributes[$loadingMode]['src'];

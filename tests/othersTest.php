@@ -97,24 +97,64 @@ class OthersTest extends TestCase
 
 	public function testSrcHandlerInLazyMode()
 	{
-		// Assuming customLazyloading option is true and srcAttributes define a 'lazy' loading mode
 		$src = 'default.jpg';
 		$srcAttributes = ['lazy' => ['src' => 'lazy.jpg']];
 		$loadingMode = 'lazy';
 
-		// You'll need to set up mocks or similar for kirby()->option and urlHandler calls
-		$this->assertEquals('lazy.jpg', srcHandler($src, $srcAttributes, $loadingMode));
+		$this->assertEquals('lazy.jpg', srcHandler($src, $srcAttributes, $loadingMode, false));
 	}
 
 	public function testSrcHandlerInEagerMode()
 	{
-		// Assuming customLazyloading option is false
 		$src = 'default.jpg';
 		$srcAttributes = ['lazy' => ['src' => 'lazy.jpg']];
 		$loadingMode = 'eager';
 
-		// Setup mocks or similar for kirby()->option calls
-		$this->assertEquals('default.jpg', srcHandler($src, $srcAttributes, $loadingMode));
+		$this->assertEquals('default.jpg', srcHandler($src, $srcAttributes, $loadingMode, false));
+	}
+
+	public function testSrcHandlerWithCustomLazyloadingReturnsNull()
+	{
+		$src = 'default.jpg';
+		$srcAttributes = [];
+		$loadingMode = 'lazy';
+
+		$this->assertNull(srcHandler($src, $srcAttributes, $loadingMode, true));
+	}
+
+	public function testSrcHandlerUserOverrideTakesPriorityOverCustomLazyloading()
+	{
+		$src = 'default.jpg';
+		$srcAttributes = ['lazy' => ['src' => 'lazy.jpg']];
+		$loadingMode = 'lazy';
+
+		$this->assertEquals('lazy.jpg', srcHandler($src, $srcAttributes, $loadingMode, true));
+	}
+
+	public function testIsFormatSkippableWhenSmallestIsAdjacent()
+	{
+		$formats = ['avif', 'webp'];
+
+		$this->assertTrue(isFormatSkippable('avif', $formats, 'webp'));
+		$this->assertFalse(isFormatSkippable('webp', $formats, 'webp'));
+	}
+
+	public function testIsFormatSkippableWhenSmallestIsNotAdjacent()
+	{
+		// Regression test: with 3+ formats, every format preceding the smallest
+		// one must be skipped, not just the format immediately before it.
+		$formats = ['avif', 'webp', 'originalformat'];
+
+		$this->assertTrue(isFormatSkippable('avif', $formats, 'originalformat'));
+		$this->assertTrue(isFormatSkippable('webp', $formats, 'originalformat'));
+		$this->assertFalse(isFormatSkippable('originalformat', $formats, 'originalformat'));
+	}
+
+	public function testIsFormatSkippableWithNoSmallestFormat()
+	{
+		$formats = ['avif', 'webp'];
+
+		$this->assertFalse(isFormatSkippable('avif', $formats, ''));
 	}
 
 	public function testUrlHandlerWithSrcsetString()

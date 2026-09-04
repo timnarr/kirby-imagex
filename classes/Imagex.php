@@ -52,6 +52,21 @@ class Imagex
 			throw new InvalidArgumentException("[kirby-imagex] Option 'loading' must be 'eager' or 'lazy'. Got: '{$loading}'");
 		}
 
+		// Validate required option: ratio
+		if (!isset($options['ratio']) || !is_string($options['ratio'])) {
+			throw new InvalidArgumentException('[kirby-imagex] Missing or invalid required option: ratio. Must be a string (e.g. "16/9" or "intrinsic").');
+		}
+
+		// Validate required option: srcset
+		if (!isset($options['srcset']) || !is_string($options['srcset'])) {
+			throw new InvalidArgumentException('[kirby-imagex] Missing or invalid required option: srcset. Must be a string matching a "thumbs.srcsets" preset name.');
+		}
+
+		// Validate required option: compareFormats
+		if (!isset($options['compareFormats']) || !is_bool($options['compareFormats'])) {
+			throw new InvalidArgumentException('[kirby-imagex] Missing or invalid required option: compareFormats. Must be a boolean.');
+		}
+
 		// Assign options to properties
 		$this->loading = $loading;
 		$this->image = $options['image'];
@@ -346,20 +361,20 @@ class Imagex
 
 		$defaultAttributes = [
 			'shared' => [
-				'src' => srcHandler($src, $userAttributes, 'shared'),
+				'src' => srcHandler($src, $userAttributes, 'shared', $customLazyloading),
 				'width' => $width,
 				'height' => $height,
 				'decoding' => 'async',
 				'fetchpriority' => $isEager ? 'high' : null,
 			],
 			'eager' => [
-				'src' => srcHandler($src, $userAttributes, 'eager'),
+				'src' => srcHandler($src, $userAttributes, 'eager', $customLazyloading),
 				'srcset' => $useNoSrcsetInImg ? null : $srcsetValue,
 			],
 			'lazy' => [
 				'loading' => $customLazyloading ? null : 'lazy',
 				'data-src' => $customLazyloading ? $src : null,
-				'src' => srcHandler($src, $userAttributes, 'lazy'),
+				'src' => srcHandler($src, $userAttributes, 'lazy', $customLazyloading),
 				'data-srcset' => $useNoSrcsetInImg ? null : ($customLazyloading ? $srcsetValue : null),
 				'srcset' => $useNoSrcsetInImg ? null : (!$customLazyloading ? $srcsetValue : null),
 			],
@@ -446,16 +461,8 @@ class Imagex
 			if ($this->compareFormats && $sourceImage !== null) {
 				$sourceSmallestFormat = $this->getSmallestFormatForImage($sourceImage, $sourceRatio);
 
-				// Skip if this format is not the smallest for this specific image
-				if ($sourceSmallestFormat && $format !== $sourceSmallestFormat) {
-					// Only skip if we're not the smallest format
-					// and a smaller format exists in the array
-					$formatIndex = array_search($format, $formats);
-					$smallestIndex = array_search($sourceSmallestFormat, $formats);
-
-					if ($formatIndex < $smallestIndex) {
-						continue;
-					}
+				if ($sourceSmallestFormat && isFormatSkippable($format, $formats, $sourceSmallestFormat)) {
+					continue;
 				}
 			}
 
@@ -503,7 +510,7 @@ class Imagex
 			$format = $formats[$i];
 
 			// Skip format if a smaller format exists for main image
-			if ($mainSmallestFormat && $this->shouldSkipFormat($format, $formats, $i, $mainSmallestFormat)) {
+			if ($mainSmallestFormat && isFormatSkippable($format, $formats, $mainSmallestFormat)) {
 				continue;
 			}
 
@@ -516,27 +523,5 @@ class Imagex
 		}
 
 		return $sources;
-	}
-
-	/**
-	 * Determines if a format should be skipped based on smallest format comparison.
-	 *
-	 * @param string $format Current format being processed.
-	 * @param array $formats All available formats.
-	 * @param int $index Current index in formats array.
-	 * @param string $smallestFormat The determined smallest format.
-	 * @return bool True if format should be skipped.
-	 */
-	private function shouldSkipFormat(string $format, array $formats, int $index, string $smallestFormat): bool
-	{
-		if (!$smallestFormat) {
-			return false;
-		}
-
-		if (!isset($formats[$index + 1])) {
-			return false;
-		}
-
-		return $smallestFormat === $formats[$index + 1];
 	}
 }
