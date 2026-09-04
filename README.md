@@ -168,8 +168,9 @@ Only `image` is required — everything else has sane defaults.
 | `srcset` | `'default'` | String | Name of the srcset preset (e.g. `'my-srcset'`, without format suffix), configured in [Kirby's config](#adjust-kirbys-thumbs-config-and-add-srcset-presets). Imagex automatically resolves the format-specific variants (`my-srcset-webp`, `my-srcset-avif`) — you only pass the base name. |
 | `ratio` | `'intrinsic'` | String | Set the desired aspect ratio here. Can be omitted, default is `intrinsic`, which means the ratio of the provided image is used. Pass your ratio in this format: `x/y`. |
 | `attributes` | `[]` | Array | HTML attributes grouped by element: `picture`, `img`, `sources`. Each can be flat (auto-converted to `shared`) or use the full `shared`/`eager`/`lazy` structure for loading-mode-specific attributes. |
-| `artDirection` | `[]` | Array | Art-directed sources with `media`, `ratio`, `image`, and `attributes` options. Order matters! Browsers use the first `<source>` with a matching media condition. Order length-based media queries from large to small. Per entry: `image` is optional — omit it to reuse the main `image` at a different ratio without needing a second file. `ratio` is optional — falls back to `'intrinsic'` (not the base `ratio`). |
+| `artDirection` | `[]` | Array | Art-directed sources with `media`, `ratio`, `image`, and `attributes` options. Order matters! Browsers use the first `<source>` with a matching media condition. Order width-based media queries from large to small. Per entry: `image` is optional — omit it to reuse the main `image` at a different ratio without needing a second file. `ratio` is optional — falls back to `'intrinsic'` (not the main `ratio`). [Read more about art-directed `<img>` styles here](#art-directed-img-styles). |
 | `compareFormats` | `false` | Boolean | In some cases AVIF files can be larger than WebP. If this option is set to true, it enables a dynamic size comparison between the specified image formats. ⚠️ The `formats` order in `config.php` matters here! The comparison weighting can be configured globally via `compareFormatsWeights`. [Read more about it here](#dynamic-format-size-handling). |
+| `focus` | `false` | Boolean | Applies the image's Kirby `focus` field (the same one `thumb(['crop' => true])` already uses for cropping) as `object-position` on the `<img>`, plus `object-fit: cover`. Falls back to `'center'` when no focus point is set. [Read more here](#focus-point-support). |
 
 ```php
 <?php
@@ -178,6 +179,7 @@ $options = [
   'loading' => $isCritical ? 'eager' : 'lazy',
   'srcset' => 'my-srcset',
   'ratio' => '1/1',
+  'focus' => true, // apply the image's focus point as object-position
 
   'attributes' => [
     // Simple flat syntax (auto-converted to 'shared')
@@ -194,7 +196,8 @@ $options = [
           $setThisClassWhenTrue ? 'optional-class' : null
         ],
         'alt' => $image->alt(),
-        'style' => ['background-color: red;', 'object-fit: cover;', 'object-position: ' . $image->focus() . ';'],
+        // `object-fit`/`object-position` from the focus point are handled by the `focus` option — see below.
+        'style' => ['background-color: red;'],
         'data-attr' => 'my-img-attribute',
         'sizes' => '760px',
       ],
@@ -260,6 +263,59 @@ snippet('imagex-picture', $options);
 **Ratio consistency:** When you override `width`, `height`, `src`, or `srcset`, ensure your custom values match each other and the image ratio to avoid layout shifts. Use `null` or `false` to remove an attribute entirely. In most cases you should let Imagex handle dimensions automatically.
 
 See [overriding-attributes.md](/docs/examples/overriding-attributes.md) for more examples including LQIP placeholders and dimension overrides.
+
+### Focus Point Support
+Kirby's native `focus` content field is already used by `thumb(['crop' => true])` to anchor cropping — Imagex's srcset presets pick this up automatically since `crop` is always `true` there. Set `'focus' => true` in the snippet options to also apply it as CSS on the `<img>`:
+
+```php
+<?php
+$options = [
+  'image' => $image->toFile(),
+  'ratio' => '1/1',
+  'srcset' => 'my-srcset',
+  'focus' => true,
+];
+?>
+
+<?php snippet('imagex-picture', $options) ?>
+```
+
+This adds `object-fit: cover;` and `object-position: <focus value>;` (falling back to `'center'` when no focus point is set, or when the field's content isn't a valid CSS position value) to the `<img>`'s `style` attribute. It's useful whenever the `<img>` is displayed at an aspect ratio or in a container that doesn't exactly match the cropped thumbnail — e.g. a fluid layout using `width: 100%; height: auto`. Like every other default, it can be overridden via `attributes.img` — `style` values are merged, so your own declarations simply take precedence in the cascade.
+
+### Art-Directed `<img>` Styles
+An `artDirection` entry's `ratio` only controls the crop of **that source's own thumbnail** (see the [`artDirection` option above](#snippet-options)) — it decides which file the browser fetches. It does **not** change the `<img>` element's own box: Imagex always derives the `<img>`'s `width`/`height`/`style` from the base `ratio` (and, with `focus` enabled, the base image's focus point), regardless of which `<source>` the browser actually matched. This is a browser limitation, not an Imagex one: `<picture>` swaps which file is loaded, not the `<img>`'s own CSS.
+
+To keep the `<img>` visually in sync, call `$imagex->getArtDirectionStyles()` — it returns `@media`-scoped CSS (targeting the `<img>`'s `id`, which is generated automatically unless you set your own) for every `artDirection` entry whose `ratio` or (with `focus` enabled) `image` differs from the default. The `imagex-picture` snippet already does this for you:
+
+```php
+<?php
+$options = [
+  'image' => $image->toFile(),
+  'ratio' => '3/2',
+  'srcset' => 'my-srcset',
+  'focus' => true,
+  'artDirection' => [
+    [
+      'media' => '(min-width: 800px)',
+      'ratio' => '21/9',
+      'image' => $wideImage->toFile(),
+    ],
+  ],
+];
+?>
+
+<?php snippet('imagex-picture', $options) ?>
+```
+
+```html
+<style>@media (min-width: 800px) { #imagex-a1b2c3d4 { aspect-ratio: 21 / 9 !important; object-position: 30% 60% !important; } }</style>
+<picture>
+  <!-- sources ... -->
+  <img id="imagex-a1b2c3d4" style="aspect-ratio: 3 / 2; object-fit: cover; object-position: 40% 50%;" ...>
+</picture>
+```
+
+A source only produces a rule when it actually changes something — a source that only adds a `media` condition without a different `ratio`/`image` produces none. When using `imagex-picture-json` for headless output, the same CSS string is available under the top-level `artDirectionStyles` key (omitted when empty) so the consuming frontend can inject it itself.
 
 ## File Methods
 

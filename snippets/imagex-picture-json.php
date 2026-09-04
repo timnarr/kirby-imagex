@@ -6,6 +6,7 @@ $imagex = new Imagex([
 	'artDirection' => $artDirection ?? [],
 	'attributes' => $attributes ?? [],
 	'compareFormats' => $compareFormats ?? false,
+	'focus' => $focus ?? false,
 	'image' => $image,
 	'loading' => $loading ?? 'lazy',
 	'ratio' => $ratio ?? 'intrinsic',
@@ -18,6 +19,7 @@ $data = [
 		'sources' => $imagex->getPictureSources(),
 	],
 	'img' => $imagex->getImgAttributes(),
+	'artDirectionStyles' => $imagex->getArtDirectionStyles(),
 ];
 
 $data = transformForJson($data);

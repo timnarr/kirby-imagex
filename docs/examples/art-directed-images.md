@@ -3,6 +3,7 @@
 1. [Ratio Change at Media Condition](#example-1-ratio-change-at-media-condition)
 2. [Image and Ratio Change at Media Condition](#example-2-image-and-ratio-change-at-media-condition)
 3. [Mixed: Some Sources Reuse the Main Image, Others Use a Different One](#example-3-mixed-some-sources-reuse-the-main-image-others-use-a-different-one)
+4. [Keeping the `<img>` in Sync with `getArtDirectionStyles()` and `focus`](#example-4-keeping-the-img-in-sync-with-getartdirectionstyles-and-focus)
 
 ## Example 1. Ratio Change at Media Condition
 
@@ -177,3 +178,52 @@ $options = [
 
 <?php snippet('imagex-picture', $options) ?>
 ```
+
+## Example 4. Keeping the `<img>` in Sync with `getArtDirectionStyles()` and `focus`
+
+A `<source>`'s `media`/`ratio`/`image` only ever controls which thumbnail the browser *picks* — the
+rendered `<img>` itself always keeps the base `ratio` and focus point, no matter which source
+actually matched. `imagex-picture` calls `Imagex::getArtDirectionStyles()` automatically and renders
+the result in a `<style>` tag, so the `<img>` follows whichever art-directed source is currently active.
+
+### Snippet Options
+```php
+<?php
+$options = [
+  'image' => $image->toFile(), // portrait crop, focus point set in the panel
+  'srcset' => 'imagex-demo',
+  'ratio' => '3/4',
+  'focus' => true, // apply focus point as object-position, and keep it in sync per source
+  'artDirection' => [
+    [
+      'media' => '(min-width: 800px)',
+      'ratio' => '21/9',
+      'image' => $wideImage->toFile(), // its own focus point, e.g. '30% 60%'
+    ],
+  ],
+];
+?>
+
+<?php snippet('imagex-picture', $options) ?>
+```
+
+### Final HTML Output
+```html
+<style>@media (min-width: 800px) { #imagex-a1b2c3d4 { aspect-ratio: 21 / 9 !important; object-position: 30% 60% !important; } }</style>
+<picture>
+  <!-- sources omitted for brevity, see examples above -->
+  <img
+    id="imagex-a1b2c3d4"
+    width="400" height="533" decoding="async" loading="lazy"
+    style="object-fit: cover; object-position: 40% 50%;"
+    src="https://example.com/image-400x533-crop-40-50-q80-sharpen10.jpg"
+    srcset="
+      https://example.com/image-400x533-crop-40-50-q80-sharpen10.jpg 400w,
+      https://example.com/image-800x1067-crop-40-50-q80-sharpen10.jpg 800w">
+</picture>
+```
+
+Only sources whose `ratio` or (with `focus` enabled) `image` actually differ from the default produce
+a rule — a source that only adds a `media` condition without changing either produces none. The `id`
+is generated automatically; pass your own via `attributes.img.id` to use it instead. See
+[overriding-attributes.md](/docs/examples/overriding-attributes.md) for more on attribute overrides.

@@ -2,10 +2,21 @@
 
 namespace TimNarr;
 
+use Kirby\Cms\File;
+use Kirby\Cms\Page;
 use PHPUnit\Framework\TestCase;
 
 class OthersTest extends TestCase
 {
+	private function fileWithFocus(string|null $focus): File
+	{
+		return new File([
+			'filename' => 'test.jpg',
+			'parent' => new Page(['slug' => 'test']),
+			'content' => $focus !== null ? ['focus' => $focus] : [],
+		]);
+	}
+
 	public function testNormalizeFormat()
 	{
 		$this->assertEquals('jpeg', normalizeFormat('JPG'));
@@ -258,5 +269,70 @@ class OthersTest extends TestCase
 		];
 
 		$this->assertEquals($expected, transformForJson($data));
+	}
+
+	public function testResolveFocusValueWithFocusSet()
+	{
+		$this->assertEquals('23.5% 67%', resolveFocusValue($this->fileWithFocus('23.5% 67%')));
+	}
+
+	public function testResolveFocusValueWithNoFocusField()
+	{
+		$this->assertEquals('center', resolveFocusValue($this->fileWithFocus(null)));
+	}
+
+	public function testResolveFocusValueWithEmptyFocusField()
+	{
+		$this->assertEquals('center', resolveFocusValue($this->fileWithFocus('')));
+	}
+
+	public function testResolveFocusValueWithKeyword()
+	{
+		$this->assertEquals('top', resolveFocusValue($this->fileWithFocus('top')));
+	}
+
+	public function testResolveFocusValueFallsBackToCenterOnInjectionAttempt()
+	{
+		// Regression test: a malicious/malformed value in the Panel-editable
+		// `focus` field must never be passed through into generated CSS as-is.
+		$malicious = '0% 0%; } </style><script>alert(1)</script>';
+		$this->assertEquals('center', resolveFocusValue($this->fileWithFocus($malicious)));
+	}
+
+	public function testResolveFocusValueFallsBackToCenterOnUnknownKeyword()
+	{
+		$this->assertEquals('center', resolveFocusValue($this->fileWithFocus('not-a-real-keyword')));
+	}
+
+	public function testIsValidCssPositionValueAcceptsPercentagePairs()
+	{
+		$this->assertTrue(isValidCssPositionValue('50% 30%'));
+		$this->assertTrue(isValidCssPositionValue('23.45% 67.89%'));
+		$this->assertTrue(isValidCssPositionValue('-10% 110%'));
+	}
+
+	public function testIsValidCssPositionValueAcceptsSingleKeyword()
+	{
+		$this->assertTrue(isValidCssPositionValue('center'));
+		$this->assertTrue(isValidCssPositionValue('top'));
+	}
+
+	public function testIsValidCssPositionValueAcceptsLengthUnits()
+	{
+		$this->assertTrue(isValidCssPositionValue('10px 5em'));
+		$this->assertTrue(isValidCssPositionValue('1.5rem center'));
+	}
+
+	public function testIsValidCssPositionValueRejectsInjectionAttempt()
+	{
+		$this->assertFalse(isValidCssPositionValue('0% 0%; } </style><script>alert(1)</script>'));
+		$this->assertFalse(isValidCssPositionValue('50%") } * { color: red'));
+	}
+
+	public function testIsValidCssPositionValueRejectsUnknownTokens()
+	{
+		$this->assertFalse(isValidCssPositionValue('not-a-real-keyword'));
+		$this->assertFalse(isValidCssPositionValue('50% 30% 10%'));
+		$this->assertFalse(isValidCssPositionValue(''));
 	}
 }

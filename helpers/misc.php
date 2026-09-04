@@ -2,6 +2,7 @@
 
 namespace TimNarr;
 
+use Kirby\Cms\File;
 use Kirby\Exception\InvalidArgumentException;
 
 /**
@@ -172,6 +173,49 @@ function calculateWeightedFormatSize($image, array $srcsetPreset, array $weights
 	$sizeLast = $image->thumb($samples['last'])->size();
 
 	return (int)(($sizeFirst * $weights['small']) + ($sizeMiddle * $weights['medium']) + ($sizeLast * $weights['large']));
+}
+
+/**
+ * Resolves the CSS `object-position` value for an image based on Kirby's native
+ * `focus` content field (the same field `thumb(['crop' => true])` already uses
+ * to anchor cropping). Falls back to `'center'` when no focus point is set.
+ *
+ * The field is Panel-editable content, not developer-controlled input, so its
+ * value is validated against the shape `object-position` actually accepts
+ * (percentage/length pairs and/or the standard position keywords) before being
+ * embedded in generated CSS. Anything that doesn't match falls back to `'center'`
+ * rather than being passed through — this can't use generic CSS-value escaping
+ * (`esc($value, 'css')`) instead, because that hex-escapes the `%` sign too and
+ * would break every legitimate percentage-based focus value.
+ *
+ * @param File $image The image file to resolve the focus point for.
+ * @return string CSS `object-position` value (e.g. '23% 65%' or 'center').
+ */
+function resolveFocusValue(File $image): string
+{
+	$value = $image->focus()->value();
+
+	if (!is_string($value) || !isValidCssPositionValue($value)) {
+		return 'center';
+	}
+
+	return $value;
+}
+
+/**
+ * Checks whether a string is a safe CSS `<position>` value: one or two
+ * space-separated tokens, each either a percentage/length number or one of
+ * the standard position keywords. Used to validate content-field values
+ * (e.g. Kirby's `focus` field) before embedding them in generated CSS.
+ *
+ * @param string $value The value to validate.
+ * @return bool True if the value is a safe CSS position value.
+ */
+function isValidCssPositionValue(string $value): bool
+{
+	$token = '(-?\d+(\.\d+)?(%|px|em|rem)|top|right|bottom|left|center)';
+
+	return (bool)preg_match("/^{$token}(\s+{$token})?$/", trim($value));
 }
 
 /**

@@ -18,7 +18,10 @@ class Imagex
 	protected array $imgAttributes;
 	protected array $pictureAttributes;
 	protected string $ratio;
+	protected bool $focus;
 	protected array $artDirection;
+	private string|null $artDirectionId = null;
+	private string|null $artDirectionStylesCache = null;
 	protected array $sourcesAttributes;
 	protected string $srcset;
 	protected bool $compareFormats;
@@ -67,12 +70,18 @@ class Imagex
 			throw new InvalidArgumentException('[kirby-imagex] Missing or invalid required option: compareFormats. Must be a boolean.');
 		}
 
+		// Validate optional option: focus
+		if (isset($options['focus']) && !is_bool($options['focus'])) {
+			throw new InvalidArgumentException('[kirby-imagex] Invalid option: focus. Must be a boolean.');
+		}
+
 		// Assign options to properties
 		$this->loading = $loading;
 		$this->image = $options['image'];
 		$this->ratio = $options['ratio'];
 		$this->srcset = $options['srcset'];
 		$this->compareFormats = $options['compareFormats'];
+		$this->focus = $options['focus'] ?? false;
 
 		// Normalize and assign attributes
 		$attributes = $options['attributes'] ?? [];
@@ -347,6 +356,10 @@ class Imagex
 		$src = $image->thumb($firstItemInSrcsetConfig)->url();
 		['width' => $width, 'height' => $height] = $firstItemInSrcsetConfig;
 
+		// An id is only needed (and generated) when there are actual art-direction
+		// style overrides to scope to this <img> — see getArtDirectionStyles().
+		$artDirectionId = $this->getArtDirectionStyles() !== '' ? $this->resolveArtDirectionId() : null;
+
 		$defaultAttributes = [
 			'shared' => [
 				'src' => srcHandler($src, $userAttributes, 'shared', $customLazyloading),
@@ -354,6 +367,8 @@ class Imagex
 				'height' => $height,
 				'decoding' => 'async',
 				'fetchpriority' => $isEager ? 'high' : null,
+				'id' => $artDirectionId,
+				'style' => $this->focus ? ['object-fit: cover;', 'object-position: ' . resolveFocusValue($image) . ';'] : [],
 			],
 			'eager' => [
 				'src' => srcHandler($src, $userAttributes, 'eager', $customLazyloading),
@@ -372,6 +387,97 @@ class Imagex
 
 		// Apply urlHandler to all URL-based attributes (handles user-overridden attributes)
 		return applyUrlHandlerToAttributes($mergedAttributes);
+	}
+
+	/**
+	 * Resolves the id used to scope generated art-direction CSS to this <img>.
+	 * Reuses a user-supplied 'id' attribute if present — checked in the same
+	 * shared/loading-mode priority getImgAttributes() itself resolves with, so
+	 * an id set only under 'eager'/'lazy' is still picked up — otherwise lazily
+	 * generates and caches one for the lifetime of this instance.
+	 *
+	 * @return string The <img> element's id.
+	 */
+	private function resolveArtDirectionId(): string
+	{
+		$userId = $this->imgAttributes[$this->loading]['id'] ?? $this->imgAttributes['shared']['id'] ?? null;
+
+		if ($userId) {
+			return $userId;
+		}
+
+		return $this->artDirectionId ??= 'imagex-' . substr(hash('xxh3', uniqid('', true)), 0, 8);
+	}
+
+	/**
+	 * Generates scoped CSS for art-directed sources that change the aspect ratio
+	 * and/or (when the `focus` option is enabled) the focus point of the image.
+	 *
+	 * A <source>'s `media`/`ratio`/`image` only ever influences which thumbnail
+	 * is picked by the browser — the rendered <img> keeps the default ratio and
+	 * focus point regardless of which source matched. This produces `@media`-scoped
+	 * `!important` rules (targeting this instance's <img> id) so the <img>'s
+	 * `aspect-ratio` and `object-position` follow whichever art-directed source
+	 * is currently active. Only sources with a `media` condition that actually
+	 * differ from the default ratio/focus produce a rule.
+	 *
+	 * `media` is developer-supplied CSS syntax (e.g. '(min-width: 800px)'), passed
+	 * through as-is like `ratio`/`srcset` elsewhere in Imagex — it can't be escaped
+	 * without breaking valid media-query syntax, so it must not be built from
+	 * untrusted/content-field input. `focus` values, which do come from a
+	 * Panel-editable content field, are validated in resolveFocusValue().
+	 *
+	 * @return string CSS rules (possibly empty), meant to be wrapped in a <style> tag.
+	 */
+	public function getArtDirectionStyles(): string
+	{
+		if ($this->artDirectionStylesCache !== null) {
+			return $this->artDirectionStylesCache;
+		}
+
+		if (empty($this->artDirection)) {
+			return $this->artDirectionStylesCache = '';
+		}
+
+		['x' => $defaultRatioX, 'y' => $defaultRatioY] = getAspectRatio($this->ratio, $this->image);
+		$defaultRatioCss = "{$defaultRatioX} / {$defaultRatioY}";
+		$defaultFocus = $this->focus ? resolveFocusValue($this->image) : null;
+
+		$rules = [];
+
+		foreach ($this->artDirection as $source) {
+			if (empty($source['media'])) {
+				continue;
+			}
+
+			$sourceRatio = $source['ratio'] ?? 'intrinsic';
+			$sourceImage = $source['image'] ?? null;
+
+			['x' => $ratioX, 'y' => $ratioY] = getAspectRatio($sourceRatio, $sourceImage ?? $this->image);
+			$resolvedRatioCss = "{$ratioX} / {$ratioY}";
+
+			$declarations = [];
+
+			if ($resolvedRatioCss !== $defaultRatioCss) {
+				$declarations[] = "aspect-ratio: {$resolvedRatioCss} !important;";
+			}
+
+			if ($this->focus && $sourceImage !== null) {
+				$resolvedFocus = resolveFocusValue($sourceImage);
+
+				if ($resolvedFocus !== $defaultFocus) {
+					$declarations[] = "object-position: {$resolvedFocus} !important;";
+				}
+			}
+
+			if (empty($declarations)) {
+				continue;
+			}
+
+			$rules[] = '@media ' . $source['media'] . ' { #' . $this->resolveArtDirectionId() . ' { ' . implode(' ', $declarations) . ' } }';
+		}
+
+		return $this->artDirectionStylesCache = implode(' ', $rules);
 	}
 
 	/**
