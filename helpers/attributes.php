@@ -120,29 +120,20 @@ function mergeHTMLAttributes(array $attributes, string $loadingMode, array $defa
 	};
 
 	// Step 1: Start with default 'shared' attributes
-	if (isset($defaultAttributes['shared'])) {
-		foreach ($defaultAttributes['shared'] as $attr => $value) {
-			$mergedAttributes[$attr] = $value;
-		}
+	foreach ($defaultAttributes['shared'] ?? [] as $attr => $value) {
+		$mergedAttributes[$attr] = $value;
 	}
 
-	// Step 2: Merge default loading mode-specific attributes
-	if (isset($defaultAttributes[$loadingMode])) {
-		foreach ($defaultAttributes[$loadingMode] as $attr => $value) {
-			$mergedAttributes[$attr] = $mergeAttributeValues($attr, $mergedAttributes[$attr] ?? '', $value);
-		}
-	}
+	// Steps 2-4: Merge in ascending priority — default loading-mode, user 'shared',
+	// then user loading-mode-specific (user attributes always win)
+	$priorityLayers = [
+		$defaultAttributes[$loadingMode] ?? [],
+		$attributes['shared'] ?? [],
+		$attributes[$loadingMode] ?? [],
+	];
 
-	// Step 3: Merge/override with user 'shared' attributes (user attributes have priority)
-	if (isset($attributes['shared'])) {
-		foreach ($attributes['shared'] as $attr => $value) {
-			$mergedAttributes[$attr] = $mergeAttributeValues($attr, $mergedAttributes[$attr] ?? '', $value);
-		}
-	}
-
-	// Step 4: Merge/override with user loading mode-specific attributes (highest priority)
-	if (isset($attributes[$loadingMode])) {
-		foreach ($attributes[$loadingMode] as $attr => $value) {
+	foreach ($priorityLayers as $layer) {
+		foreach ($layer as $attr => $value) {
 			$mergedAttributes[$attr] = $mergeAttributeValues($attr, $mergedAttributes[$attr] ?? '', $value);
 		}
 	}

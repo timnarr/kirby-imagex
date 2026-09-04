@@ -140,16 +140,6 @@ class Imagex
 	}
 
 	/**
-	 * Determines the loading mode based on the loading option.
-	 *
-	 * @return string The loading mode - 'eager' or 'lazy'
-	 */
-	private function getLoadingMode(): string
-	{
-		return $this->loading;
-	}
-
-	/**
 	 * Get image formats, ensuring uniqueness and correct naming.
 	 *
 	 * @return array Array with all formats as strings
@@ -159,9 +149,7 @@ class Imagex
 		$configFormats = $this->formats;
 		$formats = $this->addOriginalFormatAsSource ? A::append($configFormats, ['originalformat']) : $configFormats;
 
-		$formats = array_unique(array_map(function ($item) {
-			return normalizeFormat($item);
-		}, $formats));
+		$formats = array_unique(array_map(fn ($item) => normalizeFormat($item), $formats));
 
 		// Reindex the array to ensure the keys start from 0
 		return array_values($formats);
@@ -380,7 +368,7 @@ class Imagex
 			],
 		];
 
-		$mergedAttributes = mergeHTMLAttributes($userAttributes, $this->getLoadingMode(), $defaultAttributes);
+		$mergedAttributes = mergeHTMLAttributes($userAttributes, $this->loading, $defaultAttributes);
 
 		// Apply urlHandler to all URL-based attributes (handles user-overridden attributes)
 		return applyUrlHandlerToAttributes($mergedAttributes);
@@ -393,7 +381,7 @@ class Imagex
 	 */
 	public function getPictureAttributes(): array
 	{
-		return mergeHTMLAttributes($this->pictureAttributes, $this->getLoadingMode());
+		return mergeHTMLAttributes($this->pictureAttributes, $this->loading);
 	}
 
 	/**
@@ -434,7 +422,7 @@ class Imagex
 			],
 		];
 
-		$mergedAttributes = mergeHTMLAttributes($source['attributes'] ?? [], $this->getLoadingMode(), $defaultAttributes);
+		$mergedAttributes = mergeHTMLAttributes($source['attributes'] ?? [], $this->loading, $defaultAttributes);
 
 		// Apply urlHandler to all URL-based attributes (handles user-overridden attributes)
 		return applyUrlHandlerToAttributes($mergedAttributes);
@@ -498,7 +486,6 @@ class Imagex
 	public function getPictureSources(): array
 	{
 		$formats = $this->getFormats();
-		$formatsCount = count($formats);
 		$sources = [];
 
 		// Determine smallest format for main image
@@ -506,9 +493,7 @@ class Imagex
 			? $this->getSmallestFormatForImage()
 			: null;
 
-		for ($i = 0; $i < $formatsCount; $i++) {
-			$format = $formats[$i];
-
+		foreach ($formats as $format) {
 			// Skip format if a smaller format exists for main image
 			if ($mainSmallestFormat && isFormatSkippable($format, $formats, $mainSmallestFormat)) {
 				continue;
