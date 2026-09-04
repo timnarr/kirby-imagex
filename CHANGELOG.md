@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## Unreleased
+## [0.4.0] - September 04, 2026
 
 ### Added
 - New `focus` snippet option (default `false`). Applies Kirby's native `focus` content field (the same one `thumb(['crop' => true])` already uses for cropping) as `object-position` on the `<img>`, plus `object-fit: cover`. Falls back to `'center'` when no focus point is set. New `resolveFocusValue()` helper, backed by a new `isValidCssPositionValue()` validator: since `focus` is Panel-editable content rather than developer-controlled input, its value is validated against the shape `object-position` actually accepts before being embedded in generated CSS, falling back to `'center'` on anything else — closing a CSS/HTML-injection path into the `<style>` tag described below.
