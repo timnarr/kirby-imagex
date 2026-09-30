@@ -5,11 +5,13 @@ All notable changes to this project will be documented in this file.
 ## Unreleased
 
 ### Fixed
+- **Bug:** The `imagex-picture-json` snippet crashed with `Call to undefined function transformForJson()`: the helper lives in the `TimNarr` namespace, but the snippet called it unqualified. It now imports the function.
 - **Bug:** Art-direction styles applied the wrong `aspect-ratio`/`object-position` when several `media` queries matched at once (e.g. `(min-width: 1200px)` followed by `(min-width: 600px)`). `<picture>` uses the first matching `<source>`, but CSS applies the last matching rule, so the later source's values won. Rules are now emitted in reverse order, and once a property is overridden by any source, every source sets it — including sources that keep the default, which previously inherited another source's value.
 - **Bug:** With `customLazyloading: true`, eager images (`loading: 'eager'`) were rendered without a `src` attribute — and, combined with `noSrcsetInImg: true`, without any image URL at all. Eager images now always get `src`.
 - **Bug:** `relativeUrls: true` produced broken or absolute URLs on subfolder installs and multi-language sites. It stripped the full `site()->url()` — which includes the subfolder (`/blog/media/…` became `/media/…`) and, on multi-language sites, the language prefix (so nothing matched). Only the origin of Kirby's index URL is stripped now. Hosts that merely share the prefix (`example.com.cdn.net`) are no longer mangled.
 - **Bug:** Kirby's shorthand srcset presets (`'default' => [400, 800]` or `[400 => '1x', 800 => '2x']`) crashed with `Cannot use a scalar value as an array`. They are now normalized via the new `normalizeSrcsetPreset()` helper, which also throws a descriptive error for empty presets or entries without a positive `width`.
 - `ratio: 'intrinsic'` on an image without readable dimensions (e.g. SVG) now throws a descriptive `InvalidArgumentException` naming the file instead of a bare `DivisionByZeroError`.
+- Both snippets now report a missing `image` with the plugin's own `Missing required option: image` error instead of a preceding PHP "undefined variable" warning.
 - **Bug:** A user-supplied `<img>` `id` starting with a digit (e.g. a UUID) or containing characters like `.` or `:` produced an invalid `#id` selector in the art-direction styles, which browsers silently dropped. The id is now escaped via the new `escapeCssIdentifier()` helper (CSSOM `CSS.escape()` semantics, plus hex-escaping `<`/`>` so it can't close the `<style>` element).
 
 ### Added

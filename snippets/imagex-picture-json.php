@@ -4,12 +4,14 @@ declare(strict_types = 1);
 
 use TimNarr\Imagex;
 
+use function TimNarr\transformForJson;
+
 $imagex = new Imagex([
 	'artDirection' => $artDirection ?? [],
 	'attributes' => $attributes ?? [],
 	'compareFormats' => $compareFormats ?? false,
 	'focus' => $focus ?? false,
-	'image' => $image,
+	'image' => $image ?? null,
 	'loading' => $loading ?? 'lazy',
 	'ratio' => $ratio ?? 'intrinsic',
 	'srcset' => $srcset ?? 'default',

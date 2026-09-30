@@ -388,4 +388,38 @@ class ImagexTest extends TestCase
 		));
 	}
 
+	public function testPictureSnippetRenders()
+	{
+		$html = snippet('imagex-picture', [
+			'image' => $this->image(),
+			'ratio' => '16/9',
+			'artDirection' => [['media' => '(min-width: 800px)', 'ratio' => '1/1']],
+		], return: true);
+
+		$this->assertStringContainsString('<picture', $html);
+		$this->assertStringContainsString('<source', $html);
+		$this->assertMatchesRegularExpression('/<img [^>]*height="225"[^>]*width="400"/', $html);
+		$this->assertMatchesRegularExpression('/<img [^>]*id="(imagex-[0-9a-f]{8})"/', $html);
+
+		preg_match('/<img [^>]*id="([^"]+)"/', $html, $matches);
+		$this->assertStringContainsString('<style>@media (min-width: 800px) { #' . $matches[1] . ' {', $html);
+	}
+
+	public function testJsonSnippetRenders()
+	{
+		$json = snippet('imagex-picture-json', ['image' => $this->image(), 'ratio' => '16/9'], return: true);
+		$data = json_decode($json, true, flags: JSON_THROW_ON_ERROR);
+
+		$this->assertSame(400, $data['img']['width']);
+		$this->assertSame(225, $data['img']['height']);
+		$this->assertCount(2, $data['picture']['sources']);
+	}
+
+	public function testSnippetWithoutImageThrowsDescriptiveError()
+	{
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('Missing required option: image');
+
+		snippet('imagex-picture', ['ratio' => '16/9'], return: true);
+	}
 }
