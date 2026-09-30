@@ -27,6 +27,9 @@ All notable changes to this project will be documented in this file.
 - The `compareFormats` result is memoized per image and ratio on top of the persistent cache; it was looked up once per format for every art-directed source.
 - Srcset presets are resolved, normalized and validated once in the constructor (previously checked twice and rebuilt on every call).
 
+### Changed (internal)
+- All PHP files declare `strict_types`, enforced by php-cs-fixer's `declare_strict_types` rule.
+
 ### Removed
 - `srcHandler()` helper. Its only job — dropping `src` for custom lazy loading — is now a plain default attribute in `Imagex::getImgAttributes()`; user-supplied `src` overrides are handled by `mergeHTMLAttributes()` as for every other attribute.
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 	$finder = PhpCsFixer\Finder::create()
 		->exclude('vendor')
 		->ignoreDotFiles(true)
@@ -24,6 +26,7 @@
 			'combine_nested_dirname' => true,
 			'concat_space' => ['spacing' => 'one'],
 			'declare_equal_normalize' => ['space' => 'single'],
+			'declare_strict_types' => true,
 			'dir_constant' => true,
 			'function_typehint_space' => true,
 			'include' => true,

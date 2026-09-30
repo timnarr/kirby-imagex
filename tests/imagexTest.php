@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace TimNarr;
 
 use Kirby\Cms\App;
@@ -385,4 +387,5 @@ class ImagexTest extends TestCase
 			fn ($name) => str_starts_with($name, $prefix)
 		));
 	}
+
 }

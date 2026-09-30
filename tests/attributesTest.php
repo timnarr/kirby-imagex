@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace TimNarr;
 
 use Kirby\Exception\InvalidArgumentException;
