@@ -20,6 +20,12 @@ All notable changes to this project will be documented in this file.
 - **BREAKING:** `artDirection` entries are validated at construction time. Each entry must have a non-empty `media` string (a `<source>` without `media` always matches, so the default image was never used), only the keys `media`, `ratio`, `image` and `attributes` are accepted, `image` must be a `Kirby\Cms\File` or `null` (still falls back to the main image), and `ratio` must be valid. Migration: add a `media` condition to every entry and fix typos in keys.
 - The main `ratio` is now validated at construction time instead of on first render.
 - The plugin options `formats`, `customLazyloading`, `addOriginalFormatAsSource` and `noSrcsetInImg` are type-checked at construction time, throwing a descriptive `InvalidArgumentException` instead of a `TypeError`.
+- All srcset preset errors (missing `thumbs.srcsets`, missing base or format preset, malformed preset) and the `compareFormats` "not enough formats" error are now thrown at construction time as `InvalidArgumentException`. Previously a missing `thumbs.srcsets` config crashed with a `TypeError`, and some errors only surfaced during rendering.
+
+### Performance
+- Ratio-based srcset presets are memoized per `Imagex` instance instead of going through the persistent cache. They were resolved for the `<img>`, every format and every art-directed source — each time re-validating the config, JSON-encoding and hashing it, and reading a cache file for what is plain arithmetic. Existing `srcset-config-*` cache entries are no longer used and can be removed by flushing the plugin cache.
+- The `compareFormats` result is memoized per image and ratio on top of the persistent cache; it was looked up once per format for every art-directed source.
+- Srcset presets are resolved, normalized and validated once in the constructor (previously checked twice and rebuilt on every call).
 
 ### Removed
 - `srcHandler()` helper. Its only job — dropping `src` for custom lazy loading — is now a plain default attribute in `Imagex::getImgAttributes()`; user-supplied `src` overrides are handled by `mergeHTMLAttributes()` as for every other attribute.

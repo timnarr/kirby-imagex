@@ -3,7 +3,6 @@
 namespace TimNarr;
 
 use Kirby\Cms\File;
-use Kirby\Exception\Exception;
 use Kirby\Exception\InvalidArgumentException;
 use Kirby\Filesystem\F;
 use Kirby\Toolkit\A;
@@ -28,8 +27,16 @@ class Imagex
 	protected array $compareFormatsWeights;
 	protected bool $addOriginalFormatAsSource;
 	protected bool $noSrcsetInImg;
-	protected array $thumbsSrcsets;
 	protected $kirby;
+
+	/** Normalized srcset presets from the config, keyed by format. */
+	private array $srcsetPresets;
+
+	/** Srcset presets with ratio-based heights, keyed by resolved ratio ('x/y'). */
+	private array $dynamicSrcsetPresets = [];
+
+	/** Smallest format per image and ratio, keyed by 'imageId|ratio'. */
+	private array $smallestFormats = [];
 
 	/**
 	 * Constructor to initialize Imagex with its options.
@@ -100,7 +107,6 @@ class Imagex
 		$this->compareFormatsWeights = resolveCompareFormatsWeights($this->kirby->option('timnarr.imagex.compareFormatsWeights'));
 		$this->addOriginalFormatAsSource = $this->getBoolOption('addOriginalFormatAsSource');
 		$this->noSrcsetInImg = $this->getBoolOption('noSrcsetInImg');
-		$this->thumbsSrcsets = $this->kirby->option('thumbs.srcsets');
 
 		$formats = $this->kirby->option('timnarr.imagex.formats');
 		$invalidFormats = is_array($formats) ? array_filter($formats, fn ($format) => !is_string($format) || $format === '') : null;
@@ -109,9 +115,13 @@ class Imagex
 			throw new InvalidArgumentException("[kirby-imagex] Option 'timnarr.imagex.formats' must be an array of format names (e.g. ['avif', 'webp']).");
 		}
 
-		$this->formats = $formats;
+		$this->formats = $this->resolveFormats($formats);
 
-		$this->validateSrcsetPresets();
+		if ($this->compareFormats && count($this->formats) <= 1) {
+			throw new InvalidArgumentException('[kirby-imagex] Not enough formats to determine the smallest. Please set "compareFormats" to false or add at least two formats in the configuration.');
+		}
+
+		$this->srcsetPresets = $this->resolveSrcsetPresets();
 	}
 
 	/**
@@ -187,63 +197,68 @@ class Imagex
 	}
 
 	/**
-	 * Validates that all required srcset presets exist in the Kirby thumbs config.
+	 * Resolves the formats to render <source> elements for: normalized, unique,
+	 * in configured order, plus 'originalformat' if addOriginalFormatAsSource is set.
 	 *
-	 * Checks the base preset and all format-specific variants (e.g. 'my-srcset-webp',
-	 * 'my-srcset-avif') up front so misconfiguration is caught immediately with a
-	 * helpful error message rather than failing silently later during rendering.
-	 *
-	 * @throws InvalidArgumentException If required presets are missing.
+	 * @param array $configFormats Formats from the plugin config.
+	 * @return array List of format names.
 	 */
-	private function validateSrcsetPresets(): void
+	private function resolveFormats(array $configFormats): array
 	{
-		if (!is_array($this->thumbsSrcsets) || empty($this->thumbsSrcsets)) {
-			// getSrcsetPresetFromConfig() will handle the detailed error at render time
-			return;
-		}
+		$formats = $this->addOriginalFormatAsSource ? [...$configFormats, 'originalformat'] : $configFormats;
 
-		if (!isset($this->thumbsSrcsets[$this->srcset])) {
-			$available = implode(', ', array_keys($this->thumbsSrcsets));
-
-			throw new InvalidArgumentException("[kirby-imagex] Srcset preset '{$this->srcset}' not found in 'thumbs.srcsets'. Available: {$available}");
-		}
-
-		$missing = [];
-
-		foreach ($this->getFormats() as $format) {
-			if ($format === 'originalformat') {
-				continue;
-			}
-
-			$key = $this->srcset . '-' . $format;
-
-			if (!isset($this->thumbsSrcsets[$key])) {
-				$missing[] = "'{$key}'";
-			}
-		}
-
-		if (!empty($missing)) {
-			$available = implode(', ', array_keys($this->thumbsSrcsets));
-			$missingList = implode(', ', $missing);
-
-			throw new InvalidArgumentException("[kirby-imagex] Missing srcset preset(s) for active formats: {$missingList}. Add them to 'thumbs.srcsets' in config.php, or remove the corresponding format from 'timnarr.imagex.formats'. Available presets: {$available}");
-		}
+		return array_values(array_unique(array_map(fn ($format) => normalizeFormat($format), $formats)));
 	}
 
 	/**
-	 * Get image formats, ensuring uniqueness and correct naming.
+	 * Resolves and validates the srcset presets for the image format and every
+	 * active format, e.g. 'my-srcset', 'my-srcset-webp', 'my-srcset-avif'.
 	 *
-	 * @return array Array with all formats as strings
+	 * Runs once in the constructor, so misconfiguration is caught immediately
+	 * with a helpful error message rather than during rendering.
+	 *
+	 * @return array Normalized srcset presets keyed by format.
+	 * @throws InvalidArgumentException If presets are missing or malformed.
 	 */
-	private function getFormats(): array
+	private function resolveSrcsetPresets(): array
 	{
-		$configFormats = $this->formats;
-		$formats = $this->addOriginalFormatAsSource ? A::append($configFormats, ['originalformat']) : $configFormats;
+		$allPresets = $this->kirby->option('thumbs.srcsets');
 
-		$formats = array_unique(array_map(fn ($item) => normalizeFormat($item), $formats));
+		if (!is_array($allPresets) || empty($allPresets)) {
+			throw new InvalidArgumentException('[kirby-imagex] No srcset presets found. Please configure "thumbs.srcsets" in your config.');
+		}
 
-		// Reindex the array to ensure the keys start from 0
-		return array_values($formats);
+		$available = implode(', ', array_keys($allPresets));
+
+		if (!isset($allPresets[$this->srcset])) {
+			throw new InvalidArgumentException("[kirby-imagex] Srcset preset '{$this->srcset}' not found in 'thumbs.srcsets'. Available: {$available}");
+		}
+
+		$presetNames = [];
+
+		foreach ($this->formats as $format) {
+			$presetNames[$format] = $format === 'originalformat' ? $this->srcset : $this->srcset . '-' . $format;
+		}
+
+		$missing = array_filter($presetNames, fn ($name) => !isset($allPresets[$name]));
+
+		if (!empty($missing)) {
+			$missingList = implode(', ', array_map(fn ($name) => "'{$name}'", $missing));
+
+			throw new InvalidArgumentException("[kirby-imagex] Missing srcset preset(s) for active formats: {$missingList}. Add them to 'thumbs.srcsets' in config.php, or remove the corresponding format from 'timnarr.imagex.formats'. Available presets: {$available}");
+		}
+
+		$normalize = fn (string $name) => is_array($allPresets[$name])
+			? normalizeSrcsetPreset($allPresets[$name], $name)
+			: throw new InvalidArgumentException("[kirby-imagex] Srcset preset '{$name}' must be an array.");
+
+		$presets = [$this->getImageFormat() => $normalize($this->srcset)];
+
+		foreach ($presetNames as $format => $name) {
+			$presets[$format] = $normalize($name);
+		}
+
+		return $presets;
 	}
 
 	/**
@@ -260,72 +275,21 @@ class Imagex
 	}
 
 	/**
-	 * Get the srcset preset by name from the Kirby config.
-	 *
-	 * @return array Srcset presets for used formats.
-	 * @throws Exception If srcset preset is not found.
-	 */
-	private function getSrcsetPresetFromConfig(): array
-	{
-		$allSrcsetPresets = $this->thumbsSrcsets;
-
-		if (!is_array($allSrcsetPresets) || empty($allSrcsetPresets)) {
-			throw new Exception('[kirby-imagex] No srcset presets found. Please configure "thumbs.srcsets" in your config.');
-		}
-
-		if (!isset($allSrcsetPresets[$this->srcset])) {
-			$available = implode(', ', array_keys($allSrcsetPresets));
-
-			throw new Exception("[kirby-imagex] Srcset configuration '{$this->srcset}' not found. Available presets: {$available}");
-		}
-
-		$srcsetName = $this->srcset;
-		$srcsetPreset[$this->getImageFormat()] = normalizeSrcsetPreset($allSrcsetPresets[$srcsetName], $srcsetName);
-
-		foreach ($this->getFormats() as $format) {
-			if ($format === 'originalformat') {
-				$srcsetPreset[$format] = normalizeSrcsetPreset($allSrcsetPresets[$srcsetName], $srcsetName);
-			} else {
-				// Check if specific format configuration exists
-				if (!isset($allSrcsetPresets[$srcsetName . '-' . $format])) {
-					$available = implode(', ', array_keys($allSrcsetPresets));
-
-					throw new Exception("[kirby-imagex] Srcset configuration '{$srcsetName}-{$format}' not found. Available presets: {$available}");
-				}
-
-				$srcsetPreset[$format] = normalizeSrcsetPreset($allSrcsetPresets[$srcsetName . '-' . $format], $srcsetName . '-' . $format);
-			}
-		}
-
-		return $srcsetPreset;
-	}
-
-	/**
 	 * Get srcset preset with dynamic heights based on aspect ratio.
 	 *
+	 * Memoized per instance: it's called for the <img>, every format and every
+	 * art-directed source, but only depends on the resolved ratio. It's plain
+	 * arithmetic, so a persistent cache lookup would cost more than it saves.
+	 *
 	 * @param string|null $ratio Optional aspect ratio; defaults to object's ratio.
-	 * @param File|null $image Optional file object; defaults to main image.
+	 * @param File|null $image Optional file object (for 'intrinsic'); defaults to main image.
 	 * @return array Srcset preset with dynamic heights.
 	 */
 	private function getDynamicSrcsetPreset(string|null $ratio = null, File|null $image = null): array
 	{
-		$srcsetPreset = $this->getSrcsetPresetFromConfig();
-		$targetRatio = $ratio ?? $this->ratio;
-		$targetImage = $image ?? $this->image;
-		['x' => $ratioX, 'y' => $ratioY] = getAspectRatio($targetRatio, $targetImage);
+		['x' => $ratioX, 'y' => $ratioY] = getAspectRatio($ratio ?? $this->ratio, $image ?? $this->image);
 
-		// Cache settings
-		$version = $this->kirby->plugin('timnarr/imagex')->version();
-		$cache = $this->kirby->cache('timnarr.imagex');
-		$cacheKey = implode('-', [$version, $ratioX, $ratioY, json_encode($srcsetPreset)]);
-		$cacheId = 'srcset-config-' . hash('xxh3', $cacheKey);
-
-		// Get srcsetPreset from cache or set it
-		$data = $cache->getOrSet($cacheId, function () use ($srcsetPreset, $ratioX, $ratioY) {
-			return addRatioBasedHeightToSrcsetPreset($srcsetPreset, $ratioX, $ratioY);
-		});
-
-		return $data;
+		return $this->dynamicSrcsetPresets["{$ratioX}/{$ratioY}"] ??= addRatioBasedHeightToSrcsetPreset($this->srcsetPresets, $ratioX, $ratioY);
 	}
 
 	/**
@@ -349,56 +313,54 @@ class Imagex
 	 * @param File|null $image Optional file object; defaults to main image.
 	 * @param string|null $ratio Optional aspect ratio; defaults to object's ratio.
 	 * @return string|null Format of the smallest format or null if unable to determine.
-	 * @throws Exception If not enough formats are provided for comparison.
 	 */
 	public function getSmallestFormatForImage(File|null $image = null, string|null $ratio = null): string|null
 	{
 		$image = $image ?? $this->image;
 		$ratio = $ratio ?? $this->ratio;
-
-		$formats = $this->getFormats();
-		$formatsCount = A::count($formats);
-		$compareFormats = $this->compareFormats;
-
-		// Throw an exception if compareFormats is active and there are one or less formats
-		if ($compareFormats && $formatsCount <= 1) {
-			throw new Exception('[kirby-imagex] Not enough formats to determine the smallest. Please set "compareFormats" to false or add at least two formats in the configuration.');
-		}
+		$formats = $this->formats;
 
 		// Check for the specific condition where only the 'originalformat' is present and addOriginalFormatAsSource is true.
-		if (!$compareFormats && $formatsCount === 1 && A::has($formats, 'originalformat') && $this->addOriginalFormatAsSource) {
+		if (!$this->compareFormats && count($formats) === 1 && A::has($formats, 'originalformat') && $this->addOriginalFormatAsSource) {
 			return null;
 		}
 
 		// Return the first format if there is only one format, regardless of compareFormats's state.
-		if (!$compareFormats || $formatsCount === 1) {
+		if (!$this->compareFormats || count($formats) === 1) {
 			return A::first($formats);
 		}
 
-		// Cache the expensive format comparison result
-		$version = $this->kirby->plugin('timnarr/imagex')->version();
-		$cache = $this->kirby->cache('timnarr.imagex');
+		// Called per format for every art-directed source — memoize on top of the persistent cache
+		return $this->smallestFormats[$image->id() . '|' . $ratio] ??= $this->compareFormatSizes($image, $ratio);
+	}
+
+	/**
+	 * Generates sample thumbs in every format and returns the format with the
+	 * smallest weighted file size. The result is cached persistently, keyed by
+	 * everything it depends on (including the file's modification time).
+	 *
+	 * @param File $image The image to compare formats for.
+	 * @param string $ratio Aspect ratio of the generated thumbs.
+	 * @return string The smallest format.
+	 */
+	private function compareFormatSizes(File $image, string $ratio): string
+	{
 		$cacheKey = implode('-', [
-			$version,
+			$this->kirby->plugin('timnarr/imagex')->version(),
 			$image->id(),
 			(string)$image->modified(),
 			$ratio,
-			json_encode($this->getSrcsetPresetFromConfig()),
-			implode(',', $formats),
+			json_encode($this->srcsetPresets),
+			implode(',', $this->formats),
 			json_encode($this->compareFormatsWeights),
 		]);
-		$imageSlug = Str::slug($image->id());
-		$cacheId = 'compare-formats-' . $imageSlug . '-' . hash('xxh3', $cacheKey);
+		$cacheId = 'compare-formats-' . Str::slug($image->id()) . '-' . hash('xxh3', $cacheKey);
 
-		return $cache->getOrSet($cacheId, function () use ($image, $ratio, $formats) {
+		return $this->kirby->cache('timnarr.imagex')->getOrSet($cacheId, function () use ($image, $ratio) {
 			$srcsets = $this->getDynamicSrcsetPreset($ratio, $image);
 			$formatSizes = [];
 
-			foreach ($formats as $format) {
-				if (!isset($srcsets[$format])) {
-					throw new Exception("[kirby-imagex] No srcset configurations found for format: {$format}");
-				}
-
+			foreach ($this->formats as $format) {
 				$formatSizes[$format] = calculateWeightedFormatSize($image, $srcsets[$format], $this->compareFormatsWeights);
 			}
 
@@ -410,7 +372,6 @@ class Imagex
 	 * Get the smallest image format based on file size (wrapper for backwards compatibility).
 	 *
 	 * @return string|null Format of the smallest format or null if unable to determine.
-	 * @throws Exception If not enough formats are provided for comparison.
 	 */
 	public function getSmallestFormat(): string|null
 	{
@@ -642,7 +603,7 @@ class Imagex
 	private function getArtDirectedSourcesPerFormat(string $format): array
 	{
 		$sources = [];
-		$formats = $this->getFormats();
+		$formats = $this->formats;
 
 		foreach ($this->artDirection as $source) {
 			$sourceRatio = $source['ratio'] ?? 'intrinsic';
@@ -688,7 +649,7 @@ class Imagex
 	 */
 	public function getPictureSources(): array
 	{
-		$formats = $this->getFormats();
+		$formats = $this->formats;
 		$sources = [];
 
 		// Determine smallest format for main image

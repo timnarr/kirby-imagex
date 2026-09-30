@@ -304,4 +304,85 @@ class ImagexTest extends TestCase
 
 		$this->imagex(['artDirection' => '(min-width: 800px)']);
 	}
+
+	public function testMissingSrcsetConfigThrowsOnConstruction()
+	{
+		$this->app(['thumbs' => []]);
+
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('No srcset presets found');
+
+		$this->imagex();
+	}
+
+	public function testMissingFormatPresetThrowsOnConstruction()
+	{
+		$this->app(['timnarr.imagex.formats' => ['avif', 'webp', 'png']]);
+
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage("Missing srcset preset(s) for active formats: 'default-png'");
+
+		$this->imagex();
+	}
+
+	public function testCompareFormatsWithSingleFormatThrowsOnConstruction()
+	{
+		$this->app(['timnarr.imagex.formats' => ['webp']]);
+
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('Not enough formats to determine the smallest');
+
+		$this->imagex(['compareFormats' => true]);
+	}
+
+	public function testCompareFormatsRendersOnlyFormatsUpToTheSmallest()
+	{
+		$this->app([
+			'timnarr.imagex.formats' => ['webp'],
+			'timnarr.imagex.addOriginalFormatAsSource' => true,
+		]);
+		$imagex = $this->imagex(['compareFormats' => true]);
+
+		$smallest = $imagex->getSmallestFormatForImage();
+		$types = array_column($imagex->getPictureSources(), 'type');
+
+		$this->assertContains($smallest, ['webp', 'originalformat']);
+		$this->assertSame($smallest === 'webp' ? ['image/webp', 'image/jpeg'] : ['image/jpeg'], $types);
+	}
+
+	public function testRenderingDoesNotCacheSrcsetPresetsPersistently()
+	{
+		$imagex = $this->imagex(['artDirection' => [['media' => '(min-width: 800px)', 'ratio' => '1/1']]]);
+		$imagex->getPictureSources();
+		$imagex->getImgAttributes();
+
+		$this->assertSame([], $this->cacheFiles('srcset-config-'));
+	}
+
+	public function testCompareFormatsResultIsCachedPersistently()
+	{
+		$this->app([
+			'timnarr.imagex.formats' => ['webp'],
+			'timnarr.imagex.addOriginalFormatAsSource' => true,
+		]);
+		$this->imagex(['compareFormats' => true])->getPictureSources();
+
+		$this->assertCount(1, $this->cacheFiles('compare-formats-'));
+	}
+
+	private function cacheFiles(string $prefix): array
+	{
+		$cacheRoot = App::instance()->root('cache');
+
+		if (!is_dir($cacheRoot)) {
+			return [];
+		}
+
+		$files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($cacheRoot, \FilesystemIterator::SKIP_DOTS));
+
+		return array_values(array_filter(
+			array_map(fn ($file) => $file->getFilename(), iterator_to_array($files, false)),
+			fn ($name) => str_starts_with($name, $prefix)
+		));
+	}
 }
