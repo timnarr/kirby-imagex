@@ -11,6 +11,7 @@ $imagex = new Imagex([
 	'focus' => $focus ?? false,
 	'image' => $image ?? null,
 	'loading' => $loading ?? 'lazy',
+	'nonce' => $nonce ?? null,
 	'ratio' => $ratio ?? 'intrinsic',
 	'srcset' => $srcset ?? 'default',
 ]);
@@ -22,7 +23,7 @@ $artDirectionStyles = $imagex->getArtDirectionStyles();
 ?>
 
 <?php if ($artDirectionStyles !== ''): ?>
-	<style><?= $artDirectionStyles ?></style>
+	<style<?= attr(['nonce' => $imagex->getNonce()], ' ') ?>><?= $artDirectionStyles ?></style>
 <?php endif; ?>
 
 <picture <?= attr($pictureAttributes) ?>>

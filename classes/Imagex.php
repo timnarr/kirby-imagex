@@ -20,6 +20,7 @@ class Imagex
 	protected array $pictureAttributes;
 	protected string $ratio;
 	protected bool $focus;
+	protected string|null $nonce;
 	protected array $artDirection;
 	private string|null $artDirectionId = null;
 	private string|null $artDirectionStylesCache = null;
@@ -84,6 +85,11 @@ class Imagex
 			throw new InvalidArgumentException('[kirby-imagex] Invalid option: focus. Must be a boolean.');
 		}
 
+		// Validate optional option: nonce
+		if (isset($options['nonce']) && (!is_string($options['nonce']) || $options['nonce'] === '')) {
+			throw new InvalidArgumentException('[kirby-imagex] Invalid option: nonce. Must be a non-empty string (e.g. kirby()->nonce()) or null.');
+		}
+
 		// Assign options to properties
 		$this->loading = $loading;
 		$this->image = $options['image'];
@@ -91,6 +97,7 @@ class Imagex
 		$this->srcset = $options['srcset'];
 		$this->compareFormats = $options['compareFormats'];
 		$this->focus = $options['focus'] ?? false;
+		$this->nonce = $options['nonce'] ?? null;
 
 		// Normalize and assign attributes
 		$attributes = $options['attributes'] ?? [];
@@ -413,7 +420,9 @@ class Imagex
 				'decoding' => 'async',
 				'fetchpriority' => $isEager ? 'high' : null,
 				'id' => $artDirectionId,
-				'style' => $this->focus ? ['object-fit: cover;', 'object-position: ' . resolveFocusValue($image) . ';'] : [],
+				// With a CSP nonce, focus styles go into getArtDirectionStyles() instead: strict
+				// CSPs block style attributes, and nonces only apply to <style> elements
+				'style' => $this->focus && $this->nonce === null ? ['object-fit: cover;', 'object-position: ' . resolveFocusValue($image) . ';'] : [],
 			],
 			'eager' => [
 				'srcset' => $useNoSrcsetInImg ? null : $srcsetValue,
@@ -472,6 +481,10 @@ class Imagex
 	 * untrusted/content-field input. `focus` values, which do come from a
 	 * Panel-editable content field, are validated in resolveFocusValue().
 	 *
+	 * With a `nonce` set (for a strict Content Security Policy), the `focus`
+	 * styles are emitted here as a base `#id` rule instead of an inline `style`
+	 * attribute on the <img>: CSP nonces only apply to <style> elements.
+	 *
 	 * @return string CSS rules (possibly empty), meant to be wrapped in a <style> tag.
 	 */
 	public function getArtDirectionStyles(): string
@@ -480,8 +493,35 @@ class Imagex
 			return $this->artDirectionStylesCache;
 		}
 
+		$rules = $this->getArtDirectionRules();
+
+		if ($this->focus && $this->nonce !== null) {
+			array_unshift($rules, $this->getImgSelector() . ' { object-fit: cover; object-position: ' . resolveFocusValue($this->image) . '; }');
+		}
+
+		return $this->artDirectionStylesCache = implode(' ', $rules);
+	}
+
+	/**
+	 * Get the CSP nonce for the generated <style> element.
+	 *
+	 * @return string|null The nonce, or null if none was set.
+	 */
+	public function getNonce(): string|null
+	{
+		return $this->nonce;
+	}
+
+	/**
+	 * Builds the `@media`-scoped rules that keep the <img> in sync with the
+	 * active art-directed source. See getArtDirectionStyles().
+	 *
+	 * @return array CSS rules, possibly empty.
+	 */
+	private function getArtDirectionRules(): array
+	{
 		if (empty($this->artDirection)) {
-			return $this->artDirectionStylesCache = '';
+			return [];
 		}
 
 		$defaults = [
@@ -510,10 +550,10 @@ class Imagex
 		);
 
 		if (empty($properties)) {
-			return $this->artDirectionStylesCache = '';
+			return [];
 		}
 
-		$selector = '#' . escapeCssIdentifier($this->resolveArtDirectionId());
+		$selector = $this->getImgSelector();
 		$rules = [];
 
 		// <picture> uses the first matching <source>, whereas CSS applies the last
@@ -523,7 +563,17 @@ class Imagex
 			$rules[] = '@media ' . $source['media'] . ' { ' . $selector . ' { ' . implode(' ', $declarations) . ' } }';
 		}
 
-		return $this->artDirectionStylesCache = implode(' ', $rules);
+		return $rules;
+	}
+
+	/**
+	 * Get the CSS selector targeting this instance's <img>.
+	 *
+	 * @return string The escaped `#id` selector.
+	 */
+	private function getImgSelector(): string
+	{
+		return '#' . escapeCssIdentifier($this->resolveArtDirectionId());
 	}
 
 	/**

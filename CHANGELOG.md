@@ -15,6 +15,7 @@ All notable changes to this project will be documented in this file.
 - **Bug:** A user-supplied `<img>` `id` starting with a digit (e.g. a UUID) or containing characters like `.` or `:` produced an invalid `#id` selector in the art-direction styles, which browsers silently dropped. The id is now escaped via the new `escapeCssIdentifier()` helper (CSSOM `CSS.escape()` semantics, plus hex-escaping `<`/`>` so it can't close the `<style>` element).
 
 ### Added
+- New `nonce` snippet option for strict Content Security Policies. It is added to the generated `<style>` element, and the `focus` styles move from the `<img>`'s `style` attribute into that element as an `#id` rule (CSP nonces don't cover `style` attributes). New `Imagex::getNonce()` getter.
 - Integration tests for the `Imagex` class (`tests/imagexTest.php`), running against a real Kirby instance with generated fixture images. `tests/bootstrap.php` now registers the plugin once for the whole run.
 
 ### Changed

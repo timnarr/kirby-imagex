@@ -13,6 +13,7 @@ $imagex = new Imagex([
 	'focus' => $focus ?? false,
 	'image' => $image ?? null,
 	'loading' => $loading ?? 'lazy',
+	'nonce' => $nonce ?? null,
 	'ratio' => $ratio ?? 'intrinsic',
 	'srcset' => $srcset ?? 'default',
 ]);

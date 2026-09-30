@@ -422,4 +422,60 @@ class ImagexTest extends TestCase
 
 		snippet('imagex-picture', ['ratio' => '16/9'], return: true);
 	}
+
+	public function testFocusUsesStyleAttributeWithoutNonce()
+	{
+		$imagex = $this->imagex(['focus' => true]);
+
+		$this->assertSame(['object-fit: cover;', 'object-position: center;'], $imagex->getImgAttributes()['style']);
+		$this->assertSame('', $imagex->getArtDirectionStyles());
+	}
+
+	public function testFocusMovesIntoStylesWithNonce()
+	{
+		$imagex = $this->imagex(['focus' => true, 'nonce' => 'abc123']);
+		$attributes = $imagex->getImgAttributes();
+
+		$this->assertSame([], $attributes['style']);
+		$this->assertSame('#' . $attributes['id'] . ' { object-fit: cover; object-position: center; }', $imagex->getArtDirectionStyles());
+	}
+
+	public function testNonceWithFocusAndArtDirectionKeepsBaseRuleFirst()
+	{
+		$css = $this->imagex([
+			'focus' => true,
+			'nonce' => 'abc123',
+			'artDirection' => [['media' => '(min-width: 800px)', 'ratio' => '1/1']],
+		])->getArtDirectionStyles();
+
+		$this->assertMatchesRegularExpression('/^#imagex-[0-9a-f]{8} \\{ object-fit: cover; object-position: center; \\} @media \\(min-width: 800px\\)/', $css);
+	}
+
+	public function testNonceWithoutFocusOrArtDirectionGeneratesNoStyles()
+	{
+		$imagex = $this->imagex(['nonce' => 'abc123']);
+
+		$this->assertSame('', $imagex->getArtDirectionStyles());
+		$this->assertNull($imagex->getImgAttributes()['id']);
+	}
+
+	public function testInvalidNonceThrows()
+	{
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('Invalid option: nonce');
+
+		$this->imagex(['nonce' => '']);
+	}
+
+	public function testPictureSnippetAddsNonceToStyleElement()
+	{
+		$html = snippet('imagex-picture', [
+			'image' => $this->image(),
+			'focus' => true,
+			'nonce' => 'abc123',
+		], return: true);
+
+		$this->assertStringContainsString('<style nonce="abc123">#imagex-', $html);
+		$this->assertStringNotContainsString('style="', $html);
+	}
 }

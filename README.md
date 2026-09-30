@@ -171,6 +171,7 @@ Only `image` is required — everything else has sane defaults.
 | `artDirection` | `[]` | Array | Art-directed sources with `media`, `ratio`, `image`, and `attributes` options. Order matters! Browsers use the first `<source>` with a matching media condition. Order width-based media queries from large to small. Per entry: `image` is optional — omit it to reuse the main `image` at a different ratio without needing a second file. `ratio` is optional — falls back to `'intrinsic'` (not the main `ratio`). [Read more about art-directed `<img>` styles here](#art-directed-img-styles). |
 | `compareFormats` | `false` | Boolean | In some cases AVIF files can be larger than WebP. If this option is set to true, it enables a dynamic size comparison between the specified image formats. ⚠️ The `formats` order in `config.php` matters here! The comparison weighting can be configured globally via `compareFormatsWeights`. [Read more about it here](#dynamic-format-size-handling). |
 | `focus` | `false` | Boolean | Applies the image's Kirby `focus` field (the same one `thumb(['crop' => true])` already uses for cropping) as `object-position` on the `<img>`, plus `object-fit: cover`. Falls back to `'center'` when no focus point is set. [Read more here](#focus-point-support). |
+| `nonce` | `null` | String | CSP nonce for the generated `<style>` element. With a nonce set, the `focus` styles are also moved from the `<img>`'s `style` attribute into that `<style>` element, so the output works with a strict Content Security Policy. [Read more here](#content-security-policy-csp). |
 
 ```php
 <?php
@@ -316,6 +317,29 @@ $options = [
 ```
 
 A source only produces a rule when it actually changes something — a source that only adds a `media` condition without a different `ratio`/`image` produces none. When using `imagex-picture-json` for headless output, the same CSS string is available under the top-level `artDirectionStyles` key (omitted when empty) so the consuming frontend can inject it itself.
+
+### Content Security Policy (CSP)
+Imagex can output inline CSS in two places: the `<style>` element with [art-directed `<img>` styles](#art-directed-img-styles), and the `<img>`'s `style` attribute for [`focus`](#focus-point-support). A strict CSP (`style-src` without `'unsafe-inline'`) blocks both.
+
+Pass the nonce your CSP header uses via the `nonce` option:
+
+```php
+<?php snippet('imagex-picture', [
+  'image' => $image->toFile(),
+  'focus' => true,
+  'nonce' => $cspNonce, // the nonce from your Content-Security-Policy header
+]) ?>
+```
+
+```html
+<style nonce="r4nd0m">#imagex-a1b2c3d4 { object-fit: cover; object-position: 40% 50%; }</style>
+<picture>
+  <!-- sources ... -->
+  <img id="imagex-a1b2c3d4" ...>
+</picture>
+```
+
+The `<style>` element gets the `nonce` attribute, and since nonces only apply to `<style>` elements (not `style` attributes), the `focus` styles move into it as an `#id` rule. Its specificity still beats class-based CSS. Style attributes you pass yourself via `attributes` stay inline — use classes instead when your CSP is strict. In the `imagex-picture-json` snippet, the nonce only moves the focus styles into `artDirectionStyles`; your frontend adds its own nonce when injecting them.
 
 ## File Methods
 
