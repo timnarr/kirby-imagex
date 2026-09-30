@@ -128,4 +128,57 @@ class ImagexTest extends TestCase
 
 		$this->assertStringContainsString('#' . $id . ' {', $imagex->getArtDirectionStyles());
 	}
+
+	public function testEagerImgKeepsSrcWithCustomLazyloading()
+	{
+		$this->app(['timnarr.imagex.customLazyloading' => true]);
+		$attributes = $this->imagex(['loading' => 'eager'])->getImgAttributes();
+
+		$this->assertStringContainsString('image-400x225', $attributes['src']);
+		$this->assertStringContainsString('800w', $attributes['srcset']);
+		$this->assertNull($attributes['data-src'] ?? null);
+	}
+
+	public function testEagerImgKeepsSrcWithCustomLazyloadingAndNoSrcsetInImg()
+	{
+		$this->app([
+			'timnarr.imagex.customLazyloading' => true,
+			'timnarr.imagex.noSrcsetInImg' => true,
+		]);
+		$attributes = $this->imagex(['loading' => 'eager'])->getImgAttributes();
+
+		$this->assertStringContainsString('image-400x225', $attributes['src']);
+		$this->assertNull($attributes['srcset'] ?? null);
+	}
+
+	public function testLazyImgMovesSrcToDataSrcWithCustomLazyloading()
+	{
+		$this->app(['timnarr.imagex.customLazyloading' => true]);
+		$attributes = $this->imagex()->getImgAttributes();
+
+		$this->assertNull($attributes['src']);
+		$this->assertNull($attributes['srcset']);
+		$this->assertNull($attributes['loading']);
+		$this->assertStringContainsString('image-400x225', $attributes['data-src']);
+		$this->assertStringContainsString('800w', $attributes['data-srcset']);
+	}
+
+	public function testUserSrcOverridesLazyDefaultWithCustomLazyloading()
+	{
+		$this->app(['timnarr.imagex.customLazyloading' => true]);
+		$attributes = $this->imagex([
+			'attributes' => ['img' => ['lazy' => ['src' => 'placeholder.svg']]],
+		])->getImgAttributes();
+
+		$this->assertSame('placeholder.svg', $attributes['src']);
+	}
+
+	public function testNativeLazyImgHasSrcAndSrcset()
+	{
+		$attributes = $this->imagex()->getImgAttributes();
+
+		$this->assertSame('lazy', $attributes['loading']);
+		$this->assertStringContainsString('image-400x225', $attributes['src']);
+		$this->assertStringContainsString('800w', $attributes['srcset']);
+	}
 }

@@ -249,28 +249,6 @@ function applyUrlHandlerToAttributes(array $attributes, bool|null $useRelativeUr
 }
 
 /**
- * Handles the 'src' attribute for an image based on the loading mode and custom lazy loading settings.
- *
- * @param string $src The default source URL for the image.
- * @param array $srcAttributes Array of source attributes by loading mode.
- * @param string $loadingMode The loading mode to use for determining the 'src' attribute.
- * @param bool|null $customLazyloading Optionally override the customLazyloading setting (primarily for testing).
- * @return string|null The determined 'src' value or null if not applicable.
- */
-function srcHandler(string $src, array $srcAttributes, string $loadingMode, bool|null $customLazyloading = null): string|null
-{
-	$customLazyloading = $customLazyloading ?? kirby()->option('timnarr.imagex.customLazyloading');
-
-	if (isset($srcAttributes[$loadingMode]['src'])) {
-		return $srcAttributes[$loadingMode]['src'];
-	} elseif (!$customLazyloading) {
-		return $src;
-	} else {
-		return null;
-	}
-}
-
-/**
  * Transforms data for JSON output by converting class/style arrays to strings
  * and removing null values and empty strings.
  *

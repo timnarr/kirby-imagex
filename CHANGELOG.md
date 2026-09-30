@@ -6,9 +6,13 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 - **Bug:** Art-direction styles applied the wrong `aspect-ratio`/`object-position` when several `media` queries matched at once (e.g. `(min-width: 1200px)` followed by `(min-width: 600px)`). `<picture>` uses the first matching `<source>`, but CSS applies the last matching rule, so the later source's values won. Rules are now emitted in reverse order, and once a property is overridden by any source, every source sets it — including sources that keep the default, which previously inherited another source's value.
+- **Bug:** With `customLazyloading: true`, eager images (`loading: 'eager'`) were rendered without a `src` attribute — and, combined with `noSrcsetInImg: true`, without any image URL at all. Eager images now always get `src`.
 
 ### Added
 - Integration tests for the `Imagex` class (`tests/imagexTest.php`), running against a real Kirby instance with generated fixture images. `tests/bootstrap.php` now registers the plugin once for the whole run.
+
+### Removed
+- `srcHandler()` helper. Its only job — dropping `src` for custom lazy loading — is now a plain default attribute in `Imagex::getImgAttributes()`; user-supplied `src` overrides are handled by `mergeHTMLAttributes()` as for every other attribute.
 
 ## [0.4.0] - September 04, 2026
 

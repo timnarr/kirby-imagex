@@ -106,42 +106,6 @@ class OthersTest extends TestCase
 		getSampleElements([]);
 	}
 
-	public function testSrcHandlerInLazyMode()
-	{
-		$src = 'default.jpg';
-		$srcAttributes = ['lazy' => ['src' => 'lazy.jpg']];
-		$loadingMode = 'lazy';
-
-		$this->assertEquals('lazy.jpg', srcHandler($src, $srcAttributes, $loadingMode, false));
-	}
-
-	public function testSrcHandlerInEagerMode()
-	{
-		$src = 'default.jpg';
-		$srcAttributes = ['lazy' => ['src' => 'lazy.jpg']];
-		$loadingMode = 'eager';
-
-		$this->assertEquals('default.jpg', srcHandler($src, $srcAttributes, $loadingMode, false));
-	}
-
-	public function testSrcHandlerWithCustomLazyloadingReturnsNull()
-	{
-		$src = 'default.jpg';
-		$srcAttributes = [];
-		$loadingMode = 'lazy';
-
-		$this->assertNull(srcHandler($src, $srcAttributes, $loadingMode, true));
-	}
-
-	public function testSrcHandlerUserOverrideTakesPriorityOverCustomLazyloading()
-	{
-		$src = 'default.jpg';
-		$srcAttributes = ['lazy' => ['src' => 'lazy.jpg']];
-		$loadingMode = 'lazy';
-
-		$this->assertEquals('lazy.jpg', srcHandler($src, $srcAttributes, $loadingMode, true));
-	}
-
 	public function testIsFormatSkippableWhenSmallestIsAdjacent()
 	{
 		$formats = ['avif', 'webp'];

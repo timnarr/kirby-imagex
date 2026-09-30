@@ -362,7 +362,7 @@ class Imagex
 
 		$defaultAttributes = [
 			'shared' => [
-				'src' => srcHandler($src, $userAttributes, 'shared', $customLazyloading),
+				'src' => $src,
 				'width' => $width,
 				'height' => $height,
 				'decoding' => 'async',
@@ -371,13 +371,13 @@ class Imagex
 				'style' => $this->focus ? ['object-fit: cover;', 'object-position: ' . resolveFocusValue($image) . ';'] : [],
 			],
 			'eager' => [
-				'src' => srcHandler($src, $userAttributes, 'eager', $customLazyloading),
 				'srcset' => $useNoSrcsetInImg ? null : $srcsetValue,
 			],
 			'lazy' => [
 				'loading' => $customLazyloading ? null : 'lazy',
 				'data-src' => $customLazyloading ? $src : null,
-				'src' => srcHandler($src, $userAttributes, 'lazy', $customLazyloading),
+				// custom lazy loading libraries swap data-src into src; a placeholder can be set via attributes
+				'src' => $customLazyloading ? null : $src,
 				'data-srcset' => $useNoSrcsetInImg ? null : ($customLazyloading ? $srcsetValue : null),
 				'srcset' => $useNoSrcsetInImg ? null : (!$customLazyloading ? $srcsetValue : null),
 			],
