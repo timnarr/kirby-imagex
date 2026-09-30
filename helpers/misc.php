@@ -17,28 +17,53 @@ function normalizeFormat(string $format): string
 }
 
 /**
- * Optionally converts URLs to relative paths based on configuration settings.
- * Only processes internal URLs (URLs that start with the site URL).
+ * Optionally converts URLs to root-relative paths based on configuration settings.
+ * Only processes internal URLs (URLs on the same origin as the site).
  * For srcset strings with multiple URLs, processes each URL individually.
+ *
+ * Only the origin (scheme, host, port) is stripped — the path is kept, so
+ * subfolder installs (`https://example.com/blog/media/…` → `/blog/media/…`)
+ * and language-prefixed site URLs keep working.
  *
  * @param string $url The URL to process (can be a single URL or srcset string with multiple URLs).
  * @param bool|null $useRelativeUrls Optionally override the default setting for using relative URLs.
- * @param string|null $siteUrl Optionally override the default site URL.
- * @return string The URL, potentially converted to a relative path.
+ * @param string|null $siteUrl Optionally override the site URL whose origin is stripped (defaults to Kirby's index URL).
+ * @return string The URL, potentially converted to a root-relative path.
  */
 function urlHandler(string $url, bool|null $useRelativeUrls = null, string|null $siteUrl = null): string
 {
 	$useRelativeUrls = $useRelativeUrls ?? kirby()->option('timnarr.imagex.relativeUrls');
-	$siteUrl = $siteUrl ?? site()->url();
 
-	// Only apply relative URL conversion if the option is enabled
 	if (!$useRelativeUrls) {
 		return $url;
 	}
 
-	// Replace all occurrences of the site URL with relative paths
-	// This handles both single URLs and srcset strings with multiple URLs
-	return str_replace($siteUrl, '', $url);
+	$origin = getUrlOrigin($siteUrl ?? kirby()->url('index'));
+
+	// A relative index URL (e.g. '/') means Kirby already generates relative URLs
+	if ($origin === null) {
+		return $url;
+	}
+
+	// The lookahead keeps longer hosts sharing the prefix (example.com.cdn.net) untouched
+	return preg_replace('#' . preg_quote($origin, '#') . '(?=[/?\#\s]|$)#', '', $url);
+}
+
+/**
+ * Extracts the origin (scheme, host and optional port) from an absolute URL.
+ *
+ * @param string $url The URL to parse.
+ * @return string|null The origin (e.g. 'https://example.com:8080') or null for relative URLs.
+ */
+function getUrlOrigin(string $url): string|null
+{
+	$parts = parse_url($url);
+
+	if (empty($parts['scheme']) || empty($parts['host'])) {
+		return null;
+	}
+
+	return $parts['scheme'] . '://' . $parts['host'] . (isset($parts['port']) ? ':' . $parts['port'] : '');
 }
 
 /**

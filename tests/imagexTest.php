@@ -34,7 +34,7 @@ class ImagexTest extends TestCase
 	 * Boots a fresh Kirby instance with srcset presets for all default formats.
 	 * `$options` are merged into the config options (flat keys, e.g. 'timnarr.imagex.formats').
 	 */
-	private function app(array $options = []): App
+	private function app(array $options = [], string $indexUrl = 'https://example.com'): App
 	{
 		$preset = fn (string|null $format = null) => [
 			'400w' => array_filter(['width' => 400, 'format' => $format]),
@@ -43,7 +43,7 @@ class ImagexTest extends TestCase
 
 		return new App([
 			'roots' => ['index' => $this->root],
-			'urls' => ['index' => 'https://example.com'],
+			'urls' => ['index' => $indexUrl],
 			'options' => [
 				'thumbs' => ['srcsets' => [
 					'default' => $preset(),
@@ -180,5 +180,15 @@ class ImagexTest extends TestCase
 		$this->assertSame('lazy', $attributes['loading']);
 		$this->assertStringContainsString('image-400x225', $attributes['src']);
 		$this->assertStringContainsString('800w', $attributes['srcset']);
+	}
+
+	public function testRelativeUrlsKeepSubfolderPath()
+	{
+		$this->app(['timnarr.imagex.relativeUrls' => true], 'https://example.com/blog');
+
+		$attributes = $this->imagex()->getImgAttributes();
+
+		$this->assertStringStartsWith('/blog/media/', $attributes['src']);
+		$this->assertStringNotContainsString('https://', $attributes['srcset']);
 	}
 }

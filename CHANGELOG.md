@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - **Bug:** Art-direction styles applied the wrong `aspect-ratio`/`object-position` when several `media` queries matched at once (e.g. `(min-width: 1200px)` followed by `(min-width: 600px)`). `<picture>` uses the first matching `<source>`, but CSS applies the last matching rule, so the later source's values won. Rules are now emitted in reverse order, and once a property is overridden by any source, every source sets it — including sources that keep the default, which previously inherited another source's value.
 - **Bug:** With `customLazyloading: true`, eager images (`loading: 'eager'`) were rendered without a `src` attribute — and, combined with `noSrcsetInImg: true`, without any image URL at all. Eager images now always get `src`.
+- **Bug:** `relativeUrls: true` produced broken or absolute URLs on subfolder installs and multi-language sites. It stripped the full `site()->url()` — which includes the subfolder (`/blog/media/…` became `/media/…`) and, on multi-language sites, the language prefix (so nothing matched). Only the origin of Kirby's index URL is stripped now. Hosts that merely share the prefix (`example.com.cdn.net`) are no longer mangled.
 
 ### Added
 - Integration tests for the `Imagex` class (`tests/imagexTest.php`), running against a real Kirby instance with generated fixture images. `tests/bootstrap.php` now registers the plugin once for the whole run.

@@ -140,6 +140,40 @@ class OthersTest extends TestCase
 		$this->assertEquals($expected, urlHandler($srcset, true, 'http://example.com'));
 	}
 
+	public function testUrlHandlerKeepsSubfolderPath()
+	{
+		$this->assertEquals('/blog/media/image.jpg', urlHandler('https://example.com/blog/media/image.jpg', true, 'https://example.com/blog'));
+	}
+
+	public function testUrlHandlerKeepsPathForLanguagePrefixedSiteUrl()
+	{
+		// multi-language sites: site()->url() is 'https://example.com/en', media URLs have no language prefix
+		$this->assertEquals('/media/image.jpg', urlHandler('https://example.com/media/image.jpg', true, 'https://example.com/en'));
+	}
+
+	public function testUrlHandlerIgnoresHostsSharingThePrefix()
+	{
+		$this->assertEquals('https://example.com.cdn.net/image.jpg', urlHandler('https://example.com.cdn.net/image.jpg', true, 'https://example.com'));
+	}
+
+	public function testUrlHandlerRespectsPort()
+	{
+		$this->assertEquals('/image.jpg', urlHandler('http://localhost:8000/image.jpg', true, 'http://localhost:8000'));
+		$this->assertEquals('http://localhost:9000/image.jpg', urlHandler('http://localhost:9000/image.jpg', true, 'http://localhost:8000'));
+	}
+
+	public function testUrlHandlerWithRelativeSiteUrl()
+	{
+		$this->assertEquals('/media/image.jpg', urlHandler('/media/image.jpg', true, '/'));
+	}
+
+	public function testGetUrlOrigin()
+	{
+		$this->assertSame('https://example.com', getUrlOrigin('https://example.com/blog/'));
+		$this->assertSame('http://localhost:8000', getUrlOrigin('http://localhost:8000'));
+		$this->assertNull(getUrlOrigin('/'));
+	}
+
 	public function testResolveCompareFormatsWeightsMobilePreset()
 	{
 		$result = resolveCompareFormatsWeights('mobile');
