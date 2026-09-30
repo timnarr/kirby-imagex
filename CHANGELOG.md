@@ -8,7 +8,7 @@ All notable changes to this project will be documented in this file.
 - **Bug:** The `imagex-picture-json` snippet crashed with `Call to undefined function transformForJson()`: the helper lives in the `TimNarr` namespace, but the snippet called it unqualified. It now imports the function.
 - **Bug:** Art-direction styles applied the wrong `aspect-ratio`/`object-position` when several `media` queries matched at once (e.g. `(min-width: 1200px)` followed by `(min-width: 600px)`). `<picture>` uses the first matching `<source>`, but CSS applies the last matching rule, so the later source's values won. Rules are now emitted in reverse order, and once a property is overridden by any source, every source sets it — including sources that keep the default, which previously inherited another source's value.
 - **Bug:** With `customLazyloading: true`, eager images (`loading: 'eager'`) were rendered without a `src` attribute — and, combined with `noSrcsetInImg: true`, without any image URL at all. Eager images now always get `src`.
-- **Bug:** `relativeUrls: true` produced broken or absolute URLs on subfolder installs and multi-language sites. It stripped the full `site()->url()` — which includes the subfolder (`/blog/media/…` became `/media/…`) and, on multi-language sites, the language prefix (so nothing matched). Only the origin of Kirby's index URL is stripped now. Hosts that merely share the prefix (`example.com.cdn.net`) are no longer mangled.
+- **Bug:** `relativeUrls: true` produced broken or absolute URLs on subfolder installs and multi-language sites. It stripped the full `site()->url()` — which includes the subfolder (`/blog/media/…` became `/media/…`) and, on multi-language sites, the language prefix (so nothing matched). Only the origin of Kirby's index URL is stripped now (new `getUrlOrigin()` helper). Hosts that merely share the prefix (`example.com.cdn.net`) are no longer mangled.
 - **Bug:** Kirby's shorthand srcset presets (`'default' => [400, 800]` or `[400 => '1x', 800 => '2x']`) crashed with `Cannot use a scalar value as an array`. They are now normalized via the new `normalizeSrcsetPreset()` helper, which also throws a descriptive error for empty presets or entries without a positive `width`.
 - `ratio: 'intrinsic'` on an image without readable dimensions (e.g. SVG) now throws a descriptive `InvalidArgumentException` naming the file instead of a bare `DivisionByZeroError`.
 - Both snippets now report a missing `image` with the plugin's own `Missing required option: image` error instead of a preceding PHP "undefined variable" warning.
@@ -24,14 +24,12 @@ All notable changes to this project will be documented in this file.
 - The main `ratio` is now validated at construction time instead of on first render.
 - The plugin options `formats`, `customLazyloading`, `addOriginalFormatAsSource` and `noSrcsetInImg` are type-checked at construction time, throwing a descriptive `InvalidArgumentException` instead of a `TypeError`.
 - All srcset preset errors (missing `thumbs.srcsets`, missing base or format preset, malformed preset) and the `compareFormats` "not enough formats" error are now thrown at construction time as `InvalidArgumentException`. Previously a missing `thumbs.srcsets` config crashed with a `TypeError`, and some errors only surfaced during rendering.
+- All PHP files declare `strict_types`, enforced by php-cs-fixer's `declare_strict_types` rule.
 
 ### Performance
 - Ratio-based srcset presets are memoized per `Imagex` instance instead of going through the persistent cache. They were resolved for the `<img>`, every format and every art-directed source — each time re-validating the config, JSON-encoding and hashing it, and reading a cache file for what is plain arithmetic. Existing `srcset-config-*` cache entries are no longer used and can be removed by flushing the plugin cache.
 - The `compareFormats` result is memoized per image and ratio on top of the persistent cache; it was looked up once per format for every art-directed source.
 - Srcset presets are resolved, normalized and validated once in the constructor (previously checked twice and rebuilt on every call).
-
-### Changed (internal)
-- All PHP files declare `strict_types`, enforced by php-cs-fixer's `declare_strict_types` rule.
 
 ### Removed
 - `srcHandler()` helper. Its only job — dropping `src` for custom lazy loading — is now a plain default attribute in `Imagex::getImgAttributes()`; user-supplied `src` overrides are handled by `mergeHTMLAttributes()` as for every other attribute.

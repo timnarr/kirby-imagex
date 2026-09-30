@@ -55,12 +55,14 @@ return [
 | `formats` | `['avif', 'webp']` | Array with Strings | Define the modern image formats you want to use. ⚠️ Order matters here! You should go from the most to less modern format. The order in this array also affects the `compareFormats` snippet-option. [Read more about why the correct order is important](#why-order-matters). You **shouldn't add the original image format here** like PNG or JPEG. |
 | `addOriginalFormatAsSource` | `false` | Boolean | Adds a `<source>` element for the image's original format (e.g. JPEG, PNG). Useful when modern formats like AVIF or WebP can't be used, but you still need art-directed picture sources at different breakpoints / media conditions. |
 | `noSrcsetInImg` | `false` | Boolean | If active this will only output the `src` attribute in the `<img>` tag. The smallest size from the given srcset-preset is used and the `srcset` attribute is omitted. |
-| `relativeUrls` | `false` | Boolean | Output relative image URLs everywhere when active. |
+| `relativeUrls` | `false` | Boolean | Output root-relative image URLs (`/media/…`) when active. Only the origin of your site URL is removed, so subfolder installs and multi-language sites keep working. |
 
 ## Adjust Kirby's Thumbs Config and Add Srcset Presets
 The srcset configuration is still set up as you know it from Kirby, [like described here](https://getkirby.com/docs/reference/objects/cms/file/srcset#define-presets__extended-example).
 
 Set your srcset preset, like `my-srcset`, and define only the `width` — no `height` needed. Imagex calculates the height from the `ratio` you pass to the snippet, so one preset works for any aspect ratio. Switching from `16/9` to `1/1` is a one-line change, no new presets needed.
+
+Kirby's shorthand forms work too: `'my-srcset' => [400, 800, 1200]` or `[400 => '1x', 800 => '2x']`.
 
 If you use AVIF and/or WebP, add a separate preset per format by copying the base preset, appending `-{format}` to the name, and setting the `format` option. This gives you full control over quality per format.
 
@@ -168,7 +170,7 @@ Only `image` is required — everything else has sane defaults.
 | `srcset` | `'default'` | String | Name of the srcset preset (e.g. `'my-srcset'`, without format suffix), configured in [Kirby's config](#adjust-kirbys-thumbs-config-and-add-srcset-presets). Imagex automatically resolves the format-specific variants (`my-srcset-webp`, `my-srcset-avif`) — you only pass the base name. |
 | `ratio` | `'intrinsic'` | String | Set the desired aspect ratio here. Can be omitted, default is `intrinsic`, which means the ratio of the provided image is used. Pass your ratio in this format: `x/y`. |
 | `attributes` | `[]` | Array | HTML attributes grouped by element: `picture`, `img`, `sources`. Each can be flat (auto-converted to `shared`) or use the full `shared`/`eager`/`lazy` structure for loading-mode-specific attributes. |
-| `artDirection` | `[]` | Array | Art-directed sources with `media`, `ratio`, `image`, and `attributes` options. Order matters! Browsers use the first `<source>` with a matching media condition. Order width-based media queries from large to small. Per entry: `image` is optional — omit it to reuse the main `image` at a different ratio without needing a second file. `ratio` is optional — falls back to `'intrinsic'` (not the main `ratio`). [Read more about art-directed `<img>` styles here](#art-directed-img-styles). |
+| `artDirection` | `[]` | Array | Art-directed sources with `media` (required), `ratio`, `image`, and `attributes` options. Other keys throw an error. Order matters! Browsers use the first `<source>` with a matching media condition. Order width-based media queries from large to small. Per entry: `image` is optional — omit it to reuse the main `image` at a different ratio without needing a second file. `ratio` is optional — falls back to `'intrinsic'` (not the main `ratio`). [Read more about art-directed `<img>` styles here](#art-directed-img-styles). |
 | `compareFormats` | `false` | Boolean | In some cases AVIF files can be larger than WebP. If this option is set to true, it enables a dynamic size comparison between the specified image formats. ⚠️ The `formats` order in `config.php` matters here! The comparison weighting can be configured globally via `compareFormatsWeights`. [Read more about it here](#dynamic-format-size-handling). |
 | `focus` | `false` | Boolean | Applies the image's Kirby `focus` field (the same one `thumb(['crop' => true])` already uses for cropping) as `object-position` on the `<img>`, plus `object-fit: cover`. Falls back to `'center'` when no focus point is set. [Read more here](#focus-point-support). |
 | `nonce` | `null` | String | CSP nonce for the generated `<style>` element. With a nonce set, the `focus` styles are also moved from the `<img>`'s `style` attribute into that `<style>` element, so the output works with a strict Content Security Policy. [Read more here](#content-security-policy-csp). |
@@ -312,11 +314,11 @@ $options = [
 <style>@media (min-width: 800px) { #imagex-a1b2c3d4 { aspect-ratio: 21 / 9 !important; object-position: 30% 60% !important; } }</style>
 <picture>
   <!-- sources ... -->
-  <img id="imagex-a1b2c3d4" style="aspect-ratio: 3 / 2; object-fit: cover; object-position: 40% 50%;" ...>
+  <img id="imagex-a1b2c3d4" style="object-fit: cover; object-position: 40% 50%;" ...>
 </picture>
 ```
 
-A source only produces a rule when it actually changes something — a source that only adds a `media` condition without a different `ratio`/`image` produces none. When using `imagex-picture-json` for headless output, the same CSS string is available under the top-level `artDirectionStyles` key (omitted when empty) so the consuming frontend can inject it itself.
+Rules are only generated when at least one source actually changes the `aspect-ratio` or `object-position` — if none does, there's no `<style>` element and no generated `id`. Once one source changes a property, every source gets a rule for it, output in reverse order: several media queries can match at once, and CSS applies the last matching rule while `<picture>` uses the first matching `<source>`. When using `imagex-picture-json` for headless output, the same CSS string is available under the top-level `artDirectionStyles` key (omitted when empty) so the consuming frontend can inject it itself.
 
 ### Content Security Policy (CSP)
 Imagex can output inline CSS in two places: the `<style>` element with [art-directed `<img>` styles](#art-directed-img-styles), and the `<img>`'s `style` attribute for [`focus`](#focus-point-support). A strict CSP (`style-src` without `'unsafe-inline'`) blocks both.
@@ -382,10 +384,11 @@ $options = [
 See the [thumbRatio example](/docs/examples/thumb-ratio.md) for more details.
 
 ## Cache
-Imagex caches two types of expensive calculations:
+When `compareFormats` is enabled, the result of the weighted format size comparison is cached per image. The cache key includes the image ID, its last-modified timestamp, the ratio, the srcset preset, and the active formats — so a new entry is used automatically whenever the image is replaced or updated.
 
-- **Srcset config**: The calculated heights per srcset entry (based on width and ratio) are cached so repeated use of the same preset/ratio combination avoids redundant work.
-- **Format comparison**: When `compareFormats` is enabled, the result of the weighted format size comparison is cached per image. The cache key includes the image ID, its last-modified timestamp, the ratio, the srcset preset, and the active formats — so the cache automatically invalidates whenever the image is replaced or updated.
+Cache entries don't expire. Stale entries (e.g. for replaced or deleted images) stay on disk until the cache is flushed, e.g. by deleting `site/cache/<host>/timnarr/imagex` or calling `kirby()->cache('timnarr.imagex')->flush()`.
+
+Srcset heights (derived from width and ratio) are plain arithmetic and are only memoized per `Imagex` instance, not cached persistently.
 
 ## Performance Improvements for Critical Images
 Imagex provides features like Priority Hints for improving the loading times of critical images.
@@ -432,7 +435,7 @@ Imagex uses a **weighted multi-sample approach** to determine the smallest forma
 4. **Combining with `addOriginalFormatAsSource`**: When `addOriginalFormatAsSource` is enabled, the original format (e.g. JPEG or PNG) is included in the comparison alongside the modern formats. This can be useful when your source images are already well-optimised and a modern format isn't guaranteed to be smaller. Note that the original format always uses the base srcset preset — make sure its quality settings are comparable to the modern format presets, otherwise the comparison may be skewed.
 
 ## Roadmap / Ideas
-- [ ] Add tests for Imagex class
+- [x] Add tests for Imagex class
 - [ ] Use Preload Resource Hints?! See [feature-branch](https://github.com/timnarr/kirby-imagex/tree/feature/preload-links)
 
 ## License
