@@ -17,6 +17,9 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - **BREAKING:** Attributes that mix flat keys with `shared`/`eager`/`lazy` keys (e.g. `['class' => 'x', 'lazy' => [...]]`) now throw an `InvalidArgumentException`. Previously the flat keys were dropped silently. Migration: move the flat keys into `shared`.
+- **BREAKING:** `artDirection` entries are validated at construction time. Each entry must have a non-empty `media` string (a `<source>` without `media` always matches, so the default image was never used), only the keys `media`, `ratio`, `image` and `attributes` are accepted, `image` must be a `Kirby\Cms\File` or `null` (still falls back to the main image), and `ratio` must be valid. Migration: add a `media` condition to every entry and fix typos in keys.
+- The main `ratio` is now validated at construction time instead of on first render.
+- The plugin options `formats`, `customLazyloading`, `addOriginalFormatAsSource` and `noSrcsetInImg` are type-checked at construction time, throwing a descriptive `InvalidArgumentException` instead of a `TypeError`.
 
 ### Removed
 - `srcHandler()` helper. Its only job — dropping `src` for custom lazy loading — is now a plain default attribute in `Imagex::getImgAttributes()`; user-supplied `src` overrides are handled by `mergeHTMLAttributes()` as for every other attribute.

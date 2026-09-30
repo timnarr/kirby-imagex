@@ -89,19 +89,101 @@ class Imagex
 		$this->pictureAttributes = normalizeAttributesStructure($attributes['picture'] ?? []);
 		$this->sourcesAttributes = normalizeAttributesStructure($attributes['sources'] ?? []);
 
-		// Assign art direction
-		$this->artDirection = $options['artDirection'] ?? [];
+		// Resolving the ratio validates its format (and dimensions for 'intrinsic') up front
+		getAspectRatio($this->ratio, $this->image);
+
+		$this->artDirection = $this->validateArtDirection($options['artDirection'] ?? []);
 
 		// Cache kirby instance and assign options
 		$this->kirby = kirby();
-		$this->customLazyloading = $this->kirby->option('timnarr.imagex.customLazyloading');
+		$this->customLazyloading = $this->getBoolOption('customLazyloading');
 		$this->compareFormatsWeights = resolveCompareFormatsWeights($this->kirby->option('timnarr.imagex.compareFormatsWeights'));
-		$this->formats = $this->kirby->option('timnarr.imagex.formats');
-		$this->addOriginalFormatAsSource = $this->kirby->option('timnarr.imagex.addOriginalFormatAsSource');
-		$this->noSrcsetInImg = $this->kirby->option('timnarr.imagex.noSrcsetInImg');
+		$this->addOriginalFormatAsSource = $this->getBoolOption('addOriginalFormatAsSource');
+		$this->noSrcsetInImg = $this->getBoolOption('noSrcsetInImg');
 		$this->thumbsSrcsets = $this->kirby->option('thumbs.srcsets');
 
+		$formats = $this->kirby->option('timnarr.imagex.formats');
+		$invalidFormats = is_array($formats) ? array_filter($formats, fn ($format) => !is_string($format) || $format === '') : null;
+
+		if ($invalidFormats !== []) {
+			throw new InvalidArgumentException("[kirby-imagex] Option 'timnarr.imagex.formats' must be an array of format names (e.g. ['avif', 'webp']).");
+		}
+
+		$this->formats = $formats;
+
 		$this->validateSrcsetPresets();
+	}
+
+	/**
+	 * Reads a boolean plugin option, throwing a descriptive error for other types.
+	 *
+	 * @param string $name Option name without the 'timnarr.imagex.' prefix.
+	 * @return bool The option value.
+	 * @throws InvalidArgumentException If the option is not a boolean.
+	 */
+	private function getBoolOption(string $name): bool
+	{
+		$value = $this->kirby->option('timnarr.imagex.' . $name);
+
+		if (!is_bool($value)) {
+			throw new InvalidArgumentException("[kirby-imagex] Option 'timnarr.imagex.{$name}' must be a boolean. Got: " . get_debug_type($value));
+		}
+
+		return $value;
+	}
+
+	/**
+	 * Validates the shape of every artDirection entry.
+	 *
+	 * Each entry needs a `media` condition: a <source> without one always matches,
+	 * so the default image (and every later source) would never be used.
+	 *
+	 * @param mixed $artDirection The artDirection option as passed in.
+	 * @return array The validated artDirection sources.
+	 * @throws InvalidArgumentException If an entry is malformed.
+	 */
+	private function validateArtDirection(mixed $artDirection): array
+	{
+		if (!is_array($artDirection)) {
+			throw new InvalidArgumentException("[kirby-imagex] Option 'artDirection' must be an array of sources.");
+		}
+
+		$allowedKeys = ['media', 'ratio', 'image', 'attributes'];
+
+		foreach ($artDirection as $index => $source) {
+			$prefix = "[kirby-imagex] artDirection[{$index}]";
+
+			if (!is_array($source)) {
+				throw new InvalidArgumentException("{$prefix} must be an array with the keys: " . implode(', ', $allowedKeys));
+			}
+
+			$unknownKeys = array_diff(array_keys($source), $allowedKeys);
+
+			if (!empty($unknownKeys)) {
+				throw new InvalidArgumentException("{$prefix} has unknown key(s): " . implode(', ', $unknownKeys) . '. Allowed: ' . implode(', ', $allowedKeys));
+			}
+
+			if (!is_string($source['media'] ?? null) || trim($source['media']) === '') {
+				throw new InvalidArgumentException("{$prefix} is missing 'media' (e.g. '(min-width: 800px)'). Without it the source always matches and the default image is never used.");
+			}
+
+			if (isset($source['ratio']) && !is_string($source['ratio'])) {
+				throw new InvalidArgumentException("{$prefix}: 'ratio' must be a string (e.g. \"16/9\" or \"intrinsic\").");
+			}
+
+			// null is allowed and falls back to the main image, e.g. for an optional content field
+			if (isset($source['image']) && !($source['image'] instanceof File)) {
+				throw new InvalidArgumentException("{$prefix}: 'image' must be an instance of Kirby\\Cms\\File or null.");
+			}
+
+			if (isset($source['attributes']) && !is_array($source['attributes'])) {
+				throw new InvalidArgumentException("{$prefix}: 'attributes' must be an array.");
+			}
+
+			getAspectRatio($source['ratio'] ?? 'intrinsic', $source['image'] ?? $this->image);
+		}
+
+		return $artDirection;
 	}
 
 	/**
@@ -447,10 +529,6 @@ class Imagex
 		$sources = [];
 
 		foreach ($this->artDirection as $source) {
-			if (empty($source['media'])) {
-				continue;
-			}
-
 			$sourceImage = $source['image'] ?? $this->image;
 			$sources[] = [
 				'media' => $source['media'],

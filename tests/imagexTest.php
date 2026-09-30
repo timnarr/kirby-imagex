@@ -227,4 +227,81 @@ class ImagexTest extends TestCase
 
 		$this->assertStringContainsString('#\31 -hero {', $css);
 	}
+
+	public function testArtDirectionSourceWithoutMediaThrows()
+	{
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage("artDirection[0] is missing 'media'");
+
+		$this->imagex(['artDirection' => [['ratio' => '1/1']]]);
+	}
+
+	public function testArtDirectionSourceWithUnknownKeyThrows()
+	{
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('artDirection[0] has unknown key(s): ratios');
+
+		$this->imagex(['artDirection' => [['media' => '(min-width: 800px)', 'ratios' => '1/1']]]);
+	}
+
+	public function testArtDirectionSourceWithInvalidImageThrows()
+	{
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage("artDirection[0]: 'image' must be an instance of Kirby\\Cms\\File or null.");
+
+		$this->imagex(['artDirection' => [['media' => '(min-width: 800px)', 'image' => 'landscape.jpg']]]);
+	}
+
+	public function testArtDirectionSourceWithInvalidRatioThrowsOnConstruction()
+	{
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('Invalid ratio format');
+
+		$this->imagex(['artDirection' => [['media' => '(min-width: 800px)', 'ratio' => '16:9']]]);
+	}
+
+	public function testArtDirectionSourceWithNullImageFallsBackToMainImage()
+	{
+		$sources = $this->imagex(['artDirection' => [
+			['media' => '(min-width: 800px)', 'ratio' => '1/1', 'image' => null],
+		]])->getPictureSources();
+
+		$this->assertStringContainsString('image-400x400-crop', $sources[0]['srcset']);
+	}
+
+	public function testInvalidRatioThrowsOnConstruction()
+	{
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('Invalid ratio format');
+
+		$this->imagex(['ratio' => '16:9']);
+	}
+
+	public function testNonBooleanPluginOptionThrows()
+	{
+		$this->app(['timnarr.imagex.customLazyloading' => 'yes']);
+
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage("Option 'timnarr.imagex.customLazyloading' must be a boolean. Got: string");
+
+		$this->imagex();
+	}
+
+	public function testInvalidFormatsOptionThrows()
+	{
+		$this->app(['timnarr.imagex.formats' => 'avif']);
+
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage("Option 'timnarr.imagex.formats' must be an array of format names");
+
+		$this->imagex();
+	}
+
+	public function testNonArrayArtDirectionThrows()
+	{
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage("Option 'artDirection' must be an array of sources.");
+
+		$this->imagex(['artDirection' => '(min-width: 800px)']);
+	}
 }
