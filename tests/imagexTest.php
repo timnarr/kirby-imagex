@@ -191,4 +191,19 @@ class ImagexTest extends TestCase
 		$this->assertStringStartsWith('/blog/media/', $attributes['src']);
 		$this->assertStringNotContainsString('https://', $attributes['srcset']);
 	}
+
+	public function testShorthandSrcsetPresetsAreSupported()
+	{
+		$this->app(['thumbs' => ['srcsets' => [
+			'default' => [400, 800],
+			'default-webp' => ['400w' => ['width' => 400, 'format' => 'webp']],
+			'default-avif' => ['400w' => ['width' => 400, 'format' => 'avif']],
+		]]]);
+
+		$attributes = $this->imagex()->getImgAttributes();
+
+		$this->assertSame(400, $attributes['width']);
+		$this->assertSame(225, $attributes['height']);
+		$this->assertStringContainsString('image-800x450-crop.jpg 800w', $attributes['srcset']);
+	}
 }

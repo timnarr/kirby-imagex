@@ -198,11 +198,11 @@ class Imagex
 		}
 
 		$srcsetName = $this->srcset;
-		$srcsetPreset[$this->getImageFormat()] = $allSrcsetPresets[$srcsetName];
+		$srcsetPreset[$this->getImageFormat()] = normalizeSrcsetPreset($allSrcsetPresets[$srcsetName], $srcsetName);
 
 		foreach ($this->getFormats() as $format) {
 			if ($format === 'originalformat') {
-				$srcsetPreset[$format] = $allSrcsetPresets[$srcsetName];
+				$srcsetPreset[$format] = normalizeSrcsetPreset($allSrcsetPresets[$srcsetName], $srcsetName);
 			} else {
 				// Check if specific format configuration exists
 				if (!isset($allSrcsetPresets[$srcsetName . '-' . $format])) {
@@ -211,7 +211,7 @@ class Imagex
 					throw new Exception("[kirby-imagex] Srcset configuration '{$srcsetName}-{$format}' not found. Available presets: {$available}");
 				}
 
-				$srcsetPreset[$format] = $allSrcsetPresets[$srcsetName . '-' . $format];
+				$srcsetPreset[$format] = normalizeSrcsetPreset($allSrcsetPresets[$srcsetName . '-' . $format], $srcsetName . '-' . $format);
 			}
 		}
 

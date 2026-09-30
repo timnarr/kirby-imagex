@@ -2,6 +2,7 @@
 
 namespace TimNarr;
 
+use Kirby\Exception\InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
 class SrcsetTest extends TestCase
@@ -58,5 +59,43 @@ class SrcsetTest extends TestCase
 		$result = addRatioBasedHeightToSrcsetPreset($srcset, $ratioX, $ratioY);
 
 		$this->assertEquals($expected, $result);
+	}
+
+	public function testNormalizeSrcsetPresetWidthList()
+	{
+		$this->assertSame(
+			['400w' => ['width' => 400], '800w' => ['width' => 800]],
+			normalizeSrcsetPreset([400, 800], 'default')
+		);
+	}
+
+	public function testNormalizeSrcsetPresetWidthToDescriptor()
+	{
+		$this->assertSame(
+			['1x' => ['width' => 400], '2x' => ['width' => 800]],
+			normalizeSrcsetPreset([400 => '1x', 800 => '2x'], 'default')
+		);
+	}
+
+	public function testNormalizeSrcsetPresetLongFormIsUnchanged()
+	{
+		$preset = ['400w' => ['width' => 400, 'quality' => 80, 'format' => 'webp']];
+
+		$this->assertSame($preset, normalizeSrcsetPreset($preset, 'default'));
+	}
+
+	public function testNormalizeSrcsetPresetThrowsWithoutWidth()
+	{
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage("'default' entry '400w' needs a positive 'width'");
+
+		normalizeSrcsetPreset(['400w' => ['quality' => 80]], 'default');
+	}
+
+	public function testNormalizeSrcsetPresetThrowsWhenEmpty()
+	{
+		$this->expectException(InvalidArgumentException::class);
+
+		normalizeSrcsetPreset([], 'default');
 	}
 }
