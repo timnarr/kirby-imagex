@@ -217,4 +217,14 @@ class ImagexTest extends TestCase
 
 		getAspectRatio('intrinsic', App::instance()->page('test')->file('logo.svg'));
 	}
+
+	public function testArtDirectionStylesEscapeUserId()
+	{
+		$css = $this->imagex([
+			'attributes' => ['img' => ['id' => '1-hero']],
+			'artDirection' => [['media' => '(min-width: 800px)', 'ratio' => '1/1']],
+		])->getArtDirectionStyles();
+
+		$this->assertStringContainsString('#\31 -hero {', $css);
+	}
 }

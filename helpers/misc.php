@@ -244,6 +244,37 @@ function isValidCssPositionValue(string $value): bool
 }
 
 /**
+ * Escapes a string for use as a CSS identifier (e.g. in an `#id` selector),
+ * following the CSSOM `CSS.escape()` algorithm. Additionally hex-escapes
+ * `<` and `>`, so the result can't terminate a surrounding `<style>` element.
+ *
+ * @param string $value The raw identifier (e.g. an element id).
+ * @return string The escaped identifier.
+ */
+function escapeCssIdentifier(string $value): string
+{
+	$chars = mb_str_split($value);
+	$hexEscape = fn (string $char) => '\\' . dechex(mb_ord($char)) . ' ';
+	$escaped = '';
+
+	foreach ($chars as $index => $char) {
+		$codePoint = mb_ord($char);
+		$isDigit = ctype_digit($char);
+
+		$escaped .= match (true) {
+			$codePoint === 0 => "\u{FFFD}",
+			$codePoint <= 0x1F, $codePoint === 0x7F, $char === '<', $char === '>' => $hexEscape($char),
+			$index === 0 && $isDigit, $index === 1 && $isDigit && $chars[0] === '-' => $hexEscape($char),
+			$index === 0 && $char === '-' && count($chars) === 1 => '\\-',
+			$codePoint >= 0x80, $char === '-', $char === '_', ctype_alnum($char) => $char,
+			default => '\\' . $char,
+		};
+	}
+
+	return $escaped;
+}
+
+/**
  * Applies urlHandler to all URL-based attributes in an attributes array.
  * Only processes if relativeUrls option is enabled.
  *

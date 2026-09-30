@@ -174,6 +174,25 @@ class OthersTest extends TestCase
 		$this->assertNull(getUrlOrigin('/'));
 	}
 
+	public function testEscapeCssIdentifierKeepsPlainIdentifiers()
+	{
+		$this->assertSame('hero-image_1', escapeCssIdentifier('hero-image_1'));
+		$this->assertSame('bild-ä', escapeCssIdentifier('bild-ä'));
+	}
+
+	public function testEscapeCssIdentifierEscapesLeadingDigits()
+	{
+		$this->assertSame('\31 hero', escapeCssIdentifier('1hero'));
+		$this->assertSame('-\31 a', escapeCssIdentifier('-1a'));
+		$this->assertSame('\-', escapeCssIdentifier('-'));
+	}
+
+	public function testEscapeCssIdentifierEscapesSpecialCharacters()
+	{
+		$this->assertSame('hero\.main\:hover', escapeCssIdentifier('hero.main:hover'));
+		$this->assertSame('a\3c \/style\3e ', escapeCssIdentifier('a</style>'));
+	}
+
 	public function testResolveCompareFormatsWeightsMobilePreset()
 	{
 		$result = resolveCompareFormatsWeights('mobile');

@@ -403,7 +403,7 @@ class Imagex
 		$userId = $this->imgAttributes[$this->loading]['id'] ?? $this->imgAttributes['shared']['id'] ?? null;
 
 		if ($userId) {
-			return $userId;
+			return (string)$userId;
 		}
 
 		return $this->artDirectionId ??= 'imagex-' . substr(hash('xxh3', uniqid('', true)), 0, 8);
@@ -472,7 +472,7 @@ class Imagex
 			return $this->artDirectionStylesCache = '';
 		}
 
-		$selector = '#' . $this->resolveArtDirectionId();
+		$selector = '#' . escapeCssIdentifier($this->resolveArtDirectionId());
 		$rules = [];
 
 		// <picture> uses the first matching <source>, whereas CSS applies the last
