@@ -15,6 +15,9 @@ All notable changes to this project will be documented in this file.
 ### Added
 - Integration tests for the `Imagex` class (`tests/imagexTest.php`), running against a real Kirby instance with generated fixture images. `tests/bootstrap.php` now registers the plugin once for the whole run.
 
+### Changed
+- **BREAKING:** Attributes that mix flat keys with `shared`/`eager`/`lazy` keys (e.g. `['class' => 'x', 'lazy' => [...]]`) now throw an `InvalidArgumentException`. Previously the flat keys were dropped silently. Migration: move the flat keys into `shared`.
+
 ### Removed
 - `srcHandler()` helper. Its only job — dropping `src` for custom lazy loading — is now a plain default attribute in `Imagex::getImgAttributes()`; user-supplied `src` overrides are handled by `mergeHTMLAttributes()` as for every other attribute.
 

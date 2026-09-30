@@ -2,6 +2,7 @@
 
 namespace TimNarr;
 
+use Kirby\Exception\InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
 class HtmlAttributesTest extends TestCase
@@ -305,4 +306,11 @@ class HtmlAttributesTest extends TestCase
 		$this->assertEquals($expected, $result);
 	}
 
+	public function testNormalizeAttributesStructureThrowsOnMixedStructure()
+	{
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage("Attributes mix flat keys ('class', 'alt') with loading mode keys");
+
+		normalizeAttributesStructure(['class' => 'x', 'alt' => 'Text', 'lazy' => ['class' => 'y']]);
+	}
 }

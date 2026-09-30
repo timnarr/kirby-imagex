@@ -150,7 +150,8 @@ function mergeHTMLAttributes(array $attributes, string $loadingMode, array $defa
  * ['shared' => ['alt' => 'text', 'class' => ['my-class']], 'eager' => [], 'lazy' => []]
  *
  * If the array already has 'shared', 'eager', or 'lazy' keys, it's returned as-is
- * with missing keys filled in as empty arrays.
+ * with missing keys filled in as empty arrays. Mixing both styles throws, since
+ * the flat keys would otherwise be dropped silently.
  *
  * 'class' and 'style' strings are auto-converted to arrays:
  * - 'class' => 'foo bar'  becomes  'class' => ['foo', 'bar']
@@ -158,6 +159,7 @@ function mergeHTMLAttributes(array $attributes, string $loadingMode, array $defa
  *
  * @param array $attributes User-provided attributes (flat or structured)
  * @return array Normalized attributes with shared/eager/lazy structure
+ * @throws InvalidArgumentException If flat and loading mode keys are mixed.
  */
 function normalizeAttributesStructure(array $attributes): array
 {
@@ -167,6 +169,14 @@ function normalizeAttributesStructure(array $attributes): array
 	$hasLoadingModeKeys = !empty(array_intersect(array_keys($attributes), $loadingModeKeys));
 
 	if ($hasLoadingModeKeys) {
+		$flatKeys = array_diff(array_keys($attributes), $loadingModeKeys);
+
+		if (!empty($flatKeys)) {
+			$flatList = implode(', ', array_map(fn ($key) => "'{$key}'", $flatKeys));
+
+			throw new InvalidArgumentException("[kirby-imagex] Attributes mix flat keys ({$flatList}) with loading mode keys ('shared', 'eager', 'lazy'). Move them into 'shared', or pass all attributes flat.");
+		}
+
 		// Already structured, just ensure all keys exist and coerce class/style
 		return [
 			'shared' => coerceClassStyleToArrays($attributes['shared'] ?? []),
