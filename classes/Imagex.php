@@ -418,8 +418,8 @@ class Imagex
 	 * focus point regardless of which source matched. This produces `@media`-scoped
 	 * `!important` rules (targeting this instance's <img> id) so the <img>'s
 	 * `aspect-ratio` and `object-position` follow whichever art-directed source
-	 * is currently active. Only sources with a `media` condition that actually
-	 * differ from the default ratio/focus produce a rule.
+	 * is currently active. A property is only emitted if at least one source
+	 * differs from the default; if none does, no CSS (and no id) is generated.
 	 *
 	 * `media` is developer-supplied CSS syntax (e.g. '(min-width: 800px)'), passed
 	 * through as-is like `ratio`/`srcset` elsewhere in Imagex — it can't be escaped
@@ -439,45 +439,64 @@ class Imagex
 			return $this->artDirectionStylesCache = '';
 		}
 
-		['x' => $defaultRatioX, 'y' => $defaultRatioY] = getAspectRatio($this->ratio, $this->image);
-		$defaultRatioCss = "{$defaultRatioX} / {$defaultRatioY}";
-		$defaultFocus = $this->focus ? resolveFocusValue($this->image) : null;
+		$defaults = [
+			'aspect-ratio' => $this->getRatioCss($this->ratio, $this->image),
+			'object-position' => $this->focus ? resolveFocusValue($this->image) : null,
+		];
 
-		$rules = [];
+		$sources = [];
 
 		foreach ($this->artDirection as $source) {
 			if (empty($source['media'])) {
 				continue;
 			}
 
-			$sourceRatio = $source['ratio'] ?? 'intrinsic';
-			$sourceImage = $source['image'] ?? null;
+			$sourceImage = $source['image'] ?? $this->image;
+			$sources[] = [
+				'media' => $source['media'],
+				'aspect-ratio' => $this->getRatioCss($source['ratio'] ?? 'intrinsic', $sourceImage),
+				'object-position' => $this->focus ? resolveFocusValue($sourceImage) : null,
+			];
+		}
 
-			['x' => $ratioX, 'y' => $ratioY] = getAspectRatio($sourceRatio, $sourceImage ?? $this->image);
-			$resolvedRatioCss = "{$ratioX} / {$ratioY}";
+		// A property only needs rules if at least one source changes it. But once it
+		// does, every source must set it: several media queries can match at once, and
+		// a source that keeps the default would otherwise inherit another source's value.
+		$properties = array_filter(
+			array_keys($defaults),
+			fn (string $property) => $defaults[$property] !== null
+				&& in_array(true, array_map(fn (array $source) => $source[$property] !== $defaults[$property], $sources), true)
+		);
 
-			$declarations = [];
+		if (empty($properties)) {
+			return $this->artDirectionStylesCache = '';
+		}
 
-			if ($resolvedRatioCss !== $defaultRatioCss) {
-				$declarations[] = "aspect-ratio: {$resolvedRatioCss} !important;";
-			}
+		$selector = '#' . $this->resolveArtDirectionId();
+		$rules = [];
 
-			if ($this->focus && $sourceImage !== null) {
-				$resolvedFocus = resolveFocusValue($sourceImage);
-
-				if ($resolvedFocus !== $defaultFocus) {
-					$declarations[] = "object-position: {$resolvedFocus} !important;";
-				}
-			}
-
-			if (empty($declarations)) {
-				continue;
-			}
-
-			$rules[] = '@media ' . $source['media'] . ' { #' . $this->resolveArtDirectionId() . ' { ' . implode(' ', $declarations) . ' } }';
+		// <picture> uses the first matching <source>, whereas CSS applies the last
+		// matching rule — so emit in reverse to let the first source win.
+		foreach (array_reverse($sources) as $source) {
+			$declarations = array_map(fn (string $property) => "{$property}: {$source[$property]} !important;", $properties);
+			$rules[] = '@media ' . $source['media'] . ' { ' . $selector . ' { ' . implode(' ', $declarations) . ' } }';
 		}
 
 		return $this->artDirectionStylesCache = implode(' ', $rules);
+	}
+
+	/**
+	 * Resolves a ratio to its CSS `aspect-ratio` value (e.g. '16 / 9').
+	 *
+	 * @param string $ratio Aspect ratio string or 'intrinsic'.
+	 * @param File $image Image used to resolve 'intrinsic'.
+	 * @return string CSS `aspect-ratio` value.
+	 */
+	private function getRatioCss(string $ratio, File $image): string
+	{
+		['x' => $ratioX, 'y' => $ratioY] = getAspectRatio($ratio, $image);
+
+		return "{$ratioX} / {$ratioY}";
 	}
 
 	/**
