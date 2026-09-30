@@ -104,21 +104,20 @@ function mergeHTMLAttributes(array $attributes, string $loadingMode, array $defa
 
 	// Function to merge attributes, handling both array and string values
 	$mergeAttributeValues = function ($key, $currentValue, $newValue) use ($mergableAttributes) {
-		if (in_array($key, $mergableAttributes)) {
-			// Ensure both values are arrays
-			$currentValues = is_array($currentValue) ? $currentValue : explode(' ', $currentValue);
-			$newValues = is_array($newValue) ? $newValue : explode(' ', $newValue);
-			// Merge, remove duplicates, and drop empty, null, and false entries
-			$merged = array_unique(array_merge($currentValues, $newValues));
-			$filtered = array_filter($merged, fn ($val) => $val !== '' && $val !== null && $val !== false);
-			// Re-index array to ensure sequential keys starting from 0
-			$mergedValues = array_values($filtered);
-
-			return $mergedValues;
-		} else {
-			// For non-mergable attributes, new value overrides
+		// For non-mergable attributes, new value overrides
+		if (!in_array($key, $mergableAttributes, true)) {
 			return $newValue;
 		}
+
+		// Ensure both values are arrays
+		$currentValues = is_array($currentValue) ? $currentValue : explode(' ', $currentValue);
+		$newValues = is_array($newValue) ? $newValue : explode(' ', $newValue);
+		// Merge, remove duplicates, and drop empty, null, and false entries
+		$merged = array_unique(array_merge($currentValues, $newValues));
+		$filtered = array_filter($merged, fn ($val) => $val !== '' && $val !== null && $val !== false);
+
+		// Re-index array to ensure sequential keys starting from 0
+		return array_values($filtered);
 	};
 
 	// Step 1: Start with default 'shared' attributes

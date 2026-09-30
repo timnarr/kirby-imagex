@@ -186,12 +186,12 @@ function resolveCompareFormatsWeights(string|array $weights): array
  * Calculates weighted format size using the provided weights.
  * Samples the first (smallest), middle, and last (largest) srcset widths.
  *
- * @param mixed $image The image file to generate thumbnails from (Kirby\Cms\File).
+ * @param File $image The image file to generate thumbnails from.
  * @param array $srcsetPreset The srcset preset configuration for a format.
  * @param array $weights Weights array with 'small', 'medium', 'large' keys (must sum to 1.0).
  * @return int Weighted total size in bytes.
  */
-function calculateWeightedFormatSize($image, array $srcsetPreset, array $weights): int
+function calculateWeightedFormatSize(File $image, array $srcsetPreset, array $weights): int
 {
 	$samples = getSampleElements($srcsetPreset);
 
