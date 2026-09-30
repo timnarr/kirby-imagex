@@ -4,6 +4,7 @@ namespace TimNarr;
 
 use Kirby\Cms\App;
 use Kirby\Cms\File;
+use Kirby\Exception\InvalidArgumentException;
 use Kirby\Filesystem\Dir;
 use PHPUnit\Framework\TestCase;
 
@@ -17,6 +18,8 @@ class ImagexTest extends TestCase
 		Dir::make($this->root . '/content/test');
 		$this->createJpeg('image.jpg', 1600, 1200);
 		$this->createJpeg('landscape.jpg', 2100, 900);
+		// no width/height/viewBox — Kirby reports 0x0
+		file_put_contents($this->root . '/content/test/logo.svg', '<svg xmlns="http://www.w3.org/2000/svg"></svg>');
 		$this->app();
 	}
 
@@ -205,5 +208,13 @@ class ImagexTest extends TestCase
 		$this->assertSame(400, $attributes['width']);
 		$this->assertSame(225, $attributes['height']);
 		$this->assertStringContainsString('image-800x450-crop.jpg 800w', $attributes['srcset']);
+	}
+
+	public function testIntrinsicRatioThrowsForImageWithoutDimensions()
+	{
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage("Cannot use ratio 'intrinsic' for 'test/logo.svg'");
+
+		getAspectRatio('intrinsic', App::instance()->page('test')->file('logo.svg'));
 	}
 }

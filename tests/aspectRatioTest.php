@@ -2,6 +2,9 @@
 
 namespace TimNarr;
 
+use Kirby\Cms\File;
+use Kirby\Cms\Page;
+use Kirby\Exception\InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
 class AspectRatioTest extends TestCase
@@ -38,5 +41,19 @@ class AspectRatioTest extends TestCase
 	{
 		$this->expectExceptionMessage('[kirby-imagex] Invalid ratio format. "x" and "y" must be greater than 0.');
 		getAspectRatioFromRatioString('1/0');
+	}
+
+	public function testGetAspectRatioFromImageThrowsForZeroDimensions()
+	{
+		$this->expectException(InvalidArgumentException::class);
+
+		getAspectRatioFromImage(0, 0);
+	}
+
+	public function testGetAspectRatioWithExplicitRatioIgnoresDimensions()
+	{
+		$file = new File(['filename' => 'logo.svg', 'parent' => new Page(['slug' => 'test'])]);
+
+		$this->assertEquals(['x' => 16, 'y' => 9], getAspectRatio('16/9', $file));
 	}
 }

@@ -30,9 +30,14 @@ function greatestCommonDivisor(int $a, int $b): int
  * @param int $width Width of the image.
  * @param int $height Height of the image.
  * @return array Associative array with 'x' and 'y' keys for the aspect ratio.
+ * @throws InvalidArgumentException If width or height is not positive.
  */
 function getAspectRatioFromImage(int $width, int $height): array
 {
+	if ($width <= 0 || $height <= 0) {
+		throw new InvalidArgumentException("[kirby-imagex] Cannot derive an aspect ratio from {$width}x{$height} dimensions.");
+	}
+
 	$gcd = greatestCommonDivisor($width, $height);
 	$ratioX = $width / $gcd;
 	$ratioY = $height / $gcd;
@@ -78,10 +83,17 @@ function getAspectRatioFromRatioString(string $ratioString): array
  * @param string $ratio The aspect ratio as a string or 'intrinsic' to use the image's dimensions.
  * @param File $image The image file object.
  * @return array Associative array with 'x' and 'y' keys for the aspect ratio.
+ * @throws InvalidArgumentException If 'intrinsic' is used for an image without readable dimensions.
  */
 function getAspectRatio(string $ratio, File $image): array
 {
-	return $ratio === 'intrinsic'
-		? getAspectRatioFromImage($image->width(), $image->height())
-		: getAspectRatioFromRatioString($ratio);
+	if ($ratio !== 'intrinsic') {
+		return getAspectRatioFromRatioString($ratio);
+	}
+
+	if ($image->width() <= 0 || $image->height() <= 0) {
+		throw new InvalidArgumentException("[kirby-imagex] Cannot use ratio 'intrinsic' for '{$image->id()}': its dimensions can't be read (e.g. SVG or unsupported file). Set an explicit ratio like '16/9'.");
+	}
+
+	return getAspectRatioFromImage($image->width(), $image->height());
 }
