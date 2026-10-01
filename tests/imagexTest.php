@@ -290,6 +290,64 @@ class ImagexTest extends TestCase
 		$this->imagex(['ratio' => '16:9']);
 	}
 
+	public function testOnlyImageIsRequired()
+	{
+		$imagex = new Imagex(['image' => $this->image()]);
+		$attributes = $imagex->getImgAttributes();
+
+		// defaults: ratio 'intrinsic' (4/3 for the 1600x1200 fixture), srcset 'default', loading 'lazy'
+		$this->assertSame(400, $attributes['width']);
+		$this->assertSame(300, $attributes['height']);
+		$this->assertSame('lazy', $attributes['loading']);
+	}
+
+	public function testNullOptionsFallBackToDefaults()
+	{
+		$imagex = new Imagex(['image' => $this->image(), 'ratio' => null, 'loading' => null, 'attributes' => null]);
+
+		$this->assertSame(300, $imagex->getImgAttributes()['height']);
+	}
+
+	public function testUnknownOptionThrows()
+	{
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('Unknown option(s): ration. Allowed:');
+
+		$this->imagex(['ration' => '1/1']);
+	}
+
+	public function testUnknownAttributesElementThrows()
+	{
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage("Option 'attributes' has unknown key(s): image. Allowed: img, picture, sources");
+
+		$this->imagex(['attributes' => ['image' => ['alt' => 'Alt']]]);
+	}
+
+	public function testNonArrayAttributesThrows()
+	{
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage("Option 'attributes' must be an array with the keys: img, picture, sources");
+
+		$this->imagex(['attributes' => 'my-class']);
+	}
+
+	public function testNonStringLoadingNamesType()
+	{
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage("Option 'loading' must be 'eager' or 'lazy'. Got: bool");
+
+		$this->imagex(['loading' => true]);
+	}
+
+	public function testNonArrayAttributesElementThrows()
+	{
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage("Option 'attributes.img' must be an array.");
+
+		$this->imagex(['attributes' => ['img' => 'my-class']]);
+	}
+
 	public function testNonBooleanPluginOptionThrows()
 	{
 		$this->app(['timnarr.imagex.customLazyloading' => 'yes']);
@@ -424,6 +482,13 @@ class ImagexTest extends TestCase
 		$this->assertSame(400, $data['img']['width']);
 		$this->assertSame(225, $data['img']['height']);
 		$this->assertCount(2, $data['picture']['sources']);
+	}
+
+	public function testSnippetWithOnlyImageUsesClassDefaults()
+	{
+		$html = snippet('imagex-picture', ['image' => $this->image()], return: true);
+
+		$this->assertMatchesRegularExpression('/<img [^>]*height="300"[^>]*loading="lazy"[^>]*width="400"/', $html);
 	}
 
 	public function testSnippetWithoutImageThrowsDescriptiveError()

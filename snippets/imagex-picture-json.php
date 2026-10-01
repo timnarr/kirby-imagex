@@ -6,16 +6,17 @@ use TimNarr\Imagex;
 
 use function TimNarr\transformForJson;
 
+// Missing options are passed as null; Imagex applies the defaults
 $imagex = new Imagex([
-	'artDirection' => $artDirection ?? [],
-	'attributes' => $attributes ?? [],
-	'compareFormats' => $compareFormats ?? false,
-	'focus' => $focus ?? false,
+	'artDirection' => $artDirection ?? null,
+	'attributes' => $attributes ?? null,
+	'compareFormats' => $compareFormats ?? null,
+	'focus' => $focus ?? null,
 	'image' => $image ?? null,
-	'loading' => $loading ?? 'lazy',
+	'loading' => $loading ?? null,
 	'nonce' => $nonce ?? null,
-	'ratio' => $ratio ?? 'intrinsic',
-	'srcset' => $srcset ?? 'default',
+	'ratio' => $ratio ?? null,
+	'srcset' => $srcset ?? null,
 ]);
 
 $data = [

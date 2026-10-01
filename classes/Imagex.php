@@ -41,16 +41,44 @@ class Imagex
 	/** Smallest format per image and ratio, keyed by 'imageId|ratio'. */
 	private array $smallestFormats = [];
 
+	/** Accepted constructor options and their defaults. `image` has none — it's required. */
+	private const DEFAULT_OPTIONS = [
+		'artDirection' => [],
+		'attributes' => [],
+		'compareFormats' => false,
+		'focus' => false,
+		'image' => null,
+		'loading' => 'lazy',
+		'nonce' => null,
+		'ratio' => 'intrinsic',
+		'srcset' => 'default',
+	];
+
+	/** Accepted keys of the `attributes` option. */
+	private const ATTRIBUTE_ELEMENTS = ['img', 'picture', 'sources'];
+
 	/**
 	 * Constructor to initialize Imagex with its options.
 	 *
+	 * Only `image` is required. Options that are missing or `null` fall back to
+	 * their defaults (see DEFAULT_OPTIONS), so the snippets and direct callers
+	 * share one set of defaults.
+	 *
 	 * @param array $options
-	 * @throws InvalidArgumentException If required options are missing or have invalid types.
+	 * @throws InvalidArgumentException If options are unknown, missing or have invalid types.
 	 */
 	public function __construct(array $options)
 	{
+		$unknownOptions = array_diff(array_keys($options), array_keys(self::DEFAULT_OPTIONS));
+
+		if (!empty($unknownOptions)) {
+			throw new InvalidArgumentException('[kirby-imagex] Unknown option(s): ' . implode(', ', $unknownOptions) . '. Allowed: ' . implode(', ', array_keys(self::DEFAULT_OPTIONS)));
+		}
+
+		$options = [...self::DEFAULT_OPTIONS, ...array_filter($options, fn ($value) => $value !== null)];
+
 		// Validate required option: image
-		if (!isset($options['image'])) {
+		if ($options['image'] === null) {
 			throw new InvalidArgumentException('[kirby-imagex] Missing required option: image');
 		}
 
@@ -60,33 +88,33 @@ class Imagex
 		}
 
 		// Validate loading option
-		$loading = $options['loading'] ?? 'lazy';
-		if (!in_array($loading, ['eager', 'lazy'])) {
-			throw new InvalidArgumentException("[kirby-imagex] Option 'loading' must be 'eager' or 'lazy'. Got: '{$loading}'");
+		$loading = $options['loading'];
+		if (!in_array($loading, ['eager', 'lazy'], true)) {
+			throw new InvalidArgumentException("[kirby-imagex] Option 'loading' must be 'eager' or 'lazy'. Got: " . (is_string($loading) ? "'{$loading}'" : get_debug_type($loading)));
 		}
 
-		// Validate required option: ratio
-		if (!isset($options['ratio']) || !is_string($options['ratio'])) {
-			throw new InvalidArgumentException('[kirby-imagex] Missing or invalid required option: ratio. Must be a string (e.g. "16/9" or "intrinsic").');
+		// Validate option: ratio
+		if (!is_string($options['ratio'])) {
+			throw new InvalidArgumentException('[kirby-imagex] Invalid option: ratio. Must be a string (e.g. "16/9" or "intrinsic").');
 		}
 
-		// Validate required option: srcset
-		if (!isset($options['srcset']) || !is_string($options['srcset'])) {
-			throw new InvalidArgumentException('[kirby-imagex] Missing or invalid required option: srcset. Must be a string matching a "thumbs.srcsets" preset name.');
+		// Validate option: srcset
+		if (!is_string($options['srcset'])) {
+			throw new InvalidArgumentException('[kirby-imagex] Invalid option: srcset. Must be a string matching a "thumbs.srcsets" preset name.');
 		}
 
-		// Validate required option: compareFormats
-		if (!isset($options['compareFormats']) || !is_bool($options['compareFormats'])) {
-			throw new InvalidArgumentException('[kirby-imagex] Missing or invalid required option: compareFormats. Must be a boolean.');
+		// Validate option: compareFormats
+		if (!is_bool($options['compareFormats'])) {
+			throw new InvalidArgumentException('[kirby-imagex] Invalid option: compareFormats. Must be a boolean.');
 		}
 
-		// Validate optional option: focus
-		if (isset($options['focus']) && !is_bool($options['focus'])) {
+		// Validate option: focus
+		if (!is_bool($options['focus'])) {
 			throw new InvalidArgumentException('[kirby-imagex] Invalid option: focus. Must be a boolean.');
 		}
 
-		// Validate optional option: nonce
-		if (isset($options['nonce']) && (!is_string($options['nonce']) || $options['nonce'] === '')) {
+		// Validate option: nonce
+		if ($options['nonce'] !== null && (!is_string($options['nonce']) || $options['nonce'] === '')) {
 			throw new InvalidArgumentException('[kirby-imagex] Invalid option: nonce. Must be a non-empty string (e.g. kirby()->nonce()) or null.');
 		}
 
@@ -96,11 +124,11 @@ class Imagex
 		$this->ratio = $options['ratio'];
 		$this->srcset = $options['srcset'];
 		$this->compareFormats = $options['compareFormats'];
-		$this->focus = $options['focus'] ?? false;
-		$this->nonce = $options['nonce'] ?? null;
+		$this->focus = $options['focus'];
+		$this->nonce = $options['nonce'];
 
 		// Normalize and assign attributes
-		$attributes = $options['attributes'] ?? [];
+		$attributes = $this->validateAttributes($options['attributes']);
 		$this->imgAttributes = normalizeAttributesStructure($attributes['img'] ?? []);
 		$this->pictureAttributes = normalizeAttributesStructure($attributes['picture'] ?? []);
 		$this->sourcesAttributes = normalizeAttributesStructure($attributes['sources'] ?? []);
@@ -108,7 +136,7 @@ class Imagex
 		// Resolving the ratio validates its format (and dimensions for 'intrinsic') up front
 		getAspectRatio($this->ratio, $this->image);
 
-		$this->artDirection = $this->validateArtDirection($options['artDirection'] ?? []);
+		$this->artDirection = $this->validateArtDirection($options['artDirection']);
 
 		// Cache kirby instance and assign options
 		$this->kirby = kirby();
@@ -149,6 +177,36 @@ class Imagex
 		}
 
 		return $value;
+	}
+
+	/**
+	 * Validates the `attributes` option: an array keyed by element.
+	 *
+	 * @param mixed $attributes The attributes option as passed in.
+	 * @return array The validated attributes.
+	 * @throws InvalidArgumentException If it isn't an array, has unknown keys or an element's attributes aren't an array.
+	 */
+	private function validateAttributes(mixed $attributes): array
+	{
+		$allowed = implode(', ', self::ATTRIBUTE_ELEMENTS);
+
+		if (!is_array($attributes)) {
+			throw new InvalidArgumentException("[kirby-imagex] Option 'attributes' must be an array with the keys: {$allowed}");
+		}
+
+		$unknownKeys = array_diff(array_keys($attributes), self::ATTRIBUTE_ELEMENTS);
+
+		if (!empty($unknownKeys)) {
+			throw new InvalidArgumentException("[kirby-imagex] Option 'attributes' has unknown key(s): " . implode(', ', $unknownKeys) . ". Allowed: {$allowed}");
+		}
+
+		foreach ($attributes as $element => $elementAttributes) {
+			if (!is_array($elementAttributes)) {
+				throw new InvalidArgumentException("[kirby-imagex] Option 'attributes.{$element}' must be an array.");
+			}
+		}
+
+		return $attributes;
 	}
 
 	/**
