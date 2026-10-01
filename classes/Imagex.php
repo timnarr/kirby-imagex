@@ -387,6 +387,7 @@ class Imagex
 	 * @param File|null $image Optional file object; defaults to main image.
 	 * @param string|null $ratio Optional aspect ratio; defaults to object's ratio.
 	 * @return string|null Format of the smallest format or null if unable to determine.
+	 * @internal Not part of the public API — may change in any release.
 	 */
 	public function getSmallestFormatForImage(File|null $image = null, string|null $ratio = null): string|null
 	{
@@ -440,16 +441,6 @@ class Imagex
 
 			return findSmallestValueAndKey($formatSizes);
 		});
-	}
-
-	/**
-	 * Get the smallest image format based on file size (wrapper for backwards compatibility).
-	 *
-	 * @return string|null Format of the smallest format or null if unable to determine.
-	 */
-	public function getSmallestFormat(): string|null
-	{
-		return $this->getSmallestFormatForImage();
 	}
 
 	/**

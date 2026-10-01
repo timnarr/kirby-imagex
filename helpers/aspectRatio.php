@@ -13,6 +13,8 @@ use Kirby\Exception\InvalidArgumentException;
  * @param int $a The first number.
  * @param int $b The second number.
  * @return int The GCD of $a and $b.
+ *
+ * @internal Not part of the public API — may change in any release.
  */
 function greatestCommonDivisor(int $a, int $b): int
 {
@@ -32,6 +34,8 @@ function greatestCommonDivisor(int $a, int $b): int
  * @param int $height Height of the image.
  * @return array Associative array with 'x' and 'y' keys for the aspect ratio.
  * @throws InvalidArgumentException If width or height is not positive.
+ *
+ * @internal Not part of the public API — may change in any release.
  */
 function getAspectRatioFromImage(int $width, int $height): array
 {
@@ -55,6 +59,8 @@ function getAspectRatioFromImage(int $width, int $height): array
  * @param string $ratioString The aspect ratio in string format.
  * @return array Associative array with 'x' and 'y' keys for the aspect ratio.
  * @throws InvalidArgumentException If the format is not "x/y" or either 'x' or 'y' is 0.
+ *
+ * @internal Not part of the public API — may change in any release.
  */
 function getAspectRatioFromRatioString(string $ratioString): array
 {
@@ -83,6 +89,8 @@ function getAspectRatioFromRatioString(string $ratioString): array
  * @param File $image The image file object.
  * @return array Associative array with 'x' and 'y' keys for the aspect ratio.
  * @throws InvalidArgumentException If 'intrinsic' is used for an image without readable dimensions.
+ *
+ * @internal Not part of the public API — may change in any release.
  */
 function getAspectRatio(string $ratio, File $image): array
 {

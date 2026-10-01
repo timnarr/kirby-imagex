@@ -16,6 +16,8 @@ use Kirby\Exception\InvalidArgumentException;
  * @param int $ratioX The width part of the aspect ratio.
  * @param int $ratioY The height part of the aspect ratio.
  * @return array The modified srcset preset array with 'height' added to each source configuration.
+ *
+ * @internal Not part of the public API — may change in any release.
  */
 function addRatioBasedHeightToSrcsetPreset(array $srcsetPreset, int $ratioX, int $ratioY): array
 {
@@ -48,6 +50,8 @@ function addRatioBasedHeightToSrcsetPreset(array $srcsetPreset, int $ratioX, int
  * @param string $presetName The preset name, used in error messages.
  * @return array The normalized srcset preset.
  * @throws InvalidArgumentException If the preset is empty or an entry has no positive width.
+ *
+ * @internal Not part of the public API — may change in any release.
  */
 function normalizeSrcsetPreset(array $preset, string $presetName): array
 {

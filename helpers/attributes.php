@@ -15,6 +15,8 @@ use Kirby\Exception\InvalidArgumentException;
  *
  * @param array $attributes Flat attribute array (not structured by loading mode).
  * @return array Attribute array with 'class' and 'style' coerced to arrays.
+ *
+ * @internal Not part of the public API — may change in any release.
  */
 function coerceClassStyleToArrays(array $attributes): array
 {
@@ -38,6 +40,8 @@ function coerceClassStyleToArrays(array $attributes): array
  *
  * @param array $options Associative array of options with attributes by loading modes ('shared', 'eager', 'lazy').
  * @throws InvalidArgumentException If attribute types do not match expected types.
+ *
+ * @internal Not part of the public API — may change in any release.
  */
 function validateAttributeTypes(array $options): void
 {
@@ -85,6 +89,8 @@ function validateAttributeTypes(array $options): void
  * @param array $defaultAttributes Optional default attributes to apply as fallback.
  * @return array Merged array of HTML attributes for specified loading mode (class/style as arrays).
  * @throws InvalidArgumentException If $loadingMode is invalid or missing.
+ *
+ * @internal Not part of the public API — may change in any release.
  */
 function mergeHTMLAttributes(array $attributes, string $loadingMode, array $defaultAttributes = ['shared' => [], 'eager' => [], 'lazy' => []]): array
 {
@@ -161,6 +167,8 @@ function mergeHTMLAttributes(array $attributes, string $loadingMode, array $defa
  * @param array $attributes User-provided attributes (flat or structured)
  * @return array Normalized attributes with shared/eager/lazy structure
  * @throws InvalidArgumentException If flat and loading mode keys are mixed.
+ *
+ * @internal Not part of the public API — may change in any release.
  */
 function normalizeAttributesStructure(array $attributes): array
 {

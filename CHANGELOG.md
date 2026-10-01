@@ -23,6 +23,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - **BREAKING:** Unknown options now throw an `InvalidArgumentException` listing the allowed ones. This covers top-level `Imagex` options (e.g. `ration`) and `attributes` keys other than `img`, `picture` and `sources` (e.g. `image`). Previously both were ignored silently. Migration: fix the misspelled key. A misspelled snippet option is still ignored, because the snippets only forward known options.
 - The option defaults now live in the `Imagex` class only, so the snippets no longer repeat them. `new Imagex(['image' => $file])` now works with the same defaults as the snippets, and options passed as `null` fall back to the default. Previously `ratio`, `srcset` and `compareFormats` were required when using the class directly.
+- The helper functions in the `TimNarr` namespace, as well as `Imagex::getSmallestFormatForImage()`, are now marked `@internal`. They are not part of the public API and may change in any release. The README has a new "Public API" section listing what is covered by semantic versioning.
 - **BREAKING:** Attributes that mix flat keys with `shared`/`eager`/`lazy` keys (e.g. `['class' => 'x', 'lazy' => [...]]`) now throw an `InvalidArgumentException`. Previously the flat keys were dropped silently. Migration: move the flat keys into `shared`.
 - **BREAKING:** `artDirection` entries are validated at construction time. Each entry must have a non-empty `media` string (a `<source>` without `media` always matches, so the default image was never used), only the keys `media`, `ratio`, `image` and `attributes` are accepted, `image` must be a `Kirby\Cms\File` or `null` (still falls back to the main image), and `ratio` must be valid. Migration: add a `media` condition to every entry and fix typos in keys.
 - The main `ratio` is now validated at construction time instead of on first render.
@@ -36,7 +37,8 @@ All notable changes to this project will be documented in this file.
 - Srcset presets are resolved, normalized and validated once in the constructor (previously checked twice and rebuilt on every call).
 
 ### Removed
-- `srcHandler()` helper. Its only job — dropping `src` for custom lazy loading — is now a plain default attribute in `Imagex::getImgAttributes()`; user-supplied `src` overrides are handled by `mergeHTMLAttributes()` as for every other attribute.
+- **BREAKING:** `Imagex::getSmallestFormat()`. It was an unused wrapper around `getSmallestFormatForImage()` without arguments. Migration: call `getSmallestFormatForImage()` instead (now `@internal`).
+- **BREAKING:** `srcHandler()` helper. Its only job — dropping `src` for custom lazy loading — is now a plain default attribute in `Imagex::getImgAttributes()`; user-supplied `src` overrides are handled by `mergeHTMLAttributes()` as for every other attribute. Migration: none for snippet users; if you called it directly, set `src` via `attributes.img` instead.
 
 ## [0.4.0] - September 04, 2026
 

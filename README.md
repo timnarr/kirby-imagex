@@ -383,6 +383,17 @@ $options = [
 
 See the [thumbRatio example](/docs/examples/thumb-ratio.md) for more details.
 
+## Public API
+These are the parts of Imagex covered by semantic versioning. Breaking changes to them are listed in the [changelog](CHANGELOG.md) with a migration note:
+
+- The `imagex-picture` and `imagex-picture-json` snippets and their [options](#snippet-options)
+- The JSON structure returned by `imagex-picture-json` (see the [JSON output example](/docs/examples/json-output.md))
+- The [global plugin options](#global-options)
+- The [`thumbRatio()` file method](#thumbratiostring-ratio-array-options--)
+- The `TimNarr\Imagex` class: its constructor (same options as the snippets) and `getPictureAttributes()`, `getPictureSources()`, `getImgAttributes()`, `getArtDirectionStyles()` and `getNonce()`
+
+Everything else is internal and may change in any release. That includes the helper functions in the `TimNarr` namespace (e.g. `getAspectRatio()`, `mergeHTMLAttributes()`) and `Imagex::getSmallestFormatForImage()`. They are marked `@internal`.
+
 ## Cache
 When `compareFormats` is enabled, the result of the weighted format size comparison is cached per image. The cache key includes the image ID, its last-modified timestamp, the ratio, the srcset preset, and the active formats — so a new entry is used automatically whenever the image is replaced or updated.
 

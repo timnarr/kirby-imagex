@@ -12,6 +12,8 @@ use Kirby\Exception\InvalidArgumentException;
  *
  * @param string $format The image format.
  * @return string The normalized image format.
+ *
+ * @internal Not part of the public API — may change in any release.
  */
 function normalizeFormat(string $format): string
 {
@@ -31,6 +33,8 @@ function normalizeFormat(string $format): string
  * @param bool|null $useRelativeUrls Optionally override the default setting for using relative URLs.
  * @param string|null $siteUrl Optionally override the site URL whose origin is stripped (defaults to Kirby's index URL).
  * @return string The URL, potentially converted to a root-relative path.
+ *
+ * @internal Not part of the public API — may change in any release.
  */
 function urlHandler(string $url, bool|null $useRelativeUrls = null, string|null $siteUrl = null): string
 {
@@ -56,6 +60,8 @@ function urlHandler(string $url, bool|null $useRelativeUrls = null, string|null 
  *
  * @param string $url The URL to parse.
  * @return string|null The origin (e.g. 'https://example.com:8080') or null for relative URLs.
+ *
+ * @internal Not part of the public API — may change in any release.
  */
 function getUrlOrigin(string $url): string|null
 {
@@ -74,6 +80,8 @@ function getUrlOrigin(string $url): string|null
  * @param array $array The array to search.
  * @return string The smallestKey.
  * @throws InvalidArgumentException If the array is empty.
+ *
+ * @internal Not part of the public API — may change in any release.
  */
 function findSmallestValueAndKey(array $array): string
 {
@@ -97,6 +105,8 @@ function findSmallestValueAndKey(array $array): string
  * @param array $inputArray The array to process.
  * @return array Associative array with 'first', 'middle', and 'last' elements.
  * @throws InvalidArgumentException If the array is empty.
+ *
+ * @internal Not part of the public API — may change in any release.
  */
 function getSampleElements(array $inputArray): array
 {
@@ -128,6 +138,8 @@ function getSampleElements(array $inputArray): array
  * @param array $formats All available formats in configured order.
  * @param string $smallestFormat The determined smallest format.
  * @return bool True if a smaller format precedes this one and this one should be skipped.
+ *
+ * @internal Not part of the public API — may change in any release.
  */
 function isFormatSkippable(string $format, array $formats, string $smallestFormat): bool
 {
@@ -149,6 +161,8 @@ function isFormatSkippable(string $format, array $formats, string $smallestForma
  * @param string|array $weights Preset name or custom weights array.
  * @return array Resolved weights array with 'small', 'medium', 'large' keys.
  * @throws InvalidArgumentException If the preset is unknown or the custom array is invalid.
+ *
+ * @internal Not part of the public API — may change in any release.
  */
 function resolveCompareFormatsWeights(string|array $weights): array
 {
@@ -190,6 +204,8 @@ function resolveCompareFormatsWeights(string|array $weights): array
  * @param array $srcsetPreset The srcset preset configuration for a format.
  * @param array $weights Weights array with 'small', 'medium', 'large' keys (must sum to 1.0).
  * @return int Weighted total size in bytes.
+ *
+ * @internal Not part of the public API — may change in any release.
  */
 function calculateWeightedFormatSize(File $image, array $srcsetPreset, array $weights): int
 {
@@ -217,6 +233,8 @@ function calculateWeightedFormatSize(File $image, array $srcsetPreset, array $we
  *
  * @param File $image The image file to resolve the focus point for.
  * @return string CSS `object-position` value (e.g. '23% 65%' or 'center').
+ *
+ * @internal Not part of the public API — may change in any release.
  */
 function resolveFocusValue(File $image): string
 {
@@ -237,6 +255,8 @@ function resolveFocusValue(File $image): string
  *
  * @param string $value The value to validate.
  * @return bool True if the value is a safe CSS position value.
+ *
+ * @internal Not part of the public API — may change in any release.
  */
 function isValidCssPositionValue(string $value): bool
 {
@@ -252,6 +272,8 @@ function isValidCssPositionValue(string $value): bool
  *
  * @param string $value The raw identifier (e.g. an element id).
  * @return string The escaped identifier.
+ *
+ * @internal Not part of the public API — may change in any release.
  */
 function escapeCssIdentifier(string $value): string
 {
@@ -284,6 +306,8 @@ function escapeCssIdentifier(string $value): string
  * @param bool|null $useRelativeUrls Optionally override the relativeUrls setting (primarily for testing).
  * @param string|null $siteUrl Optionally override the site URL (primarily for testing).
  * @return array The processed attributes array with relative URLs where applicable.
+ *
+ * @internal Not part of the public API — may change in any release.
  */
 function applyUrlHandlerToAttributes(array $attributes, bool|null $useRelativeUrls = null, string|null $siteUrl = null): array
 {
@@ -312,6 +336,8 @@ function applyUrlHandlerToAttributes(array $attributes, bool|null $useRelativeUr
  *
  * @param mixed $data The data to transform.
  * @return mixed The transformed data.
+ *
+ * @internal Not part of the public API — may change in any release.
  */
 function transformForJson(mixed $data): mixed
 {
