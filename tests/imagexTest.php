@@ -348,6 +348,35 @@ class ImagexTest extends TestCase
 		$this->imagex(['attributes' => ['img' => 'my-class']]);
 	}
 
+	public function testArtDirectionAcceptsFlatAttributes()
+	{
+		$sources = $this->imagex(['artDirection' => [
+			['media' => '(min-width: 800px)', 'attributes' => ['data-landscape' => 'true', 'class' => 'a b']],
+		]])->getPictureSources();
+
+		$this->assertSame('true', $sources[0]['data-landscape']);
+		$this->assertSame(['a', 'b'], $sources[0]['class']);
+	}
+
+	public function testArtDirectionAcceptsClassStringInStructuredAttributes()
+	{
+		$sources = $this->imagex(['artDirection' => [
+			['media' => '(min-width: 800px)', 'attributes' => ['lazy' => ['class' => 'a b']]],
+		]])->getPictureSources();
+
+		$this->assertSame(['a', 'b'], $sources[0]['class']);
+	}
+
+	public function testArtDirectionRejectsMixedAttributes()
+	{
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('Attributes mix flat keys');
+
+		$this->imagex(['artDirection' => [
+			['media' => '(min-width: 800px)', 'attributes' => ['class' => 'a', 'lazy' => ['data-x' => 'y']]],
+		]]);
+	}
+
 	public function testNonBooleanPluginOptionThrows()
 	{
 		$this->app(['timnarr.imagex.customLazyloading' => 'yes']);

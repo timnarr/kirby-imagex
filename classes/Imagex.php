@@ -216,7 +216,7 @@ class Imagex
 	 * so the default image (and every later source) would never be used.
 	 *
 	 * @param mixed $artDirection The artDirection option as passed in.
-	 * @return array The validated artDirection sources.
+	 * @return array The validated artDirection sources, with `attributes` normalized to the shared/eager/lazy structure.
 	 * @throws InvalidArgumentException If an entry is malformed.
 	 */
 	private function validateArtDirection(mixed $artDirection): array
@@ -256,6 +256,9 @@ class Imagex
 			if (isset($source['attributes']) && !is_array($source['attributes'])) {
 				throw new InvalidArgumentException("{$prefix}: 'attributes' must be an array.");
 			}
+
+			// Flat or structured, like every other attributes option
+			$artDirection[$index]['attributes'] = normalizeAttributesStructure($source['attributes'] ?? []);
 
 			try {
 				getAspectRatio($source['ratio'] ?? 'intrinsic', $source['image'] ?? $this->image);
