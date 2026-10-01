@@ -216,7 +216,8 @@ class Imagex
 	 * so the default image (and every later source) would never be used.
 	 *
 	 * @param mixed $artDirection The artDirection option as passed in.
-	 * @return array The validated artDirection sources, with `attributes` normalized to the shared/eager/lazy structure.
+	 * @return array The validated artDirection sources, with `ratio` defaulting to 'intrinsic' (not the main
+	 *               ratio) and `attributes` normalized to the shared/eager/lazy structure.
 	 * @throws InvalidArgumentException If an entry is malformed.
 	 */
 	private function validateArtDirection(mixed $artDirection): array
@@ -257,11 +258,12 @@ class Imagex
 				throw new InvalidArgumentException("{$prefix}: 'attributes' must be an array.");
 			}
 
+			$artDirection[$index]['ratio'] = $source['ratio'] ?? 'intrinsic';
 			// Flat or structured, like every other attributes option
 			$artDirection[$index]['attributes'] = normalizeAttributesStructure($source['attributes'] ?? []);
 
 			try {
-				getAspectRatio($source['ratio'] ?? 'intrinsic', $source['image'] ?? $this->image);
+				getAspectRatio($artDirection[$index]['ratio'], $source['image'] ?? $this->image);
 			} catch (InvalidArgumentException $e) {
 				throw new InvalidArgumentException("{$prefix}: " . str_replace('[kirby-imagex] ', '', $e->getMessage()), previous: $e);
 			}
@@ -367,20 +369,6 @@ class Imagex
 	}
 
 	/**
-	 * Get the srcset value for a given srcset preset.
-	 *
-	 * @param array $srcsetPreset Srcset preset array.
-	 * @param File|null $image Optional file object; defaults to main image.
-	 * @return string Srcset value string.
-	 */
-	private function getSrcsetValue(array $srcsetPreset, File|null $image = null): string
-	{
-		$image = $image ?? $this->image;
-
-		return $image->srcset($srcsetPreset);
-	}
-
-	/**
 	 * Get the smallest image format based on weighted file size comparison.
 	 * Uses mobile-first weighting across multiple srcset samples.
 	 *
@@ -452,7 +440,7 @@ class Imagex
 	{
 		$format = $this->getImageFormat();
 		$srcsetPreset = $this->getDynamicSrcsetPreset();
-		$srcsetValue = $this->getSrcsetValue($srcsetPreset[$format]);
+		$srcsetValue = $this->image->srcset($srcsetPreset[$format]);
 
 		$image = $this->image;
 		$isEager = $this->loading === 'eager';
@@ -591,7 +579,7 @@ class Imagex
 			$sourceImage = $source['image'] ?? $this->image;
 			$sources[] = [
 				'media' => $source['media'],
-				'aspect-ratio' => $this->getRatioCss($source['ratio'] ?? 'intrinsic', $sourceImage),
+				'aspect-ratio' => $this->getRatioCss($source['ratio'], $sourceImage),
 				'object-position' => $this->focus ? resolveFocusValue($sourceImage) : null,
 			];
 		}
@@ -657,20 +645,21 @@ class Imagex
 	}
 
 	/**
-	 * Get HTML attributes for a <source> element within a <picture>, including responsive and art direction settings.
+	 * Get HTML attributes for a <source> element within a <picture>: for the
+	 * main image, or for an art-directed source.
 	 *
 	 * @param string $format Image format for the source.
-	 * @param string $srcsetValue Srcset definition string.
-	 * @param array $srcsetPreset Srcset configuration array.
-	 * @param array $source Additional source settings for art direction.
+	 * @param array|null $source A validated artDirection source, or null for the main image.
 	 * @return array HTML attributes for the source element.
 	 */
-	private function getSourceAttributes(string $format, string $srcsetValue, array $srcsetPreset, array $source = []): array
+	private function getSourceAttributes(string $format, array|null $source = null): array
 	{
+		$image = $source['image'] ?? $this->image;
+		$srcsetPreset = $this->getDynamicSrcsetPreset($source['ratio'] ?? $this->ratio, $image);
+		$srcsetValue = $image->srcset($srcsetPreset[$format]);
 		['width' => $width, 'height' => $height] = A::first($srcsetPreset[$format]);
 
 		if ($format === 'originalformat') {
-			$image = $source['image'] ?? $this->image;
 			$format = $this->getImageFormat($image);
 		}
 
@@ -711,43 +700,21 @@ class Imagex
 	private function getArtDirectedSourcesPerFormat(string $format): array
 	{
 		$sources = [];
-		$formats = $this->formats;
 
 		foreach ($this->artDirection as $source) {
-			$sourceRatio = $source['ratio'] ?? 'intrinsic';
-			$sourceImage = $source['image'] ?? null;
-
 			// Per-image format decision when using a different image
-			if ($this->compareFormats && $sourceImage !== null) {
-				$sourceSmallestFormat = $this->getSmallestFormatForImage($sourceImage, $sourceRatio);
+			if ($this->compareFormats && isset($source['image'])) {
+				$sourceSmallestFormat = $this->getSmallestFormatForImage($source['image'], $source['ratio']);
 
-				if ($sourceSmallestFormat && isFormatSkippable($format, $formats, $sourceSmallestFormat)) {
+				if ($sourceSmallestFormat && isFormatSkippable($format, $this->formats, $sourceSmallestFormat)) {
 					continue;
 				}
 			}
 
-			$srcsetPreset = $this->getDynamicSrcsetPreset($sourceRatio, $sourceImage);
-			$srcsetValue = $this->getSrcsetValue($srcsetPreset[$format], $sourceImage);
-			$sourceAttributes = $this->getSourceAttributes($format, $srcsetValue, $srcsetPreset, $source);
-
-			$sources[] = $sourceAttributes;
+			$sources[] = $this->getSourceAttributes($format, $source);
 		}
 
 		return $sources;
-	}
-
-	/**
-	 * Get default picture sources for a specific format.
-	 *
-	 * @param string $format Image format.
-	 * @return array HTML attributes for default picture sources.
-	 */
-	private function getDefaultSourcesPerFormat(string $format): array
-	{
-		$srcsetPreset = $this->getDynamicSrcsetPreset();
-		$srcsetValue = $this->getSrcsetValue($srcsetPreset[$format]);
-
-		return $this->getSourceAttributes($format, $srcsetValue, $srcsetPreset);
 	}
 
 	/**
@@ -771,12 +738,9 @@ class Imagex
 				continue;
 			}
 
-			if (!empty($this->artDirection)) {
-				// Per-source format decision for art-directed images
-				$sources = array_merge($sources, $this->getArtDirectedSourcesPerFormat($format));
-			}
-
-			$sources[] = $this->getDefaultSourcesPerFormat($format);
+			// Art-directed sources come first: browsers use the first matching <source>
+			array_push($sources, ...$this->getArtDirectedSourcesPerFormat($format));
+			$sources[] = $this->getSourceAttributes($format);
 		}
 
 		return $sources;
