@@ -69,6 +69,50 @@ class Imagex
 	 */
 	public function __construct(array $options)
 	{
+		$options = $this->resolveOptions($options);
+
+		$this->loading = $options['loading'];
+		$this->image = $options['image'];
+		$this->ratio = $options['ratio'];
+		$this->srcset = $options['srcset'];
+		$this->compareFormats = $options['compareFormats'];
+		$this->focus = $options['focus'];
+		$this->nonce = $options['nonce'];
+
+		$attributes = $this->validateAttributes($options['attributes']);
+		$this->imgAttributes = normalizeAttributesStructure($attributes['img'] ?? []);
+		$this->pictureAttributes = normalizeAttributesStructure($attributes['picture'] ?? []);
+		$this->sourcesAttributes = normalizeAttributesStructure($attributes['sources'] ?? []);
+
+		// Resolving the ratio validates its format (and dimensions for 'intrinsic') up front
+		getAspectRatio($this->ratio, $this->image);
+
+		$this->artDirection = $this->validateArtDirection($options['artDirection']);
+
+		// Plugin options from config.php
+		$this->kirby = kirby();
+		$this->customLazyloading = $this->getBoolOption('customLazyloading');
+		$this->compareFormatsWeights = resolveCompareFormatsWeights($this->kirby->option('timnarr.imagex.compareFormatsWeights'));
+		$this->addOriginalFormatAsSource = $this->getBoolOption('addOriginalFormatAsSource');
+		$this->noSrcsetInImg = $this->getBoolOption('noSrcsetInImg');
+		$this->formats = $this->resolveFormats($this->kirby->option('timnarr.imagex.formats'));
+
+		if ($this->compareFormats && count($this->formats) <= 1) {
+			throw new InvalidArgumentException('[kirby-imagex] Not enough formats to determine the smallest. Please set "compareFormats" to false or add at least two formats in the configuration.');
+		}
+
+		$this->srcsetPresets = $this->resolveSrcsetPresets();
+	}
+
+	/**
+	 * Applies the defaults to the constructor options and validates their types.
+	 *
+	 * @param array $options The options as passed in.
+	 * @return array All options, with defaults for missing or `null` ones.
+	 * @throws InvalidArgumentException If an option is unknown, `image` is missing or a type is invalid.
+	 */
+	private function resolveOptions(array $options): array
+	{
 		$unknownOptions = array_diff(array_keys($options), array_keys(self::DEFAULT_OPTIONS));
 
 		if (!empty($unknownOptions)) {
@@ -89,6 +133,7 @@ class Imagex
 
 		// Validate loading option
 		$loading = $options['loading'];
+
 		if (!in_array($loading, ['eager', 'lazy'], true)) {
 			throw new InvalidArgumentException("[kirby-imagex] Option 'loading' must be 'eager' or 'lazy'. Got: " . (is_string($loading) ? "'{$loading}'" : get_debug_type($loading)));
 		}
@@ -118,47 +163,7 @@ class Imagex
 			throw new InvalidArgumentException('[kirby-imagex] Invalid option: nonce. Must be a non-empty string (e.g. kirby()->nonce()) or null.');
 		}
 
-		// Assign options to properties
-		$this->loading = $loading;
-		$this->image = $options['image'];
-		$this->ratio = $options['ratio'];
-		$this->srcset = $options['srcset'];
-		$this->compareFormats = $options['compareFormats'];
-		$this->focus = $options['focus'];
-		$this->nonce = $options['nonce'];
-
-		// Normalize and assign attributes
-		$attributes = $this->validateAttributes($options['attributes']);
-		$this->imgAttributes = normalizeAttributesStructure($attributes['img'] ?? []);
-		$this->pictureAttributes = normalizeAttributesStructure($attributes['picture'] ?? []);
-		$this->sourcesAttributes = normalizeAttributesStructure($attributes['sources'] ?? []);
-
-		// Resolving the ratio validates its format (and dimensions for 'intrinsic') up front
-		getAspectRatio($this->ratio, $this->image);
-
-		$this->artDirection = $this->validateArtDirection($options['artDirection']);
-
-		// Cache kirby instance and assign options
-		$this->kirby = kirby();
-		$this->customLazyloading = $this->getBoolOption('customLazyloading');
-		$this->compareFormatsWeights = resolveCompareFormatsWeights($this->kirby->option('timnarr.imagex.compareFormatsWeights'));
-		$this->addOriginalFormatAsSource = $this->getBoolOption('addOriginalFormatAsSource');
-		$this->noSrcsetInImg = $this->getBoolOption('noSrcsetInImg');
-
-		$formats = $this->kirby->option('timnarr.imagex.formats');
-		$invalidFormats = is_array($formats) ? array_filter($formats, fn ($format) => !is_string($format) || $format === '') : null;
-
-		if ($invalidFormats !== []) {
-			throw new InvalidArgumentException("[kirby-imagex] Option 'timnarr.imagex.formats' must be an array of format names (e.g. ['avif', 'webp']).");
-		}
-
-		$this->formats = $this->resolveFormats($formats);
-
-		if ($this->compareFormats && count($this->formats) <= 1) {
-			throw new InvalidArgumentException('[kirby-imagex] Not enough formats to determine the smallest. Please set "compareFormats" to false or add at least two formats in the configuration.');
-		}
-
-		$this->srcsetPresets = $this->resolveSrcsetPresets();
+		return $options;
 	}
 
 	/**
@@ -276,11 +281,18 @@ class Imagex
 	 * Resolves the formats to render <source> elements for: normalized, unique,
 	 * in configured order, plus 'originalformat' if addOriginalFormatAsSource is set.
 	 *
-	 * @param array $configFormats Formats from the plugin config.
+	 * @param mixed $configFormats Formats from the plugin config.
 	 * @return array List of format names.
+	 * @throws InvalidArgumentException If the config isn't an array of non-empty strings.
 	 */
-	private function resolveFormats(array $configFormats): array
+	private function resolveFormats(mixed $configFormats): array
 	{
+		$isFormatName = fn ($format) => is_string($format) && $format !== '';
+
+		if (!is_array($configFormats) || !A::every($configFormats, $isFormatName)) {
+			throw new InvalidArgumentException("[kirby-imagex] Option 'timnarr.imagex.formats' must be an array of format names (e.g. ['avif', 'webp']).");
+		}
+
 		$formats = $this->addOriginalFormatAsSource ? [...$configFormats, 'originalformat'] : $configFormats;
 
 		return array_values(array_unique(array_map(fn ($format) => normalizeFormat($format), $formats)));
