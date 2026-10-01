@@ -594,7 +594,7 @@ class Imagex
 		$properties = array_filter(
 			array_keys($defaults),
 			fn (string $property) => $defaults[$property] !== null
-				&& in_array(true, array_map(fn (array $source) => $source[$property] !== $defaults[$property], $sources), true)
+				&& A::some($sources, fn (array $source) => $source[$property] !== $defaults[$property])
 		);
 
 		if (empty($properties)) {
