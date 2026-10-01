@@ -29,19 +29,23 @@ class AspectRatioTest extends TestCase
 
 	public function testInvalidGetAspectRatioFromRatioStringColon()
 	{
-		$this->expectExceptionMessage('[kirby-imagex] Invalid ratio format. Expected format "x/y".');
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage("[kirby-imagex] Invalid ratio format '1:1'. Expected format \"x/y\"");
 		getAspectRatioFromRatioString('1:1');
 	}
 
 	public function testInvalidGetAspectRatioFromRatioStringDash()
 	{
-		$this->expectExceptionMessage('[kirby-imagex] Invalid ratio format. Expected format "x/y".');
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage("[kirby-imagex] Invalid ratio format '1-1'. Expected format \"x/y\"");
 		getAspectRatioFromRatioString('1-1');
 	}
 
 	public function testInvalidGetAspectRatioFromRatioStringWithZero()
 	{
-		$this->expectExceptionMessage('[kirby-imagex] Invalid ratio format. "x" and "y" must be greater than 0.');
+		// Same exception type as every other validation error, so callers can catch one type
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage("[kirby-imagex] Invalid ratio '1/0'. \"x\" and \"y\" must be greater than 0.");
 		getAspectRatioFromRatioString('1/0');
 	}
 

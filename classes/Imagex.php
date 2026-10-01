@@ -199,7 +199,11 @@ class Imagex
 				throw new InvalidArgumentException("{$prefix}: 'attributes' must be an array.");
 			}
 
-			getAspectRatio($source['ratio'] ?? 'intrinsic', $source['image'] ?? $this->image);
+			try {
+				getAspectRatio($source['ratio'] ?? 'intrinsic', $source['image'] ?? $this->image);
+			} catch (InvalidArgumentException $e) {
+				throw new InvalidArgumentException("{$prefix}: " . str_replace('[kirby-imagex] ', '', $e->getMessage()), previous: $e);
+			}
 		}
 
 		return $artDirection;

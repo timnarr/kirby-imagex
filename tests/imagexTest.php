@@ -257,9 +257,20 @@ class ImagexTest extends TestCase
 	public function testArtDirectionSourceWithInvalidRatioThrowsOnConstruction()
 	{
 		$this->expectException(InvalidArgumentException::class);
-		$this->expectExceptionMessage('Invalid ratio format');
+		$this->expectExceptionMessage("artDirection[0]: Invalid ratio format '16:9'");
 
 		$this->imagex(['artDirection' => [['media' => '(min-width: 800px)', 'ratio' => '16:9']]]);
+	}
+
+	public function testArtDirectionIntrinsicRatioErrorNamesEntry()
+	{
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage("artDirection[1]: Cannot use ratio 'intrinsic' for 'test/logo.svg'");
+
+		$this->imagex(['artDirection' => [
+			['media' => '(min-width: 1200px)', 'ratio' => '1/1'],
+			['media' => '(min-width: 800px)', 'image' => $this->image('logo.svg')],
+		]]);
 	}
 
 	public function testArtDirectionSourceWithNullImageFallsBackToMainImage()
@@ -274,7 +285,7 @@ class ImagexTest extends TestCase
 	public function testInvalidRatioThrowsOnConstruction()
 	{
 		$this->expectException(InvalidArgumentException::class);
-		$this->expectExceptionMessage('Invalid ratio format');
+		$this->expectExceptionMessage("Invalid ratio format '16:9'");
 
 		$this->imagex(['ratio' => '16:9']);
 	}

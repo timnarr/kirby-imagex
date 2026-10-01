@@ -5,7 +5,6 @@ declare(strict_types = 1);
 namespace TimNarr;
 
 use Kirby\Cms\File;
-use Kirby\Exception\Exception;
 use Kirby\Exception\InvalidArgumentException;
 
 /**
@@ -55,14 +54,12 @@ function getAspectRatioFromImage(int $width, int $height): array
  *
  * @param string $ratioString The aspect ratio in string format.
  * @return array Associative array with 'x' and 'y' keys for the aspect ratio.
- * @throws InvalidArgumentException If the format is not "x/y".
- * @throws Exception If either 'x' or 'y' in the ratio is 0.
+ * @throws InvalidArgumentException If the format is not "x/y" or either 'x' or 'y' is 0.
  */
 function getAspectRatioFromRatioString(string $ratioString): array
 {
-
 	if (!preg_match('/^\d+\/\d+$/', $ratioString)) {
-		throw new InvalidArgumentException('[kirby-imagex] Invalid ratio format. Expected format "x/y".');
+		throw new InvalidArgumentException("[kirby-imagex] Invalid ratio format '{$ratioString}'. Expected format \"x/y\" (e.g. \"16/9\") or \"intrinsic\".");
 	}
 
 	$ratioArray = explode('/', $ratioString);
@@ -70,7 +67,7 @@ function getAspectRatioFromRatioString(string $ratioString): array
 	$ratioY = (int)$ratioArray[1];
 
 	if ($ratioX === 0 || $ratioY === 0) {
-		throw new Exception('[kirby-imagex] Invalid ratio format. "x" and "y" must be greater than 0.');
+		throw new InvalidArgumentException("[kirby-imagex] Invalid ratio '{$ratioString}'. \"x\" and \"y\" must be greater than 0.");
 	}
 
 	return [
