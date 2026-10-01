@@ -44,12 +44,10 @@ function getAspectRatioFromImage(int $width, int $height): array
 	}
 
 	$gcd = greatestCommonDivisor($width, $height);
-	$ratioX = $width / $gcd;
-	$ratioY = $height / $gcd;
 
 	return [
-		'x' => (int)$ratioX,
-		'y' => (int)$ratioY,
+		'x' => intdiv($width, $gcd),
+		'y' => intdiv($height, $gcd),
 	];
 }
 

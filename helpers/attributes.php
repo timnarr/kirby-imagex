@@ -45,24 +45,12 @@ function coerceClassStyleToArrays(array $attributes): array
  */
 function validateAttributeTypes(array $options): void
 {
-	$expectedTypes = [
-		// Attribute as key and expected type as value
-		'style' => 'array',
-		'class' => 'array',
-	];
-
 	$violations = [];
 
 	foreach ($options as $loadingMode => $attributes) {
 		foreach ($attributes as $attribute => $value) {
-			// Check if the attribute has a defined expected type
-			if (isset($expectedTypes[$attribute])) {
-				$expectedType = $expectedTypes[$attribute];
-				// Validate the type of the attribute's value against the expected type
-				$actualType = gettype($value);
-				if ($actualType !== $expectedType) {
-					$violations[] = "attribute \"$attribute\" in \"$loadingMode\" expected to be $expectedType, $actualType given.";
-				}
+			if (in_array($attribute, ['class', 'style'], true) && !is_array($value)) {
+				$violations[] = "attribute \"$attribute\" in \"$loadingMode\" expected to be array, " . gettype($value) . ' given.';
 			}
 		}
 	}
@@ -105,33 +93,15 @@ function mergeHTMLAttributes(array $attributes, string $loadingMode, array $defa
 		throw new InvalidArgumentException("[kirby-imagex] LoadingMode \"$loadingMode\" not found in attributes or defaultAttributes.");
 	}
 
-	$mergableAttributes = ['class', 'style'];
-	$mergedAttributes = [];
+	// 'class' and 'style' are arrays (validated above): merged, deduplicated, empty/null/false entries dropped
+	$mergeValues = fn (array $current, array $new) => array_values(array_filter(
+		array_unique(array_merge($current, $new)),
+		fn ($value) => $value !== '' && $value !== null && $value !== false
+	));
 
-	// Function to merge attributes, handling both array and string values
-	$mergeAttributeValues = function ($key, $currentValue, $newValue) use ($mergableAttributes) {
-		// For non-mergable attributes, new value overrides
-		if (!in_array($key, $mergableAttributes, true)) {
-			return $newValue;
-		}
+	$mergedAttributes = $defaultAttributes['shared'] ?? [];
 
-		// Ensure both values are arrays
-		$currentValues = is_array($currentValue) ? $currentValue : explode(' ', $currentValue);
-		$newValues = is_array($newValue) ? $newValue : explode(' ', $newValue);
-		// Merge, remove duplicates, and drop empty, null, and false entries
-		$merged = array_unique(array_merge($currentValues, $newValues));
-		$filtered = array_filter($merged, fn ($val) => $val !== '' && $val !== null && $val !== false);
-
-		// Re-index array to ensure sequential keys starting from 0
-		return array_values($filtered);
-	};
-
-	// Step 1: Start with default 'shared' attributes
-	foreach ($defaultAttributes['shared'] ?? [] as $attr => $value) {
-		$mergedAttributes[$attr] = $value;
-	}
-
-	// Steps 2-4: Merge in ascending priority — default loading-mode, user 'shared',
+	// Merge in ascending priority — default loading-mode, user 'shared',
 	// then user loading-mode-specific (user attributes always win)
 	$priorityLayers = [
 		$defaultAttributes[$loadingMode] ?? [],
@@ -141,7 +111,9 @@ function mergeHTMLAttributes(array $attributes, string $loadingMode, array $defa
 
 	foreach ($priorityLayers as $layer) {
 		foreach ($layer as $attr => $value) {
-			$mergedAttributes[$attr] = $mergeAttributeValues($attr, $mergedAttributes[$attr] ?? '', $value);
+			$mergedAttributes[$attr] = in_array($attr, ['class', 'style'], true)
+				? $mergeValues($mergedAttributes[$attr] ?? [], $value)
+				: $value;
 		}
 	}
 

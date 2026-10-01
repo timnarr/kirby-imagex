@@ -17,7 +17,9 @@ use Kirby\Exception\InvalidArgumentException;
  */
 function normalizeFormat(string $format): string
 {
-	return strtolower($format) === 'jpg' ? 'jpeg' : strtolower($format);
+	$format = strtolower($format);
+
+	return $format === 'jpg' ? 'jpeg' : $format;
 }
 
 /**
@@ -89,13 +91,7 @@ function findSmallestValueAndKey(array $array): string
 		throw new InvalidArgumentException('[kirby-imagex] Input array cannot be empty.');
 	}
 
-	// Find the smallest value in the array
-	$smallestValue = min($array);
-
-	// Find the key associated with the smallest value
-	$smallestKey = array_search($smallestValue, $array, true);
-
-	return $smallestKey;
+	return array_search(min($array), $array, true);
 }
 
 /**
