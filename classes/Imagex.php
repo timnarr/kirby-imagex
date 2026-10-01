@@ -369,8 +369,8 @@ class Imagex
 	}
 
 	/**
-	 * Get the smallest image format based on weighted file size comparison.
-	 * Uses mobile-first weighting across multiple srcset samples.
+	 * Get the smallest image format based on weighted file size comparison
+	 * (see compareFormatsWeights). Without compareFormats, the first configured format.
 	 *
 	 * @param File|null $image Optional file object; defaults to main image.
 	 * @param string|null $ratio Optional aspect ratio; defaults to object's ratio.
@@ -379,19 +379,18 @@ class Imagex
 	 */
 	public function getSmallestFormatForImage(File|null $image = null, string|null $ratio = null): string|null
 	{
-		$image = $image ?? $this->image;
-		$ratio = $ratio ?? $this->ratio;
-		$formats = $this->formats;
+		if (!$this->compareFormats) {
+			// Only the image's original format is rendered, so there is no modern format to prefer
+			if ($this->addOriginalFormatAsSource && $this->formats === ['originalformat']) {
+				return null;
+			}
 
-		// Check for the specific condition where only the 'originalformat' is present and addOriginalFormatAsSource is true.
-		if (!$this->compareFormats && count($formats) === 1 && A::has($formats, 'originalformat') && $this->addOriginalFormatAsSource) {
-			return null;
+			return A::first($this->formats);
 		}
 
-		// Return the first format if there is only one format, regardless of compareFormats's state.
-		if (!$this->compareFormats || count($formats) === 1) {
-			return A::first($formats);
-		}
+		// The constructor guarantees at least two formats when compareFormats is enabled
+		$image ??= $this->image;
+		$ratio ??= $this->ratio;
 
 		// Called per format for every art-directed source — memoize on top of the persistent cache
 		return $this->smallestFormats[$image->id() . '|' . $ratio] ??= $this->compareFormatSizes($image, $ratio);
@@ -438,19 +437,12 @@ class Imagex
 	 */
 	public function getImgAttributes(): array
 	{
-		$format = $this->getImageFormat();
-		$srcsetPreset = $this->getDynamicSrcsetPreset();
-		$srcsetValue = $this->image->srcset($srcsetPreset[$format]);
-
-		$image = $this->image;
-		$isEager = $this->loading === 'eager';
-		$userAttributes = $this->imgAttributes;
+		$srcsetPreset = $this->getDynamicSrcsetPreset()[$this->getImageFormat()];
+		$smallestEntry = A::first($srcsetPreset);
+		['width' => $width, 'height' => $height] = $smallestEntry;
+		$src = $this->image->thumb($smallestEntry)->url();
+		$srcset = $this->noSrcsetInImg ? null : $this->image->srcset($srcsetPreset);
 		$customLazyloading = $this->customLazyloading;
-		$useNoSrcsetInImg = $this->noSrcsetInImg;
-
-		$firstItemInSrcsetConfig = A::first($srcsetPreset[$format]);
-		$src = $image->thumb($firstItemInSrcsetConfig)->url();
-		['width' => $width, 'height' => $height] = $firstItemInSrcsetConfig;
 
 		// An id is only needed (and generated) when there are actual art-direction
 		// style overrides to scope to this <img> — see getArtDirectionStyles().
@@ -462,26 +454,26 @@ class Imagex
 				'width' => $width,
 				'height' => $height,
 				'decoding' => 'async',
-				'fetchpriority' => $isEager ? 'high' : null,
+				'fetchpriority' => $this->loading === 'eager' ? 'high' : null,
 				'id' => $artDirectionId,
 				// With a CSP nonce, focus styles go into getArtDirectionStyles() instead: strict
 				// CSPs block style attributes, and nonces only apply to <style> elements
-				'style' => $this->focus && $this->nonce === null ? ['object-fit: cover;', 'object-position: ' . resolveFocusValue($image) . ';'] : [],
+				'style' => $this->focus && $this->nonce === null ? ['object-fit: cover;', 'object-position: ' . resolveFocusValue($this->image) . ';'] : [],
 			],
 			'eager' => [
-				'srcset' => $useNoSrcsetInImg ? null : $srcsetValue,
+				'srcset' => $srcset,
 			],
 			'lazy' => [
 				'loading' => $customLazyloading ? null : 'lazy',
 				'data-src' => $customLazyloading ? $src : null,
 				// custom lazy loading libraries swap data-src into src; a placeholder can be set via attributes
 				'src' => $customLazyloading ? null : $src,
-				'data-srcset' => $useNoSrcsetInImg ? null : ($customLazyloading ? $srcsetValue : null),
-				'srcset' => $useNoSrcsetInImg ? null : (!$customLazyloading ? $srcsetValue : null),
+				'data-srcset' => $customLazyloading ? $srcset : null,
+				'srcset' => $customLazyloading ? null : $srcset,
 			],
 		];
 
-		$mergedAttributes = mergeHTMLAttributes($userAttributes, $this->loading, $defaultAttributes);
+		$mergedAttributes = mergeHTMLAttributes($this->imgAttributes, $this->loading, $defaultAttributes);
 
 		// Apply urlHandler to all URL-based attributes (handles user-overridden attributes)
 		return applyUrlHandlerToAttributes($mergedAttributes);
