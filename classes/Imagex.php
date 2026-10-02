@@ -382,30 +382,35 @@ class Imagex
 
 	/**
 	 * Get the smallest image format based on weighted file size comparison
-	 * (see compareFormatsWeights). Without compareFormats, the first configured format.
+	 * (see compareFormatsWeights). Only meaningful with compareFormats enabled,
+	 * for which the constructor guarantees at least two formats.
 	 *
 	 * @param File|null $image Optional file object; defaults to main image.
 	 * @param string|null $ratio Optional aspect ratio; defaults to object's ratio.
-	 * @return string|null Format of the smallest format or null if unable to determine.
+	 * @return string The smallest format.
 	 * @internal Not part of the public API — may change in any release.
 	 */
-	public function getSmallestFormatForImage(File|null $image = null, string|null $ratio = null): string|null
+	public function getSmallestFormatForImage(File|null $image = null, string|null $ratio = null): string
 	{
-		if (!$this->compareFormats) {
-			// Only the image's original format is rendered, so there is no modern format to prefer
-			if ($this->addOriginalFormatAsSource && $this->formats === ['originalformat']) {
-				return null;
-			}
-
-			return A::first($this->formats);
-		}
-
-		// The constructor guarantees at least two formats when compareFormats is enabled
 		$image ??= $this->image;
 		$ratio ??= $this->ratio;
 
 		// Called per format for every art-directed source — memoize on top of the persistent cache
 		return $this->smallestFormats[$image->id() . '|' . $ratio] ??= $this->compareFormatSizes($image, $ratio);
+	}
+
+	/**
+	 * Whether a format's <source> is left out because compareFormats found a
+	 * smaller format later in the configured order (see isFormatSkippable()).
+	 *
+	 * @param string $format The format to check.
+	 * @param File|null $image Optional file object; defaults to main image.
+	 * @param string|null $ratio Optional aspect ratio; defaults to object's ratio.
+	 * @return bool True if the format's <source> should be skipped.
+	 */
+	private function isFormatSkipped(string $format, File|null $image = null, string|null $ratio = null): bool
+	{
+		return $this->compareFormats && isFormatSkippable($format, $this->formats, $this->getSmallestFormatForImage($image, $ratio));
 	}
 
 	/**
@@ -707,12 +712,8 @@ class Imagex
 
 		foreach ($this->artDirection as $source) {
 			// Per-image format decision when using a different image
-			if ($this->compareFormats && isset($source['image'])) {
-				$sourceSmallestFormat = $this->getSmallestFormatForImage($source['image'], $source['ratio']);
-
-				if ($sourceSmallestFormat && isFormatSkippable($format, $this->formats, $sourceSmallestFormat)) {
-					continue;
-				}
+			if (isset($source['image']) && $this->isFormatSkipped($format, $source['image'], $source['ratio'])) {
+				continue;
 			}
 
 			$sources[] = $this->getSourceAttributes($format, $source);
@@ -728,17 +729,11 @@ class Imagex
 	 */
 	public function getPictureSources(): array
 	{
-		$formats = $this->formats;
 		$sources = [];
 
-		// Determine smallest format for main image
-		$mainSmallestFormat = $this->compareFormats
-			? $this->getSmallestFormatForImage()
-			: null;
-
-		foreach ($formats as $format) {
+		foreach ($this->formats as $format) {
 			// Skip format if a smaller format exists for main image
-			if ($mainSmallestFormat && isFormatSkippable($format, $formats, $mainSmallestFormat)) {
+			if ($this->isFormatSkipped($format)) {
 				continue;
 			}
 
