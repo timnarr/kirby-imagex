@@ -139,14 +139,7 @@ function getSampleElements(array $inputArray): array
  */
 function isFormatSkippable(string $format, array $formats, string $smallestFormat): bool
 {
-	if (!$smallestFormat || $format === $smallestFormat) {
-		return false;
-	}
-
-	$formatIndex = array_search($format, $formats);
-	$smallestIndex = array_search($smallestFormat, $formats);
-
-	return $formatIndex < $smallestIndex;
+	return array_search($format, $formats) < array_search($smallestFormat, $formats);
 }
 
 /**

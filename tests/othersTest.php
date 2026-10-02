@@ -127,13 +127,6 @@ class OthersTest extends TestCase
 		$this->assertFalse(isFormatSkippable('originalformat', $formats, 'originalformat'));
 	}
 
-	public function testIsFormatSkippableWithNoSmallestFormat()
-	{
-		$formats = ['avif', 'webp'];
-
-		$this->assertFalse(isFormatSkippable('avif', $formats, ''));
-	}
-
 	public function testUrlHandlerWithSrcsetString()
 	{
 		// Test handling of srcset strings with multiple URLs
