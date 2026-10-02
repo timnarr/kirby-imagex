@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## Unreleased
+## [0.5.0] - October 02, 2026
 
 ### Fixed
 - **Bug:** The `imagex-picture-json` snippet crashed with `Call to undefined function transformForJson()`: the helper lives in the `TimNarr` namespace, but the snippet called it unqualified. It now imports the function.
@@ -29,7 +29,8 @@ All notable changes to this project will be documented in this file.
 - **BREAKING:** Attributes that mix flat keys with `shared`/`eager`/`lazy` keys (e.g. `['class' => 'x', 'lazy' => [...]]`) now throw an `InvalidArgumentException`. Previously the flat keys were dropped silently. Migration: move the flat keys into `shared`.
 - **BREAKING:** `artDirection` entries are validated at construction time. Each entry must have a non-empty `media` string (a `<source>` without `media` always matches, so the default image was never used), only the keys `media`, `ratio`, `image` and `attributes` are accepted, `image` must be a `Kirby\Cms\File` or `null` (still falls back to the main image), and `ratio` must be valid. Migration: add a `media` condition to every entry and fix typos in keys.
 - The main `ratio` is now validated at construction time instead of on first render.
-- The plugin options `formats`, `compareFormatsWeights`, `customLazyloading`, `addOriginalFormatAsSource`, `noSrcsetInImg` and `relativeUrls` are type-checked at construction time, throwing a descriptive `InvalidArgumentException` instead of a `TypeError`. For `relativeUrls`, a non-boolean value (e.g. `1` or a string from `env()`) was previously accepted and now has to be `true` or `false`.
+- **BREAKING:** The `relativeUrls` plugin option must be a boolean. A non-boolean value (e.g. `1` or a string from `env()`) was previously coerced silently and now throws an `InvalidArgumentException`. Migration: set it to `true` or `false`.
+- The plugin options `formats`, `compareFormatsWeights`, `customLazyloading`, `addOriginalFormatAsSource`, `noSrcsetInImg` and `relativeUrls` are type-checked at construction time, throwing a descriptive `InvalidArgumentException` instead of a `TypeError`.
 - All srcset preset errors (missing `thumbs.srcsets`, missing base or format preset, malformed preset) and the `compareFormats` "not enough formats" error are now thrown at construction time as `InvalidArgumentException`. Previously a missing `thumbs.srcsets` config crashed with a `TypeError`, and some errors only surfaced during rendering.
 - All PHP files declare `strict_types`, enforced by php-cs-fixer's `declare_strict_types` rule.
 
@@ -41,6 +42,68 @@ All notable changes to this project will be documented in this file.
 ### Removed
 - **BREAKING:** `Imagex::getSmallestFormat()`. It was an unused wrapper around `getSmallestFormatForImage()` without arguments. Migration: call `getSmallestFormatForImage()` instead (now `@internal`).
 - **BREAKING:** `srcHandler()` helper. Its only job — dropping `src` for custom lazy loading — is now a plain default attribute in `Imagex::getImgAttributes()`; user-supplied `src` overrides are handled by `mergeHTMLAttributes()` as for every other attribute. Migration: none for snippet users; if you called it directly, set `src` via `attributes.img` instead.
+
+### Migration Guide
+
+#### From 0.4.x to 0.5.0
+
+Most setups need no changes. 0.5.0 validates options up front and throws where 0.4.x silently ignored mistakes, so an upgrade surfaces misconfigurations that were already there. Go through these points; each error message names the offending option and the valid alternatives.
+
+**1. Add a `media` condition to every `artDirection` entry**
+
+An entry without `media` always matched, so the default image was never shown. It now throws.
+```php
+// Before
+'artDirection' => [
+  ['ratio' => '21/9', 'image' => $wideImage],
+],
+
+// After
+'artDirection' => [
+  ['media' => '(min-width: 800px)', 'ratio' => '21/9', 'image' => $wideImage],
+],
+```
+Only the keys `media`, `ratio`, `image` and `attributes` are accepted; a typo like `ratios` now throws instead of being ignored.
+
+**2. Don't mix flat and structured attributes**
+
+Flat keys next to `shared`/`eager`/`lazy` were dropped silently. Move them into `shared`:
+```php
+// Before
+'attributes' => [
+  'img' => [
+    'class' => 'hero',
+    'lazy' => ['data-sizes' => 'auto'],
+  ],
+],
+
+// After
+'attributes' => [
+  'img' => [
+    'shared' => ['class' => 'hero'],
+    'lazy' => ['data-sizes' => 'auto'],
+  ],
+],
+```
+
+**3. Fix unknown option and `attributes` keys**
+
+`attributes` only accepts `img`, `picture` and `sources` (e.g. `image` throws). When you use the `Imagex` class directly, misspelled options like `ration` throw too. Misspelled snippet options are still ignored.
+
+**4. Set `relativeUrls` to a real boolean**
+```php
+// Before
+'timnarr.imagex.relativeUrls' => env('RELATIVE_URLS'), // e.g. '1'
+
+// After
+'timnarr.imagex.relativeUrls' => env('RELATIVE_URLS') === '1',
+```
+
+**5. Only if you call PHP internals directly**
+
+- `Imagex::getSmallestFormat()` was removed. Use `getSmallestFormatForImage()`.
+- The `srcHandler()` helper was removed. Set `src` via `attributes.img` instead.
+- The helper functions in the `TimNarr` namespace and `Imagex::getSmallestFormatForImage()` are now `@internal` and may change in any release. See "Public API" in the README for what is covered by semantic versioning.
 
 ## [0.4.0] - September 04, 2026
 
