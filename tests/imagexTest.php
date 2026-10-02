@@ -406,6 +406,28 @@ class ImagexTest extends TestCase
 		$this->imagex();
 	}
 
+	public function testNonBooleanRelativeUrlsOptionThrowsOnConstruction()
+	{
+		// Regression test: under strict_types, a non-bool value (e.g. 1 or an env() string)
+		// crashed with a TypeError in urlHandler() while rendering
+		$this->app(['timnarr.imagex.relativeUrls' => 1]);
+
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage("Option 'timnarr.imagex.relativeUrls' must be a boolean. Got: int");
+
+		$this->imagex();
+	}
+
+	public function testInvalidCompareFormatsWeightsTypeThrows()
+	{
+		$this->app(['timnarr.imagex.compareFormatsWeights' => 5]);
+
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage("Option 'timnarr.imagex.compareFormatsWeights' must be a preset name (mobile, desktop, balanced) or an array with 'small', 'medium' and 'large' weights. Got: int");
+
+		$this->imagex();
+	}
+
 	public function testInvalidFormatsOptionThrows()
 	{
 		$this->app(['timnarr.imagex.formats' => 'avif']);

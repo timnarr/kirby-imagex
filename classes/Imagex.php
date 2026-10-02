@@ -30,6 +30,7 @@ class Imagex
 	protected array $compareFormatsWeights;
 	protected bool $addOriginalFormatAsSource;
 	protected bool $noSrcsetInImg;
+	protected bool $relativeUrls;
 	protected $kirby;
 
 	/** Normalized srcset presets from the config, keyed by format. */
@@ -95,6 +96,7 @@ class Imagex
 		$this->compareFormatsWeights = resolveCompareFormatsWeights($this->kirby->option('timnarr.imagex.compareFormatsWeights'));
 		$this->addOriginalFormatAsSource = $this->getBoolOption('addOriginalFormatAsSource');
 		$this->noSrcsetInImg = $this->getBoolOption('noSrcsetInImg');
+		$this->relativeUrls = $this->getBoolOption('relativeUrls');
 		$this->formats = $this->resolveFormats($this->kirby->option('timnarr.imagex.formats'));
 
 		if ($this->compareFormats && count($this->formats) <= 1) {
@@ -504,7 +506,7 @@ class Imagex
 		$mergedAttributes = mergeHTMLAttributes($this->imgAttributes, $this->loading, $defaultAttributes);
 
 		// Apply urlHandler to all URL-based attributes (handles user-overridden attributes)
-		return applyUrlHandlerToAttributes($mergedAttributes);
+		return applyUrlHandlerToAttributes($mergedAttributes, $this->relativeUrls);
 	}
 
 	/**
@@ -704,7 +706,7 @@ class Imagex
 		$mergedAttributes = mergeHTMLAttributes($source['attributes'] ?? [], $this->loading, $defaultAttributes);
 
 		// Apply urlHandler to all URL-based attributes (handles user-overridden attributes)
-		return applyUrlHandlerToAttributes($mergedAttributes);
+		return applyUrlHandlerToAttributes($mergedAttributes, $this->relativeUrls);
 	}
 
 	/**

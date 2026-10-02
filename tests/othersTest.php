@@ -6,6 +6,7 @@ namespace TimNarr;
 
 use Kirby\Cms\File;
 use Kirby\Cms\Page;
+use Kirby\Exception\InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
 class OthersTest extends TestCase
@@ -125,6 +126,14 @@ class OthersTest extends TestCase
 		$this->assertTrue(isFormatSkippable('avif', $formats, 'originalformat'));
 		$this->assertTrue(isFormatSkippable('webp', $formats, 'originalformat'));
 		$this->assertFalse(isFormatSkippable('originalformat', $formats, 'originalformat'));
+	}
+
+	public function testResolveCompareFormatsWeightsRejectsInvalidType()
+	{
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('must be a preset name (mobile, desktop, balanced) or an array');
+
+		resolveCompareFormatsWeights(null);
 	}
 
 	public function testUrlHandlerWithSrcsetString()
