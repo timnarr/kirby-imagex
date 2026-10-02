@@ -33,10 +33,10 @@ class Imagex
 	protected bool $relativeUrls;
 	protected $kirby;
 
-	/** Normalized srcset presets from the config, keyed by format. */
+	/** Normalized srcset presets from the config, keyed by preset name (see getSrcsetPresetName()). */
 	private array $srcsetPresets;
 
-	/** Srcset presets with ratio-based heights, keyed by resolved ratio ('x/y'). */
+	/** Srcset presets with ratio-based heights, keyed by resolved ratio ('x/y') and preset name. */
 	private array $dynamicSrcsetPresets = [];
 
 	/** Smallest format per image and ratio, keyed by 'imageId|ratio'. */
@@ -316,13 +316,16 @@ class Imagex
 	}
 
 	/**
-	 * Resolves and validates the srcset presets for the image format and every
-	 * active format, e.g. 'my-srcset', 'my-srcset-webp', 'my-srcset-avif'.
+	 * Resolves and validates the base srcset preset (used by the <img>) and the
+	 * preset of every active format, e.g. 'my-srcset', 'my-srcset-webp', 'my-srcset-avif'.
+	 *
+	 * Keyed by preset name, not format: the <img> always uses the base preset, even
+	 * if the image's own format (e.g. a WebP upload) is also an active format.
 	 *
 	 * Runs once in the constructor, so misconfiguration is caught immediately
 	 * with a helpful error message rather than during rendering.
 	 *
-	 * @return array Normalized srcset presets keyed by format.
+	 * @return array Normalized srcset presets keyed by preset name.
 	 * @throws InvalidArgumentException If presets are missing or malformed.
 	 */
 	private function resolveSrcsetPresets(): array
@@ -339,12 +342,7 @@ class Imagex
 			throw new InvalidArgumentException("[kirby-imagex] Srcset preset '{$this->srcset}' not found in 'thumbs.srcsets'. Available: {$available}");
 		}
 
-		$presetNames = [];
-
-		foreach ($this->formats as $format) {
-			$presetNames[$format] = $format === 'originalformat' ? $this->srcset : $this->srcset . '-' . $format;
-		}
-
+		$presetNames = array_map($this->getSrcsetPresetName(...), $this->formats);
 		$missing = array_filter($presetNames, fn ($name) => !isset($allPresets[$name]));
 
 		if (!empty($missing)) {
@@ -357,13 +355,26 @@ class Imagex
 			? normalizeSrcsetPreset($allPresets[$name], $name)
 			: throw new InvalidArgumentException("[kirby-imagex] Srcset preset '{$name}' must be an array.");
 
-		$presets = [$this->getImageFormat() => $normalize($this->srcset)];
+		$presets = [];
 
-		foreach ($presetNames as $format => $name) {
-			$presets[$format] = $normalize($name);
+		// 'originalformat' shares the base preset
+		foreach ([$this->srcset, ...$presetNames] as $name) {
+			$presets[$name] ??= $normalize($name);
 		}
 
 		return $presets;
+	}
+
+	/**
+	 * Get the srcset preset name for a format, e.g. 'my-srcset-webp' for 'webp'.
+	 * 'originalformat' uses the base preset.
+	 *
+	 * @param string $format The format, as listed in the formats option.
+	 * @return string The preset name in 'thumbs.srcsets'.
+	 */
+	private function getSrcsetPresetName(string $format): string
+	{
+		return $format === 'originalformat' ? $this->srcset : $this->srcset . '-' . $format;
 	}
 
 	/**
@@ -378,21 +389,23 @@ class Imagex
 	}
 
 	/**
-	 * Get srcset preset with dynamic heights based on aspect ratio.
+	 * Get a srcset preset with dynamic heights based on aspect ratio.
 	 *
 	 * Memoized per instance: it's called for the <img>, every format and every
 	 * art-directed source, but only depends on the resolved ratio. It's plain
 	 * arithmetic, so a persistent cache lookup would cost more than it saves.
 	 *
+	 * @param string|null $format The format's preset, or null for the <img>'s base preset.
 	 * @param string|null $ratio Optional aspect ratio; defaults to object's ratio.
 	 * @param File|null $image Optional file object (for 'intrinsic'); defaults to main image.
 	 * @return array Srcset preset with dynamic heights.
 	 */
-	private function getDynamicSrcsetPreset(string|null $ratio = null, File|null $image = null): array
+	private function getDynamicSrcsetPreset(string|null $format = null, string|null $ratio = null, File|null $image = null): array
 	{
 		['x' => $ratioX, 'y' => $ratioY] = getAspectRatio($ratio ?? $this->ratio, $image ?? $this->image);
+		$presets = $this->dynamicSrcsetPresets["{$ratioX}/{$ratioY}"] ??= addRatioBasedHeightToSrcsetPreset($this->srcsetPresets, $ratioX, $ratioY);
 
-		return $this->dynamicSrcsetPresets["{$ratioX}/{$ratioY}"] ??= addRatioBasedHeightToSrcsetPreset($this->srcsetPresets, $ratioX, $ratioY);
+		return $presets[$format === null ? $this->srcset : $this->getSrcsetPresetName($format)];
 	}
 
 	/**
@@ -451,11 +464,10 @@ class Imagex
 		$cacheId = 'compare-formats-' . Str::slug($image->id()) . '-' . hash('xxh3', $cacheKey);
 
 		return $this->kirby->cache('timnarr.imagex')->getOrSet($cacheId, function () use ($image, $ratio) {
-			$srcsets = $this->getDynamicSrcsetPreset($ratio, $image);
 			$formatSizes = [];
 
 			foreach ($this->formats as $format) {
-				$formatSizes[$format] = calculateWeightedFormatSize($image, $srcsets[$format], $this->compareFormatsWeights);
+				$formatSizes[$format] = calculateWeightedFormatSize($image, $this->getDynamicSrcsetPreset($format, $ratio, $image), $this->compareFormatsWeights);
 			}
 
 			return findSmallestValueAndKey($formatSizes);
@@ -469,7 +481,7 @@ class Imagex
 	 */
 	public function getImgAttributes(): array
 	{
-		$srcsetPreset = $this->getDynamicSrcsetPreset()[$this->getImageFormat()];
+		$srcsetPreset = $this->getDynamicSrcsetPreset();
 		$smallestEntry = A::first($srcsetPreset);
 		['width' => $width, 'height' => $height] = $smallestEntry;
 		$src = $this->image->thumb($smallestEntry)->url();
@@ -677,9 +689,9 @@ class Imagex
 	private function getSourceAttributes(string $format, array|null $source = null): array
 	{
 		$image = $source['image'] ?? $this->image;
-		$srcsetPreset = $this->getDynamicSrcsetPreset($source['ratio'] ?? $this->ratio, $image);
-		$srcsetValue = $image->srcset($srcsetPreset[$format]);
-		['width' => $width, 'height' => $height] = A::first($srcsetPreset[$format]);
+		$srcsetPreset = $this->getDynamicSrcsetPreset($format, $source['ratio'] ?? $this->ratio, $image);
+		$srcsetValue = $image->srcset($srcsetPreset);
+		['width' => $width, 'height' => $height] = A::first($srcsetPreset);
 
 		if ($format === 'originalformat') {
 			$format = $this->getImageFormat($image);

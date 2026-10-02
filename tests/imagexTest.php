@@ -8,6 +8,7 @@ use Kirby\Cms\App;
 use Kirby\Cms\File;
 use Kirby\Exception\InvalidArgumentException;
 use Kirby\Filesystem\Dir;
+use Kirby\Toolkit\A;
 use PHPUnit\Framework\TestCase;
 
 class ImagexTest extends TestCase
@@ -195,6 +196,30 @@ class ImagexTest extends TestCase
 
 		$this->assertStringStartsWith('/blog/media/', $attributes['src']);
 		$this->assertStringNotContainsString('https://', $attributes['srcset']);
+	}
+
+	public function testImgUsesBasePresetWhenImageFormatIsAlsoAConfiguredFormat()
+	{
+		// Regression test: for a WebP upload with 'webp' in formats, the 'default-webp'
+		// preset overwrote the base preset used by the <img>
+		imagewebp(imagecreatetruecolor(1600, 1200), $this->root . '/content/test/image.webp');
+		$preset = fn (array $options = []) => [
+			'400w' => ['width' => 400, ...$options],
+			'800w' => ['width' => 800, ...$options],
+		];
+		$this->app(['thumbs' => ['srcsets' => [
+			'default' => $preset(),
+			'default-webp' => $preset(['format' => 'webp', 'quality' => 50]),
+			'default-avif' => $preset(['format' => 'avif']),
+		]]]);
+
+		$imagex = $this->imagex(['image' => $this->image('image.webp')]);
+		$img = $imagex->getImgAttributes();
+		$webpSource = A::first(array_filter($imagex->getPictureSources(), fn (array $source) => $source['type'] === 'image/webp'));
+
+		$this->assertStringNotContainsString('-q50', $img['src']);
+		$this->assertStringNotContainsString('-q50', $img['srcset']);
+		$this->assertStringContainsString('-q50', $webpSource['srcset']);
 	}
 
 	public function testShorthandSrcsetPresetsAreSupported()
