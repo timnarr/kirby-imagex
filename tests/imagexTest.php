@@ -367,10 +367,29 @@ class ImagexTest extends TestCase
 		$this->assertSame(['a', 'b'], $sources[0]['class']);
 	}
 
+	public function testInvalidAttributeTypeThrowsOnConstruction()
+	{
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('attribute "class" in "shared" expected to be array, integer given.');
+
+		$this->imagex(['attributes' => ['img' => ['class' => 42]]]);
+	}
+
+	public function testArtDirectionAttributeErrorsIncludeTheEntryIndex()
+	{
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('artDirection[1]: Type mismatch detected: attribute "style" in "lazy" expected to be array, integer given.');
+
+		$this->imagex(['artDirection' => [
+			['media' => '(min-width: 1200px)'],
+			['media' => '(min-width: 800px)', 'attributes' => ['lazy' => ['style' => 42]]],
+		]]);
+	}
+
 	public function testArtDirectionRejectsMixedAttributes()
 	{
 		$this->expectException(InvalidArgumentException::class);
-		$this->expectExceptionMessage('Attributes mix flat keys');
+		$this->expectExceptionMessage('artDirection[0]: Attributes mix flat keys');
 
 		$this->imagex(['artDirection' => [
 			['media' => '(min-width: 800px)', 'attributes' => ['class' => 'a', 'lazy' => ['data-x' => 'y']]],

@@ -277,10 +277,11 @@ class Imagex
 			}
 
 			$artDirection[$index]['ratio'] = $source['ratio'] ?? 'intrinsic';
-			// Flat or structured, like every other attributes option
-			$artDirection[$index]['attributes'] = normalizeAttributesStructure($source['attributes'] ?? []);
 
+			// Attribute and ratio errors come from shared helpers; prefix them with the entry index
 			try {
+				// Flat or structured, like every other attributes option
+				$artDirection[$index]['attributes'] = normalizeAttributesStructure($source['attributes'] ?? []);
 				getAspectRatio($artDirection[$index]['ratio'], $source['image'] ?? $this->image);
 			} catch (InvalidArgumentException $e) {
 				throw new InvalidArgumentException("{$prefix}: " . str_replace('[kirby-imagex] ', '', $e->getMessage()), previous: $e);
