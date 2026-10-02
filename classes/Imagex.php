@@ -498,16 +498,16 @@ class Imagex
 
 	/**
 	 * Resolves the id used to scope generated art-direction CSS to this <img>.
-	 * Reuses a user-supplied 'id' attribute if present — checked in the same
-	 * shared/loading-mode priority getImgAttributes() itself resolves with, so
-	 * an id set only under 'eager'/'lazy' is still picked up — otherwise lazily
+	 * Reuses a user-supplied 'id' attribute if present — resolved with the same
+	 * shared/loading-mode merge as getImgAttributes(), so an id set only under
+	 * 'eager'/'lazy' is still picked up — otherwise lazily
 	 * generates and caches one for the lifetime of this instance.
 	 *
 	 * @return string The <img> element's id.
 	 */
 	private function resolveArtDirectionId(): string
 	{
-		$userId = $this->imgAttributes[$this->loading]['id'] ?? $this->imgAttributes['shared']['id'] ?? null;
+		$userId = mergeHTMLAttributes($this->imgAttributes, $this->loading)['id'] ?? null;
 
 		if ($userId) {
 			return (string)$userId;

@@ -35,8 +35,8 @@ function coerceClassStyleToArrays(array $attributes): array
  * Validates attribute value types in the options array against expected types.
  *
  * Validates that 'style' and 'class' attributes are provided as arrays.
- * String values are auto-converted to arrays in normalizeAttributesStructure(),
- * so this acts as a safety net for other unexpected types (e.g. integers).
+ * Called by normalizeAttributesStructure() after auto-converting strings, so it
+ * catches other unexpected types (e.g. integers) once, at construction.
  *
  * @param array $options Associative array of options with attributes by loading modes ('shared', 'eager', 'lazy').
  * @throws InvalidArgumentException If attribute types do not match expected types.
@@ -72,28 +72,24 @@ function validateAttributeTypes(array $options): void
  * Note: Returns attributes with 'class' and 'style' as arrays. Use transformForJson()
  * to convert them to strings for JSON output.
  *
+ * User attributes are expected to come from normalizeAttributesStructure(), which
+ * already validated their types; defaults are built by the plugin itself.
+ *
  * @param array $attributes User-defined attributes structured by loading modes.
- * @param string $loadingMode The loading mode to merge attributes for ('shared', 'eager', or 'lazy').
+ * @param string $loadingMode The loading mode to merge attributes for ('eager' or 'lazy').
  * @param array $defaultAttributes Optional default attributes to apply as fallback.
  * @return array Merged array of HTML attributes for specified loading mode (class/style as arrays).
- * @throws InvalidArgumentException If $loadingMode is invalid or missing.
+ * @throws InvalidArgumentException If $loadingMode is invalid.
  *
  * @internal Not part of the public API — may change in any release.
  */
 function mergeHTMLAttributes(array $attributes, string $loadingMode, array $defaultAttributes = ['shared' => [], 'eager' => [], 'lazy' => []]): array
 {
-	validateAttributeTypes($defaultAttributes);
-	validateAttributeTypes($attributes);
-
-	if (!in_array($loadingMode, ['shared', 'eager', 'lazy'])) {
+	if (!in_array($loadingMode, ['eager', 'lazy'], true)) {
 		throw new InvalidArgumentException("[kirby-imagex] Invalid loadingMode: \"$loadingMode\".");
 	}
 
-	if (!isset($attributes[$loadingMode]) && !isset($defaultAttributes[$loadingMode])) {
-		throw new InvalidArgumentException("[kirby-imagex] LoadingMode \"$loadingMode\" not found in attributes or defaultAttributes.");
-	}
-
-	// 'class' and 'style' are arrays (validated above): merged, deduplicated, empty/null/false entries dropped
+	// 'class' and 'style' are arrays (validated in normalizeAttributesStructure()): merged, deduplicated, empty/null/false entries dropped
 	$mergeValues = fn (array $current, array $new) => array_values(array_filter(
 		array_unique(array_merge($current, $new)),
 		fn ($value) => $value !== '' && $value !== null && $value !== false
@@ -138,7 +134,7 @@ function mergeHTMLAttributes(array $attributes, string $loadingMode, array $defa
  *
  * @param array $attributes User-provided attributes (flat or structured)
  * @return array Normalized attributes with shared/eager/lazy structure
- * @throws InvalidArgumentException If flat and loading mode keys are mixed.
+ * @throws InvalidArgumentException If flat and loading mode keys are mixed, or 'class'/'style' have an invalid type.
  *
  * @internal Not part of the public API — may change in any release.
  */
@@ -159,17 +155,21 @@ function normalizeAttributesStructure(array $attributes): array
 		}
 
 		// Already structured, just ensure all keys exist and coerce class/style
-		return [
+		$normalized = [
 			'shared' => coerceClassStyleToArrays($attributes['shared'] ?? []),
 			'eager' => coerceClassStyleToArrays($attributes['eager'] ?? []),
 			'lazy' => coerceClassStyleToArrays($attributes['lazy'] ?? []),
 		];
+	} else {
+		// Flat structure - wrap in 'shared'
+		$normalized = [
+			'shared' => coerceClassStyleToArrays($attributes),
+			'eager' => [],
+			'lazy' => [],
+		];
 	}
 
-	// Flat structure - wrap in 'shared'
-	return [
-		'shared' => coerceClassStyleToArrays($attributes),
-		'eager' => [],
-		'lazy' => [],
-	];
+	validateAttributeTypes($normalized);
+
+	return $normalized;
 }

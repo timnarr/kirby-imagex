@@ -315,4 +315,11 @@ class HtmlAttributesTest extends TestCase
 
 		normalizeAttributesStructure(['class' => 'x', 'alt' => 'Text', 'lazy' => ['class' => 'y']]);
 	}
+
+	public function testNormalizeAttributesStructureThrowsOnInvalidClassType()
+	{
+		$this->expectExceptionMessage('[kirby-imagex] Type mismatch detected: attribute "class" in "lazy" expected to be array, integer given.');
+
+		normalizeAttributesStructure(['lazy' => ['class' => 42]]);
+	}
 }
