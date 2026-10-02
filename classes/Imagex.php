@@ -113,6 +113,7 @@ class Imagex
 	 * @param array $vars The snippet's variables, e.g. get_defined_vars().
 	 * @return static
 	 * @throws InvalidArgumentException See __construct().
+	 * @internal Not part of the public API — may change in any release.
 	 */
 	public static function fromSnippetData(array $vars): static
 	{
