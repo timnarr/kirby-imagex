@@ -308,7 +308,7 @@ class Imagex
 
 		$formats = $this->addOriginalFormatAsSource ? [...$configFormats, 'originalformat'] : $configFormats;
 
-		return array_values(array_unique(array_map(fn ($format) => normalizeFormat($format), $formats)));
+		return array_values(array_unique(array_map(normalizeFormat(...), $formats)));
 	}
 
 	/**
@@ -370,9 +370,7 @@ class Imagex
 	 */
 	private function getImageFormat(File|null $image = null): string
 	{
-		$image = $image ?? $this->image;
-
-		return normalizeFormat($image->extension());
+		return normalizeFormat(($image ?? $this->image)->extension());
 	}
 
 	/**
@@ -472,7 +470,6 @@ class Imagex
 		['width' => $width, 'height' => $height] = $smallestEntry;
 		$src = $this->image->thumb($smallestEntry)->url();
 		$srcset = $this->noSrcsetInImg ? null : $this->image->srcset($srcsetPreset);
-		$customLazyloading = $this->customLazyloading;
 
 		// An id is only needed (and generated) when there are actual art-direction
 		// style overrides to scope to this <img> — see getArtDirectionStyles().
@@ -494,12 +491,12 @@ class Imagex
 				'srcset' => $srcset,
 			],
 			'lazy' => [
-				'loading' => $customLazyloading ? null : 'lazy',
-				'data-src' => $customLazyloading ? $src : null,
+				'loading' => $this->customLazyloading ? null : 'lazy',
+				'data-src' => $this->customLazyloading ? $src : null,
 				// custom lazy loading libraries swap data-src into src; a placeholder can be set via attributes
-				'src' => $customLazyloading ? null : $src,
-				'data-srcset' => $customLazyloading ? $srcset : null,
-				'srcset' => $customLazyloading ? null : $srcset,
+				'src' => $this->customLazyloading ? null : $src,
+				'data-srcset' => $this->customLazyloading ? $srcset : null,
+				'srcset' => $this->customLazyloading ? null : $srcset,
 			],
 		];
 
@@ -611,8 +608,7 @@ class Imagex
 		// a source that keeps the default would otherwise inherit another source's value.
 		$properties = array_filter(
 			array_keys($defaults),
-			fn (string $property) => $defaults[$property] !== null
-				&& A::some($sources, fn (array $source) => $source[$property] !== $defaults[$property])
+			fn (string $property) => A::some($sources, fn (array $source) => $source[$property] !== $defaults[$property])
 		);
 
 		if (empty($properties)) {
@@ -685,7 +681,6 @@ class Imagex
 			$format = $this->getImageFormat($image);
 		}
 
-		$customLazyloading = $this->customLazyloading;
 		$defaultAttributes = [
 			'shared' => [
 				'type' => F::extensionToMime($format),
@@ -699,8 +694,8 @@ class Imagex
 				...($this->sourcesAttributes['eager'] ?? []),
 			],
 			'lazy' => [
-				'srcset' => $customLazyloading ? null : $srcsetValue,
-				'data-srcset' => $customLazyloading ? $srcsetValue : null,
+				'srcset' => $this->customLazyloading ? null : $srcsetValue,
+				'data-srcset' => $this->customLazyloading ? $srcsetValue : null,
 				...($this->sourcesAttributes['lazy'] ?? []),
 			],
 		];

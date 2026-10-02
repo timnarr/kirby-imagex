@@ -337,25 +337,26 @@ function applyUrlHandlerToAttributes(array $attributes, bool|null $useRelativeUr
  */
 function transformForJson(mixed $data): mixed
 {
-	if (is_array($data)) {
-		$result = [];
-		foreach ($data as $key => $value) {
-			// Convert class and style arrays to strings
-			if (($key === 'class' || $key === 'style') && is_array($value)) {
-				$value = implode(' ', $value);
-			}
-
-			// Recursively transform nested arrays
-			$transformed = transformForJson($value);
-
-			// Skip null values and empty strings
-			if ($transformed !== null && $transformed !== '') {
-				$result[$key] = $transformed;
-			}
-		}
-
-		return $result;
+	if (!is_array($data)) {
+		return $data;
 	}
 
-	return $data;
+	$result = [];
+
+	foreach ($data as $key => $value) {
+		// Convert class and style arrays to strings
+		if (($key === 'class' || $key === 'style') && is_array($value)) {
+			$value = implode(' ', $value);
+		}
+
+		// Recursively transform nested arrays
+		$transformed = transformForJson($value);
+
+		// Skip null values and empty strings
+		if ($transformed !== null && $transformed !== '') {
+			$result[$key] = $transformed;
+		}
+	}
+
+	return $result;
 }
