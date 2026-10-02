@@ -105,6 +105,19 @@ class Imagex
 	}
 
 	/**
+	 * Creates an instance from a snippet's variables, picking only the known
+	 * options so the snippets don't have to list them again.
+	 *
+	 * @param array $vars The snippet's variables, e.g. get_defined_vars().
+	 * @return static
+	 * @throws InvalidArgumentException See __construct().
+	 */
+	public static function fromSnippetData(array $vars): static
+	{
+		return new static(array_intersect_key($vars, self::DEFAULT_OPTIONS));
+	}
+
+	/**
 	 * Applies the defaults to the constructor options and validates their types.
 	 *
 	 * @param array $options The options as passed in.

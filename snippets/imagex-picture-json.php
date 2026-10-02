@@ -6,18 +6,8 @@ use TimNarr\Imagex;
 
 use function TimNarr\transformForJson;
 
-// Missing options are passed as null; Imagex applies the defaults
-$imagex = new Imagex([
-	'artDirection' => $artDirection ?? null,
-	'attributes' => $attributes ?? null,
-	'compareFormats' => $compareFormats ?? null,
-	'focus' => $focus ?? null,
-	'image' => $image ?? null,
-	'loading' => $loading ?? null,
-	'nonce' => $nonce ?? null,
-	'ratio' => $ratio ?? null,
-	'srcset' => $srcset ?? null,
-]);
+// Picks the known options from the snippet's variables; Imagex applies the defaults
+$imagex = Imagex::fromSnippetData(get_defined_vars());
 
 $data = [
 	'picture' => [
