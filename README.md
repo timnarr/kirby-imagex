@@ -3,6 +3,8 @@
 # Kirby Imagex
 **Modern Images for Kirby CMS** – Imagex helps you orchestrate modern, responsive and performant images in Kirby.
 
+**Requirements:** Kirby 5 · PHP 8.2–8.5
+
 
 ## Features
 - 🌠 Dynamic generation of image srcsets for art-directed or media-condition-based images.
@@ -28,6 +30,8 @@ You'll find all examples in the [examples.md](/docs/examples/README.md).
 ```
 composer require timnarr/kirby-imagex
 ```
+
+Composer is the only supported installation method. Imagex loads its classes and helpers through Composer's autoloader, so installing it as a ZIP download or Git submodule won't work.
 
 ## Global Configuration
 Configure global settings in your `config.php` file:

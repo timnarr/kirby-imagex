@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.1] - October 13, 2026
+
+### Changed
+- Declare Kirby 5 support via `extra.kirby.compatible` in `composer.json`, so the Kirby plugin directory picks it up.
+- README now states the supported Kirby and PHP versions and that Composer is the only supported installation method.
+
 ## [0.5.0] - October 02, 2026
 
 ### Fixed
