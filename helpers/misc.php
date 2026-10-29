@@ -77,15 +77,16 @@ function getUrlOrigin(string $url): string|null
 }
 
 /**
- * Finds and returns the smallest value in an array and its key.
+ * Finds the key of the smallest value in an array, e.g. the format with the
+ * smallest file size.
  *
- * @param array $array The array to search.
- * @return string The smallestKey.
+ * @param array $array The array to search, keyed by string.
+ * @return string The key of the smallest value.
  * @throws InvalidArgumentException If the array is empty.
  *
  * @internal Not part of the public API — may change in any release.
  */
-function findSmallestValueAndKey(array $array): string
+function findKeyOfSmallestValue(array $array): string
 {
 	if (empty($array)) {
 		throw new InvalidArgumentException('[kirby-imagex] Input array cannot be empty.');

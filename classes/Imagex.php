@@ -528,7 +528,7 @@ class Imagex
 				$formatSizes[$format] = calculateWeightedFormatSize($image, $this->getDynamicSrcsetPreset($format, $ratio, $image), $this->compareFormatsWeights);
 			}
 
-			return findSmallestValueAndKey($formatSizes);
+			return findKeyOfSmallestValue($formatSizes);
 		});
 	}
 
