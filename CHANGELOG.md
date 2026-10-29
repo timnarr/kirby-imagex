@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Added
+- New `formats` snippet option: overrides the global `formats` for a single image, e.g. `['webp']` for animated GIFs (Kirby converts them to a still AVIF) or `[]` for no modern formats. `null` (default) uses the global option.
+
 ### Fixed
 - **Bug:** With `compareFormats` and an art-directed `image`, the art-directed image could be ignored. `<source>` elements were grouped by format, so when the art-directed image skipped AVIF but the main image didn't, the default AVIF `<source>` (no `media`) came first and always matched in AVIF browsers. `<source>` elements are now grouped by source: each `artDirection` entry in all its formats, then the main image in all its formats. **The order of `<source>` elements changes for every art-directed `<picture>` with more than one format**; browsers still pick the same image, except in the buggy case above. Migration: if your CSS or JavaScript relies on the position of `<source>` elements, select them by `media` or `type` instead.
 - An `artDirection` entry with its own `image` now keeps every format its own comparison keeps, even if `compareFormats` skipped that format for the main image. Previously a format skipped for the main image was skipped for every source.

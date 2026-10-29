@@ -782,4 +782,63 @@ class ImagexTest extends TestCase
 		$this->assertStringNotContainsString('srcset', $html);
 		$this->assertMatchesRegularExpression('/<img [^>]*height="225"[^>]*src="[^"]+\/icon\.svg"[^>]*width="400"/', $html);
 	}
+
+	public function testFormatsOptionOverridesGlobalFormats()
+	{
+		$sources = $this->imagex(['formats' => ['webp']])->getPictureSources();
+
+		$this->assertSame(['image/webp'], array_column($sources, 'type'));
+	}
+
+	public function testEmptyFormatsOptionRendersOnlyTheImg()
+	{
+		$imagex = $this->imagex(['formats' => []]);
+
+		$this->assertSame([], $imagex->getPictureSources());
+		$this->assertStringContainsString('800w', $imagex->getImgAttributes()['srcset']);
+	}
+
+	public function testNullFormatsOptionUsesGlobalFormats()
+	{
+		$this->assertSame(['image/avif', 'image/webp'], array_column($this->imagex(['formats' => null])->getPictureSources(), 'type'));
+	}
+
+	public function testFormatsOptionKeepsAddOriginalFormatAsSource()
+	{
+		$this->app(['timnarr.imagex.addOriginalFormatAsSource' => true]);
+
+		$this->assertSame(['image/webp', 'image/jpeg'], array_column($this->imagex(['formats' => ['webp']])->getPictureSources(), 'type'));
+	}
+
+	public function testInvalidFormatsOptionNamesTheSnippetOption()
+	{
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage("Option 'formats' must be an array of format names");
+
+		$this->imagex(['formats' => 'webp']);
+	}
+
+	public function testFormatsOptionWithoutPresetThrows()
+	{
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage("Missing srcset preset(s) for active formats: 'default-png'");
+
+		$this->imagex(['formats' => ['png']]);
+	}
+
+	public function testCompareFormatsWithSingleSnippetFormatThrows()
+	{
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('Not enough formats');
+
+		$this->imagex(['formats' => ['webp'], 'compareFormats' => true]);
+	}
+
+	public function testPictureSnippetForwardsFormatsOption()
+	{
+		$html = snippet('imagex-picture', ['image' => $this->image(), 'formats' => ['webp']], return: true);
+
+		$this->assertStringContainsString('type="image/webp"', $html);
+		$this->assertStringNotContainsString('image/avif', $html);
+	}
 }

@@ -53,6 +53,8 @@ class Imagex
 		'attributes' => [],
 		'compareFormats' => false,
 		'focus' => false,
+		// null: use the global 'timnarr.imagex.formats' option
+		'formats' => null,
 		'image' => null,
 		'loading' => 'lazy',
 		'nonce' => null,
@@ -103,10 +105,12 @@ class Imagex
 		$this->addOriginalFormatAsSource = $this->getBoolOption('addOriginalFormatAsSource');
 		$this->noSrcsetInImg = $this->getBoolOption('noSrcsetInImg');
 		$this->relativeUrls = $this->getBoolOption('relativeUrls');
-		$this->formats = $this->resolveFormats($this->kirby->option('timnarr.imagex.formats'));
+		$this->formats = $options['formats'] !== null
+			? $this->resolveFormats($options['formats'], "Option 'formats'")
+			: $this->resolveFormats($this->kirby->option('timnarr.imagex.formats'), "Option 'timnarr.imagex.formats'");
 
 		if ($this->compareFormats && count($this->formats) <= 1) {
-			throw new InvalidArgumentException('[kirby-imagex] Not enough formats to determine the smallest. Please set "compareFormats" to false or add at least two formats in the configuration.');
+			throw new InvalidArgumentException('[kirby-imagex] Not enough formats to determine the smallest. Please set "compareFormats" to false or use at least two formats (globally or via the "formats" option).');
 		}
 
 		$this->srcsetPresets = $this->resolveSrcsetPresets();
@@ -312,16 +316,17 @@ class Imagex
 	 * Resolves the formats to render <source> elements for: normalized, unique,
 	 * in configured order, plus 'originalformat' if addOriginalFormatAsSource is set.
 	 *
-	 * @param mixed $configFormats Formats from the plugin config.
+	 * @param mixed $configFormats Formats from the snippet option or the plugin config.
+	 * @param string $label Name of the option for error messages.
 	 * @return array List of format names.
-	 * @throws InvalidArgumentException If the config isn't an array of non-empty strings.
+	 * @throws InvalidArgumentException If it isn't an array of non-empty strings.
 	 */
-	private function resolveFormats(mixed $configFormats): array
+	private function resolveFormats(mixed $configFormats, string $label): array
 	{
 		$isFormatName = fn ($format) => is_string($format) && $format !== '';
 
 		if (!is_array($configFormats) || !A::every($configFormats, $isFormatName)) {
-			throw new InvalidArgumentException("[kirby-imagex] Option 'timnarr.imagex.formats' must be an array of format names (e.g. ['avif', 'webp']).");
+			throw new InvalidArgumentException("[kirby-imagex] {$label} must be an array of format names (e.g. ['avif', 'webp']).");
 		}
 
 		$formats = $this->addOriginalFormatAsSource ? [...$configFormats, 'originalformat'] : $configFormats;
@@ -362,7 +367,7 @@ class Imagex
 		if (!empty($missing)) {
 			$missingList = implode(', ', array_map(fn ($name) => "'{$name}'", $missing));
 
-			throw new InvalidArgumentException("[kirby-imagex] Missing srcset preset(s) for active formats: {$missingList}. Add them to 'thumbs.srcsets' in config.php, or remove the corresponding format from 'timnarr.imagex.formats'. Available presets: {$available}");
+			throw new InvalidArgumentException("[kirby-imagex] Missing srcset preset(s) for active formats: {$missingList}. Add them to 'thumbs.srcsets' in config.php, or remove the corresponding format from the 'formats' option. Available presets: {$available}");
 		}
 
 		$normalize = fn (string $name) => is_array($allPresets[$name])

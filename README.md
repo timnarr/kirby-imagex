@@ -178,6 +178,7 @@ Only `image` is required — everything else has sane defaults. Unknown options 
 | `compareFormats` | `false` | Boolean | In some cases AVIF files can be larger than WebP. If this option is set to true, it enables a dynamic size comparison between the specified image formats. ⚠️ The `formats` order in `config.php` matters here! The comparison weighting can be configured globally via `compareFormatsWeights`. [Read more about it here](#dynamic-format-size-handling). |
 | `focus` | `false` | Boolean | Applies the image's Kirby `focus` field (the same one `thumb(['crop' => true])` already uses for cropping) as `object-position` on the `<img>`, plus `object-fit: cover`. Falls back to `'center'` when no focus point is set. [Read more here](#focus-point-support). |
 | `nonce` | `null` | String | CSP nonce for the generated `<style>` element. With a nonce set, the `focus` styles are also moved from the `<img>`'s `style` attribute into that `<style>` element, so the output works with a strict Content Security Policy. [Read more here](#content-security-policy-csp). |
+| `formats` | `null` | Array or `null` | Overrides the global [`formats`](#global-options) for this image, e.g. `['webp']` or `[]` for no modern formats at all. `null` uses the global option. Each format needs its srcset preset (`my-srcset-webp`, …). `addOriginalFormatAsSource` still applies. Useful for animated GIFs, see "[Files Kirby Can't Resize and Animated GIFs](#files-kirby-cant-resize-and-animated-gifs)". |
 
 ```php
 <?php
@@ -347,10 +348,20 @@ Pass the nonce your CSP header uses via the `nonce` option:
 
 The `<style>` element gets the `nonce` attribute, and since nonces only apply to `<style>` elements (not `style` attributes), the `focus` styles move into it as an `#id` rule. Its specificity still beats class-based CSS. Style attributes you pass yourself via `attributes` stay inline — use classes instead when your CSP is strict. In the `imagex-picture-json` snippet, the nonce only moves the focus styles into `artDirectionStyles`; your frontend adds its own nonce when injecting them.
 
-### Files Kirby Can't Resize
+### Files Kirby Can't Resize and Animated GIFs
 **SVGs and other files Kirby can't resize** (`$file->isResizable()` is `false`) are rendered as a plain `<img>` with the original file as `src`: no `<source>` elements and no `srcset`, since every width and format would just be the original file again. `compareFormats` is skipped for them. `width` and `height` are still derived from the srcset preset and `ratio` as usual, so the `<img>` keeps reserving space (for `ratio: 'intrinsic'`, the SVG needs `width`/`height` attributes or a `viewBox`). The `<picture>` wrapper stays, so your `attributes.picture` keep working.
 
 Art-directed sources need a resizable image. An `artDirection` entry whose image can't be resized — or which falls back to a main image that can't — throws an error. A non-resizable main image with resizable art-directed images works: the art-directed `<source>` elements are rendered, the SVG is the default.
+
+**Animated GIFs** lose their animation in most modern formats: Kirby converts them to a still AVIF of the first frame, and only the `im` thumb driver is documented to keep all frames when converting to WebP. Use the `formats` snippet option to choose per image:
+
+```php
+<?php snippet('imagex-picture', [
+  'image' => $image,
+  // WebP only (needs the `im` driver to stay animated), or [] to keep the GIF
+  'formats' => $image->extension() === 'gif' ? ['webp'] : null,
+]) ?>
+```
 
 ## File Methods
 
