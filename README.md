@@ -72,7 +72,28 @@ Kirby's shorthand forms work too: `'my-srcset' => [400, 800, 1200]` or `[400 => 
 
 If you use AVIF and/or WebP, add a separate preset per format by copying the base preset, appending `-{format}` to the name, and setting the `format` option. This gives you full control over quality per format.
 
-The quality settings for the modern formats shouldn't simply be taken from the default preset. To really benefit from smaller image files due to modern formats, you should slightly adjust your quality settings. My rule of thumb is to take the quality value from JPEG/PNG and reduce it by 5 for WebP and 15 for AVIF. Here is a good [read](https://www.industrialempathy.com/posts/avif-webp-quality-settings/) with more detail, but I've also noticed that this isn't completely applicable to images in Kirby.
+The quality settings for the modern formats shouldn't simply be taken from the default preset: AVIF and WebP need different quality values than JPEG to look the same. My rule of thumb is **AVIF = JPEG − 15** and **WebP = JPEG + 5**. From JPEG 80 upwards, use the same value for WebP as for JPEG.
+
+<details>
+<summary>Where the rule of thumb comes from</summary>
+
+For each JPEG quality, I interpolated the [SSIMULACRA 2](https://github.com/cloudinary/ssimulacra2) score (a metric for perceived image quality) and read off the AVIF and WebP quality that reach the same score:
+
+| JPEG | SSIMULACRA 2 | AVIF | Δ | WebP | Δ |
+|---:|---:|---:|---:|---:|---:|
+| 60 | 67.9 | 51 | −9 | 66 | +6 |
+| 65 | 70.0 | 53 | −12 | 72 | +7 |
+| 70 | 72.5 | 56 | −14 | 76 | +6 |
+| 75 | 75.0 | 60 | −15 | 79 | +4 |
+| 80 | 77.8 | 66 | −14 | 82 | +2 |
+| 85 | 80.7 | 71 | −14 | 86 | +1 |
+| 90 | 84.3 | 79 | −11 | 89 | −1 |
+| 95 | 88.3 | 89 | −6 | 95 | ±0 |
+
+For more background, see this [article on AVIF and WebP quality settings](https://www.industrialempathy.com/posts/avif-webp-quality-settings/).
+
+</details>
+
 
 ```php
 // config.php
@@ -84,9 +105,9 @@ The quality settings for the modern formats shouldn't simply be taken from the d
       '1200w' => ['width' => 1200, 'crop' => true, 'quality' => 80],
     ],
     'my-srcset-webp' => [ // preset for webp
-      '400w'  => ['width' =>  400, 'crop' => true, 'quality' => 75, 'format' => 'webp', 'sharpen' => 10],
-      '800w'  => ['width' =>  800, 'crop' => true, 'quality' => 75, 'format' => 'webp', 'sharpen' => 10],
-      '1200w' => ['width' => 1200, 'crop' => true, 'quality' => 75, 'format' => 'webp', 'sharpen' => 10],
+      '400w'  => ['width' =>  400, 'crop' => true, 'quality' => 80, 'format' => 'webp', 'sharpen' => 10],
+      '800w'  => ['width' =>  800, 'crop' => true, 'quality' => 80, 'format' => 'webp', 'sharpen' => 10],
+      '1200w' => ['width' => 1200, 'crop' => true, 'quality' => 80, 'format' => 'webp', 'sharpen' => 10],
     ],
     'my-srcset-avif' => [ // preset for avif
       '400w'  => ['width' =>  400, 'crop' => true, 'quality' => 65, 'format' => 'avif', 'sharpen' => 25],

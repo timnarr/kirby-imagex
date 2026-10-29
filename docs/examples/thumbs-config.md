@@ -11,8 +11,8 @@ I use this thumbs config in all the examples. I limit this to have only two widt
       '800w' => ['width' => 800, 'crop' => true, 'quality' => 80, 'sharpen' => 10],
     ],
     'imagex-demo-webp' => [
-      '400w' => ['width' => 400, 'crop' => true, 'quality' => 75, 'sharpen' => 10, 'format' => 'webp'],
-      '800w' => ['width' => 800, 'crop' => true, 'quality' => 75, 'sharpen' => 10, 'format' => 'webp'],
+      '400w' => ['width' => 400, 'crop' => true, 'quality' => 80, 'sharpen' => 10, 'format' => 'webp'],
+      '800w' => ['width' => 800, 'crop' => true, 'quality' => 80, 'sharpen' => 10, 'format' => 'webp'],
     ],
     'imagex-demo-avif' => [
       '400w' => ['width' => 400, 'crop' => true, 'quality' => 65, 'sharpen' => 25, 'format' => 'avif'],
