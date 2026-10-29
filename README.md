@@ -72,12 +72,12 @@ Kirby's shorthand forms work too: `'my-srcset' => [400, 800, 1200]` or `[400 => 
 
 If you use AVIF and/or WebP, add a separate preset per format by copying the base preset, appending `-{format}` to the name, and setting the `format` option. This gives you full control over quality per format.
 
-The quality settings for the modern formats shouldn't simply be taken from the default preset: AVIF and WebP need different quality values than JPEG to look the same. My rule of thumb is **AVIF = JPEG − 15** and **WebP = JPEG + 5**. From JPEG 80 upwards, use the same value for WebP as for JPEG.
+The quality settings for the modern formats shouldn't simply be taken from the default preset: AVIF and WebP need different quality values than JPEG to look the same. As a rule of thumb, use **AVIF = JPEG − 15** and **WebP = JPEG + 5**. From JPEG 80 upwards, use the same value for WebP as for JPEG.
 
 <details>
 <summary>Where the rule of thumb comes from</summary>
 
-For each JPEG quality, I interpolated the [SSIMULACRA 2](https://github.com/cloudinary/ssimulacra2) score (a metric for perceived image quality) and read off the AVIF and WebP quality that reach the same score:
+The table compares the formats by [SSIMULACRA 2](https://github.com/cloudinary/ssimulacra2), a metric for perceived image quality: for each JPEG quality, it shows the AVIF and WebP quality that reach the same score.
 
 | JPEG | SSIMULACRA 2 | AVIF | Δ | WebP | Δ |
 |---:|---:|---:|---:|---:|---:|
