@@ -84,6 +84,9 @@ $options = [
         'object-fit: cover;',
         'object-position: ' . $image->toFile()->focus() . ';'
       ]
+    ],
+    'sources' => [
+      'sizes' => '(width >= 800px) 400px, 100vw', // a <source> doesn't inherit the <img>'s sizes
     ]
   ]
 ];
@@ -96,12 +99,12 @@ $options = [
 ```html
 <picture>
   <source
-    width="400" height="225" type="image/avif"
+    width="400" height="225" type="image/avif" sizes="(width >= 800px) 400px, 100vw"
     srcset="
       https://example.com/image-400x225-crop-52-65-q65-sharpen25.avif 400w,
       https://example.com/image-800x450-crop-52-65-q65-sharpen25.avif 800w">
   <source
-    width="400" height="225" type="image/webp"
+    width="400" height="225" type="image/webp" sizes="(width >= 800px) 400px, 100vw"
     srcset="
       https://example.com/image-400x225-crop-52-65-q75-sharpen10.webp 400w,
       https://example.com/image-800x450-crop-52-65-q75-sharpen10.webp 800w">
@@ -144,6 +147,9 @@ $options = [
     'picture' => [
       'class' => ['my-picture'],
       'data-attr' => 'some-data-attribute'
+    ],
+    'sources' => [
+      'sizes' => '(width >= 800px) 400px, 100vw', // a <source> doesn't inherit the <img>'s sizes
     ]
   ]
 ];
@@ -156,12 +162,12 @@ $options = [
 ```html
 <picture class="my-picture" data-attr="some-data-attribute">
   <source
-    width="400" height="225" type="image/avif"
+    width="400" height="225" type="image/avif" sizes="(width >= 800px) 400px, 100vw"
     srcset="
       https://example.com/image-400x225-crop-52-65-q65-sharpen25.avif 400w,
       https://example.com/image-800x450-crop-52-65-q65-sharpen25.avif 800w">
   <source
-    width="400" height="225" type="image/webp"
+    width="400" height="225" type="image/webp" sizes="(width >= 800px) 400px, 100vw"
     srcset="
       https://example.com/image-400x225-crop-52-65-q75-sharpen10.webp 400w,
       https://example.com/image-800x450-crop-52-65-q75-sharpen10.webp 800w">

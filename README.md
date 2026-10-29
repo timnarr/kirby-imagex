@@ -131,6 +131,9 @@ $options = [
       'style' => ['background: red;'],
       'sizes' => '100vw',
     ],
+    'sources' => [
+      'sizes' => '100vw',
+    ],
   ],
   'ratio' => '16/9',
   'srcset' => 'my-srcset',
@@ -140,6 +143,8 @@ $options = [
 
 <?php snippet('imagex-picture', $options) ?>
 ```
+
+Set `sizes` for both `img` and `sources`: a `<source>` doesn't inherit the `<img>`'s `sizes`. Without its own `sizes`, the browser assumes `100vw` for it and may load a larger image than needed. As most browsers use one of the AVIF or WebP `<source>` elements, their `sizes` is the one that usually counts.
 
 Imagex outputs a `<picture>` element with `<source>` elements and one `<img>`. If you need extra HTML you can wrap the Imagex snippet accordingly. Handle `svg` or `gif` files differently as needed!
 
@@ -240,6 +245,11 @@ $options = [
         // extend `shared` attributes in lazy loading mode
         'class' => ['js-lazyload'],
       ],
+    ],
+
+    // A <source> doesn't inherit the <img>'s `sizes`
+    'sources' => [
+      'sizes' => '760px',
     ],
   ],
 
