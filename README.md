@@ -3,7 +3,7 @@
 # Kirby Imagex
 **Modern Images for Kirby CMS** – Imagex helps you orchestrate modern, responsive and performant images in Kirby.
 
-**Requirements:** Kirby 5 · PHP 8.2–8.5
+**Requirements:** Kirby 6 · PHP 8.3–8.5 (for Kirby 5 use [v0.5.x](https://github.com/timnarr/kirby-imagex/releases/tag/0.5.1))
 
 
 ## Features

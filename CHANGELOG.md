@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Changed
+- **BREAKING:** Kirby 6 is now required (`extra.kirby.compatible` is `^6.0`). Kirby 5 is no longer supported. Migration: upgrade your site to Kirby 6, or stay on `0.5.x` while you are on Kirby 5. No option names, snippet variables or output changed.
+- **BREAKING:** PHP 8.3 is now the minimum version (Kirby 6 requires it). PHP 8.2 is no longer supported.
+
 ## [0.5.1] - October 13, 2026
 
 ### Changed
