@@ -347,6 +347,11 @@ Pass the nonce your CSP header uses via the `nonce` option:
 
 The `<style>` element gets the `nonce` attribute, and since nonces only apply to `<style>` elements (not `style` attributes), the `focus` styles move into it as an `#id` rule. Its specificity still beats class-based CSS. Style attributes you pass yourself via `attributes` stay inline — use classes instead when your CSP is strict. In the `imagex-picture-json` snippet, the nonce only moves the focus styles into `artDirectionStyles`; your frontend adds its own nonce when injecting them.
 
+### Files Kirby Can't Resize
+**SVGs and other files Kirby can't resize** (`$file->isResizable()` is `false`) are rendered as a plain `<img>` with the original file as `src`: no `<source>` elements and no `srcset`, since every width and format would just be the original file again. `compareFormats` is skipped for them. `width` and `height` are still derived from the srcset preset and `ratio` as usual, so the `<img>` keeps reserving space (for `ratio: 'intrinsic'`, the SVG needs `width`/`height` attributes or a `viewBox`). The `<picture>` wrapper stays, so your `attributes.picture` keep working.
+
+Art-directed sources need a resizable image. An `artDirection` entry whose image can't be resized — or which falls back to a main image that can't — throws an error. A non-resizable main image with resizable art-directed images works: the art-directed `<source>` elements are rendered, the SVG is the default.
+
 ## File Methods
 
 Imagex registers additional methods on Kirby's `File` object.

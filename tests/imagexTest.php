@@ -36,6 +36,8 @@ class ImagexTest extends TestCase
 	{
 		$this->root = sys_get_temp_dir() . '/kirby-imagex-tests-' . uniqid();
 		Dir::make($this->root . '/content/test');
+		// Only a viewBox: Kirby derives 160x90, but can't resize SVGs
+		file_put_contents($this->root . '/content/test/icon.svg', '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 90"></svg>');
 		$this->createJpeg('image.jpg', 1600, 1200);
 		$this->createJpeg('landscape.jpg', 2100, 900);
 		// no width/height/viewBox — Kirby reports 0x0
@@ -304,10 +306,10 @@ class ImagexTest extends TestCase
 		$this->imagex(['artDirection' => [['media' => '(width >= 800px)', 'ratio' => '16:9']]]);
 	}
 
-	public function testArtDirectionIntrinsicRatioErrorNamesEntry()
+	public function testArtDirectionWithNonResizableImageThrows()
 	{
 		$this->expectException(InvalidArgumentException::class);
-		$this->expectExceptionMessage("artDirection[1]: Cannot use ratio 'intrinsic' for 'test/logo.svg'");
+		$this->expectExceptionMessage("artDirection[1]: Kirby can't resize 'logo.svg'");
 
 		$this->imagex(['artDirection' => [
 			['media' => '(width >= 1200px)', 'ratio' => '1/1'],
@@ -728,5 +730,56 @@ class ImagexTest extends TestCase
 
 		$this->assertStringContainsString('<style nonce="abc123">#imagex-', $html);
 		$this->assertStringNotContainsString('style="', $html);
+	}
+
+	public function testNonResizableImageRendersOnlyTheOriginalAsImg()
+	{
+		$imagex = $this->imagex(['image' => $this->image('icon.svg'), 'ratio' => 'intrinsic']);
+		$img = $imagex->getImgAttributes();
+
+		$this->assertSame([], $imagex->getPictureSources());
+		$this->assertStringEndsWith('/icon.svg', $img['src']);
+		$this->assertNull($img['srcset']);
+		$this->assertSame(400, $img['width']);
+		$this->assertSame(225, $img['height']);
+	}
+
+	public function testNonResizableImageSkipsCompareFormats()
+	{
+		$imagex = $this->imagex(['image' => $this->image('icon.svg'), 'compareFormats' => true]);
+
+		$this->assertSame([], $imagex->getPictureSources());
+		$this->assertSame([], $this->cacheFiles('compare-formats-'));
+	}
+
+	public function testNonResizableImageKeepsResizableArtDirectedSources()
+	{
+		$sources = $this->imagex([
+			'image' => $this->image('icon.svg'),
+			'artDirection' => [['media' => '(width >= 800px)', 'image' => $this->image('landscape.jpg')]],
+		])->getPictureSources();
+
+		$this->assertSame(['image/avif', 'image/webp'], array_column($sources, 'type'));
+		$this->assertSame(['(width >= 800px)', '(width >= 800px)'], array_column($sources, 'media'));
+	}
+
+	public function testArtDirectionFallingBackToNonResizableMainImageThrows()
+	{
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage("artDirection[0]: Kirby can't resize 'icon.svg'");
+
+		$this->imagex([
+			'image' => $this->image('icon.svg'),
+			'artDirection' => [['media' => '(width >= 800px)', 'ratio' => '1/1']],
+		]);
+	}
+
+	public function testPictureSnippetRendersNonResizableImage()
+	{
+		$html = snippet('imagex-picture', ['image' => $this->image('icon.svg')], return: true);
+
+		$this->assertStringNotContainsString('<source', $html);
+		$this->assertStringNotContainsString('srcset', $html);
+		$this->assertMatchesRegularExpression('/<img [^>]*height="225"[^>]*src="[^"]+\/icon\.svg"[^>]*width="400"/', $html);
 	}
 }

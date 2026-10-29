@@ -16,6 +16,8 @@ class Imagex
 	protected bool $customLazyloading;
 	protected array $formats;
 	protected File $image;
+	/** Whether Kirby can resize/convert the main image (false e.g. for SVGs). */
+	protected bool $resizable;
 	protected array $imgAttributes;
 	protected array $pictureAttributes;
 	protected string $ratio;
@@ -77,6 +79,7 @@ class Imagex
 
 		$this->loading = $options['loading'];
 		$this->image = $options['image'];
+		$this->resizable = $this->image->isResizable();
 		$this->ratio = $options['ratio'];
 		$this->srcset = $options['srcset'];
 		$this->compareFormats = $options['compareFormats'];
@@ -282,6 +285,14 @@ class Imagex
 				throw new InvalidArgumentException("{$prefix}: 'attributes' must be an array.");
 			}
 
+			// A <source> of a file Kirby can't resize would list the original under every
+			// width and format type; art direction is pointless for it
+			$sourceImage = $source['image'] ?? $this->image;
+
+			if (!$sourceImage->isResizable()) {
+				throw new InvalidArgumentException("{$prefix}: Kirby can't resize '{$sourceImage->filename()}' (e.g. an SVG), so it can't be used for art direction. Use a resizable image (JPEG, PNG, WebP, AVIF …) for this entry.");
+			}
+
 			$artDirection[$index]['ratio'] = $source['ratio'] ?? 'intrinsic';
 
 			// Attribute and ratio errors come from shared helpers; prefix them with the entry index
@@ -441,6 +452,11 @@ class Imagex
 	 */
 	private function isFormatSkipped(string $format, File|null $image = null, string|null $ratio = null): bool
 	{
+		// Nothing to compare: every format would be the original file
+		if (!($image ?? $this->image)->isResizable()) {
+			return false;
+		}
+
 		return $this->compareFormats && isFormatSkippable($format, $this->formats, $this->getSmallestFormatForImage($image, $ratio));
 	}
 
@@ -487,8 +503,9 @@ class Imagex
 		$srcsetPreset = $this->getDynamicSrcsetPreset();
 		$smallestEntry = A::first($srcsetPreset);
 		['width' => $width, 'height' => $height] = $smallestEntry;
+		// Kirby returns the original for files it can't resize, so a srcset would only repeat it
 		$src = $this->image->thumb($smallestEntry)->url();
-		$srcset = $this->noSrcsetInImg ? null : $this->image->srcset($srcsetPreset);
+		$srcset = $this->noSrcsetInImg || !$this->resizable ? null : $this->image->srcset($srcsetPreset);
 
 		// An id is only needed (and generated) when there are actual art-direction
 		// style overrides to scope to this <img> — see getArtDirectionStyles().
@@ -775,7 +792,10 @@ class Imagex
 			array_push($sources, ...$this->getSourcesPerFormat($source));
 		}
 
-		array_push($sources, ...$this->getSourcesPerFormat());
+		// A file Kirby can't resize (e.g. SVG) is only served as the <img>'s src
+		if ($this->resizable) {
+			array_push($sources, ...$this->getSourcesPerFormat());
+		}
 
 		return $this->pictureSources = $sources;
 	}
