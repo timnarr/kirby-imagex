@@ -23,6 +23,9 @@
 		"php": "~8.3.0 || ~8.4.0 || ~8.5.0",
 		"getkirby/composer-installer": "^1"
 	},
+	"conflict": {
+		"getkirby/cms": "<6.0"
+	},
 	"require-dev": {
 		"friendsofphp/php-cs-fixer": "^3",
 		"phpunit/phpunit": "^13",

@@ -16,7 +16,7 @@ All notable changes to this project will be documented in this file.
 - Files Kirby can't resize (e.g. SVGs) are rendered as a plain `<img>` with the original file as `src`. Previously every format got a `<source>` listing the original SVG under every width, with a wrong `type` like `image/avif`. `compareFormats` is skipped for them. An `artDirection` entry using such a file (directly or by falling back to the main image) now throws a descriptive `InvalidArgumentException`.
 
 ### Changed
-- **BREAKING:** Kirby 6 is now required (`extra.kirby.compatible` is `^6.0`). Kirby 5 is no longer supported. Migration: upgrade your site to Kirby 6, or stay on `0.5.x` while you are on Kirby 5. No option names, snippet variables or output changed.
+- **BREAKING:** Kirby 6 is now required (`extra.kirby.compatible` is `^6.0`). Kirby 5 is no longer supported. Migration: upgrade your site to Kirby 6, or stay on `0.5.x` while you are on Kirby 5. A `conflict` with `getkirby/cms` < 6.0 keeps Composer from installing this version into a Kirby 5 project. No option names, snippet variables or output changed.
 - **BREAKING:** PHP 8.3 is now the minimum version (Kirby 6 requires it). PHP 8.2 is no longer supported.
 - README, examples and error messages use the Media Queries Level 4 range syntax, e.g. `(width >= 800px)` instead of `(min-width: 800px)`. Your own `media` strings are output unchanged.
 
