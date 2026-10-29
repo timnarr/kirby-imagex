@@ -47,8 +47,8 @@ $options = [
   <source
     width="400" height="400" type="image/webp"
     srcset="
-      https://example.com/image-400x400-crop-52-65-q75-sharpen10.webp 400w,
-      https://example.com/image-800x800-crop-52-65-q75-sharpen10.webp 800w">
+      https://example.com/image-400x400-crop-52-65-q80-sharpen10.webp 400w,
+      https://example.com/image-800x800-crop-52-65-q80-sharpen10.webp 800w">
   <img
     width="400" height="400" decoding="async" loading="lazy"
     src="https://example.com/image-400x400-crop-52-65-q80-sharpen10.jpg"
@@ -106,8 +106,8 @@ $options = [
   <source
     width="400" height="225" type="image/webp" sizes="(width >= 800px) 400px, 100vw"
     srcset="
-      https://example.com/image-400x225-crop-52-65-q75-sharpen10.webp 400w,
-      https://example.com/image-800x450-crop-52-65-q75-sharpen10.webp 800w">
+      https://example.com/image-400x225-crop-52-65-q80-sharpen10.webp 400w,
+      https://example.com/image-800x450-crop-52-65-q80-sharpen10.webp 800w">
   <img
     class="my-image my-image--variant" sizes="(width >= 800px) 400px, 100vw"
     style="object-fit: cover; object-position: 52% 65%;"
@@ -169,8 +169,8 @@ $options = [
   <source
     width="400" height="225" type="image/webp" sizes="(width >= 800px) 400px, 100vw"
     srcset="
-      https://example.com/image-400x225-crop-52-65-q75-sharpen10.webp 400w,
-      https://example.com/image-800x450-crop-52-65-q75-sharpen10.webp 800w">
+      https://example.com/image-400x225-crop-52-65-q80-sharpen10.webp 400w,
+      https://example.com/image-800x450-crop-52-65-q80-sharpen10.webp 800w">
   <img
     class="my-image" sizes="(width >= 800px) 400px, 100vw"
     style="object-fit: cover; object-position: 52% 65%;"

@@ -78,7 +78,7 @@ The JSON structure groups `picture` attributes with `sources` nested inside, and
                 "width": 400,
                 "height": 225,
                 "sizes": "(width >= 800px) 400px, 100vw",
-                "srcset": "https://example.com/image-400x225-crop-52-65-q75-sharpen10.webp 400w, https://example.com/image-800x450-crop-52-65-q75-sharpen10.webp 800w"
+                "srcset": "https://example.com/image-400x225-crop-52-65-q80-sharpen10.webp 400w, https://example.com/image-800x450-crop-52-65-q80-sharpen10.webp 800w"
             }
         ]
     },

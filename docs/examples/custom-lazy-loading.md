@@ -70,8 +70,8 @@ $options = [
   <source
     width="400" height="267" data-sizes="auto" type="image/webp"
     data-srcset="
-      https://example.com/image-400x267-crop-52-65-q75-sharpen10.webp 400w,
-      https://example.com/image-800x533-crop-52-65-q75-sharpen10.webp 800w">
+      https://example.com/image-400x267-crop-52-65-q80-sharpen10.webp 400w,
+      https://example.com/image-800x533-crop-52-65-q80-sharpen10.webp 800w">
     <img
       width="400" height="267" class="my-img-component lazyload" data-sizes="auto" decoding="async"
       data-src="https://example.com/image-400x267-crop-52-65-q80-sharpen10.jpg"
@@ -93,8 +93,8 @@ If we now use the same image and config and switch this image to eager (`'loadin
   <source
     width="400" height="267" sizes="400px" type="image/webp"
     srcset="
-      https://example.com/image-400x267-crop-52-65-q75-sharpen10.webp 400w,
-      https://example.com/image-800x533-crop-52-65-q75-sharpen10.webp 800w">
+      https://example.com/image-400x267-crop-52-65-q80-sharpen10.webp 400w,
+      https://example.com/image-800x533-crop-52-65-q80-sharpen10.webp 800w">
     <!-- fetchpriority="high" is added automatically when loading='eager' -->
     <!-- You can override it by setting 'fetchpriority' => null in attributes.img -->
     <img
@@ -163,8 +163,8 @@ $options = [
   <source
     width="400" height="171" data-aspectratio="21/9" data-sizes="auto" media="(width >= 800px)" type="image/webp"
     data-srcset="
-      https://example.com/different-image-400x171-crop-51-52-q75-sharpen10.webp 400w,
-      https://example.com/different-image-800x343-crop-51-52-q75-sharpen10.webp 800w">
+      https://example.com/different-image-400x171-crop-51-52-q80-sharpen10.webp 400w,
+      https://example.com/different-image-800x343-crop-51-52-q80-sharpen10.webp 800w">
   <source
     width="400" height="267" data-aspectratio="3/2" data-sizes="auto" type="image/avif"
     data-srcset="
@@ -173,8 +173,8 @@ $options = [
   <source
     width="400" height="267" data-sizes="auto" data-aspectratio="3/2" type="image/webp"
     data-srcset="
-      https://example.com/image-400x267-crop-52-65-q75-sharpen10.webp 400w,
-      https://example.com/image-800x533-crop-52-65-q75-sharpen10.webp 800w">
+      https://example.com/image-400x267-crop-52-65-q80-sharpen10.webp 400w,
+      https://example.com/image-800x533-crop-52-65-q80-sharpen10.webp 800w">
   <img
     width="400" height="267" class="my-img-component lazyload" data-sizes="auto" decoding="async"
     data-src="https://example.com/image-400x267-crop-52-65-q80-sharpen10.jpg"

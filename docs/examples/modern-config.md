@@ -53,8 +53,8 @@ return [
   <source
     width="400" height="171" media="(width >= 800px)" sizes="400px" type="image/webp"
     srcset="
-      https://example.com/different-image-400x171-crop-51-52-q75-sharpen10.webp 400w,
-      https://example.com/different-image-800x343-crop-51-52-q75-sharpen10.webp 800w">
+      https://example.com/different-image-400x171-crop-51-52-q80-sharpen10.webp 400w,
+      https://example.com/different-image-800x343-crop-51-52-q80-sharpen10.webp 800w">
   <source
     width="400" height="267" sizes="400px" type="image/avif"
     srcset="
@@ -63,8 +63,8 @@ return [
   <source
     width="400" height="267" sizes="400px" type="image/webp"
     srcset="
-      https://example.com/image-400x267-crop-52-65-q75-sharpen10.webp 400w,
-      https://example.com/image-800x533-crop-52-65-q75-sharpen10.webp 800w">
+      https://example.com/image-400x267-crop-52-65-q80-sharpen10.webp 400w,
+      https://example.com/image-800x533-crop-52-65-q80-sharpen10.webp 800w">
   <img
     width="400" height="267" sizes="400px" decoding="async" loading="lazy"
     src="https://example.com/image-400x267-crop-52-65-q80-sharpen10.jpg"
@@ -106,8 +106,8 @@ return [
   <source
     width="400" height="171" media="(width >= 800px)" sizes="400px" type="image/webp"
     srcset="
-      https://example.com/different-image-400x171-crop-51-52-q75-sharpen10.webp 400w,
-      https://example.com/different-image-800x343-crop-51-52-q75-sharpen10.webp 800w">
+      https://example.com/different-image-400x171-crop-51-52-q80-sharpen10.webp 400w,
+      https://example.com/different-image-800x343-crop-51-52-q80-sharpen10.webp 800w">
   <source
     width="400" height="267" sizes="400px" type="image/avif"
     srcset="
@@ -116,8 +116,8 @@ return [
   <source
     width="400" height="267" sizes="400px" type="image/webp"
     srcset="
-      https://example.com/image-400x267-crop-52-65-q75-sharpen10.webp 400w,
-      https://example.com/image-800x533-crop-52-65-q75-sharpen10.webp 800w">
+      https://example.com/image-400x267-crop-52-65-q80-sharpen10.webp 400w,
+      https://example.com/image-800x533-crop-52-65-q80-sharpen10.webp 800w">
   <img
     width="400" height="267" sizes="400px" decoding="async" loading="lazy"
     src="https://example.com/image-400x267-crop-52-65-q80-sharpen10.jpg">
@@ -151,8 +151,8 @@ return [
   <source
     width="400" height="267" sizes="400px" type="image/webp"
     srcset="
-      https://example.com/image-400x267-crop-52-65-q75-sharpen10.webp 400w,
-      https://example.com/image-800x533-crop-52-65-q75-sharpen10.webp 800w">
+      https://example.com/image-400x267-crop-52-65-q80-sharpen10.webp 400w,
+      https://example.com/image-800x533-crop-52-65-q80-sharpen10.webp 800w">
   <img
     width="400" height="267" sizes="400px" decoding="async" loading="lazy"
     src="https://example.com/image-400x267-crop-52-65-q80-sharpen10.jpg">
@@ -185,13 +185,13 @@ return [
   <source
     width="400" height="171" media="(width >= 800px)" sizes="400px" type="image/webp"
     srcset="
-      /different-image-400x171-crop-51-52-q75-sharpen10.webp 400w,
-      /different-image-800x343-crop-51-52-q75-sharpen10.webp 800w">
+      /different-image-400x171-crop-51-52-q80-sharpen10.webp 400w,
+      /different-image-800x343-crop-51-52-q80-sharpen10.webp 800w">
   <source
     width="400" height="267" sizes="400px" type="image/webp"
     srcset="
-      /image-400x267-crop-52-65-q75-sharpen10.webp 400w,
-      /image-800x533-crop-52-65-q75-sharpen10.webp 800w">
+      /image-400x267-crop-52-65-q80-sharpen10.webp 400w,
+      /image-800x533-crop-52-65-q80-sharpen10.webp 800w">
   <img
     width="400" height="267" sizes="400px" decoding="async" loading="lazy"
     src="/image-400x267-crop-52-65-q80-sharpen10.jpg">
@@ -247,8 +247,8 @@ In this example, the main image uses `avif` (smaller) with `webp` as fallback, w
   <source
     width="400" height="171" media="(width >= 800px)" type="image/webp"
     srcset="
-      /illustration-400x171-crop-51-52-q75-sharpen10.webp 400w,
-      /illustration-800x343-crop-51-52-q75-sharpen10.webp 800w">
+      /illustration-400x171-crop-51-52-q80-sharpen10.webp 400w,
+      /illustration-800x343-crop-51-52-q80-sharpen10.webp 800w">
   <!-- Main image: avif is smaller for this photo, webp is kept as fallback -->
   <source
     width="400" height="267" type="image/avif"
@@ -258,8 +258,8 @@ In this example, the main image uses `avif` (smaller) with `webp` as fallback, w
   <source
     width="400" height="267" type="image/webp"
     srcset="
-      /image-400x267-crop-52-65-q75-sharpen10.webp 400w,
-      /image-800x533-crop-52-65-q75-sharpen10.webp 800w">
+      /image-400x267-crop-52-65-q80-sharpen10.webp 400w,
+      /image-800x533-crop-52-65-q80-sharpen10.webp 800w">
   <img
     width="400" height="267" decoding="async" loading="lazy"
     src="/image-400x267-crop-52-65-q80-sharpen10.jpg">

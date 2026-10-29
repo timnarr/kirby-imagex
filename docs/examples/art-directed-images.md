@@ -60,8 +60,8 @@ $options = [
   <source
     width="400" height="171"  media="(width >= 800px)" type="image/webp"
     srcset="
-      https://example.com/image-400x171-crop-52-65-q75-sharpen10.webp 400w,
-      https://example.com/image-800x343-crop-52-65-q75-sharpen10.webp 800w">
+      https://example.com/image-400x171-crop-52-65-q80-sharpen10.webp 400w,
+      https://example.com/image-800x343-crop-52-65-q80-sharpen10.webp 800w">
   <source
     width="400" height="267" type="image/avif"
     srcset="
@@ -70,8 +70,8 @@ $options = [
   <source
     width="400" height="267" type="image/webp"
     srcset="
-      https://example.com/image-400x267-crop-52-65-q75-sharpen10.webp 400w,
-      https://example.com/image-800x533-crop-52-65-q75-sharpen10.webp 800w">
+      https://example.com/image-400x267-crop-52-65-q80-sharpen10.webp 400w,
+      https://example.com/image-800x533-crop-52-65-q80-sharpen10.webp 800w">
   <img
     width="400" height="267" decoding="async" loading="lazy"
     src="https://example.com/image-400x267-crop-52-65-q80-sharpen10.jpg"
@@ -121,8 +121,8 @@ $options = [
   <source
     width="400" height="171"  media="(width >= 800px)" type="image/webp"
     srcset="
-      https://example.com/different-image-400x171-crop-52-65-q75-sharpen10.webp 400w,
-      https://example.com/different-image-800x343-crop-52-65-q75-sharpen10.webp 800w">
+      https://example.com/different-image-400x171-crop-52-65-q80-sharpen10.webp 400w,
+      https://example.com/different-image-800x343-crop-52-65-q80-sharpen10.webp 800w">
   <source
     width="400" height="267" type="image/avif"
     srcset="
@@ -131,8 +131,8 @@ $options = [
   <source
     width="400" height="267" type="image/webp"
     srcset="
-      https://example.com/image-400x267-crop-52-65-q75-sharpen10.webp 400w,
-      https://example.com/image-800x533-crop-52-65-q75-sharpen10.webp 800w">
+      https://example.com/image-400x267-crop-52-65-q80-sharpen10.webp 400w,
+      https://example.com/image-800x533-crop-52-65-q80-sharpen10.webp 800w">
   <img
     width="400" height="267" decoding="async" loading="lazy"
     src="https://example.com/image-400x267-crop-52-65-q80-sharpen10.jpg"
