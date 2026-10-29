@@ -157,46 +157,32 @@ class Imagex
 
 		$options = [...self::DEFAULT_OPTIONS, ...array_filter($options, fn ($value) => $value !== null)];
 
-		// Validate required option: image
 		if ($options['image'] === null) {
 			throw new InvalidArgumentException('[kirby-imagex] Missing required option: image');
 		}
 
-		// Type validation for image
 		if (!($options['image'] instanceof File)) {
 			throw new InvalidArgumentException("[kirby-imagex] Option 'image' must be an instance of Kirby\Cms\File");
 		}
 
-		// Validate loading option
 		$loading = $options['loading'];
 
 		if (!in_array($loading, ['eager', 'lazy'], true)) {
 			throw new InvalidArgumentException("[kirby-imagex] Option 'loading' must be 'eager' or 'lazy'. Got: " . (is_string($loading) ? "'{$loading}'" : get_debug_type($loading)));
 		}
 
-		// Validate option: ratio
 		if (!is_string($options['ratio'])) {
 			throw new InvalidArgumentException('[kirby-imagex] Invalid option: ratio. Must be a string (e.g. "16/9" or "intrinsic").');
 		}
 
-		// Validate option: srcset
 		if (!is_string($options['srcset'])) {
 			throw new InvalidArgumentException('[kirby-imagex] Invalid option: srcset. Must be a string matching a "thumbs.srcsets" preset name.');
 		}
 
-		// Validate option: compareFormats
-		if (!is_bool($options['compareFormats'])) {
-			throw new InvalidArgumentException('[kirby-imagex] Invalid option: compareFormats. Must be a boolean.');
-		}
-
-		// Validate option: focus
-		if (!is_bool($options['focus'])) {
-			throw new InvalidArgumentException('[kirby-imagex] Invalid option: focus. Must be a boolean.');
-		}
-
-		// Validate option: preload
-		if (!is_bool($options['preload'])) {
-			throw new InvalidArgumentException('[kirby-imagex] Invalid option: preload. Must be a boolean.');
+		foreach (['compareFormats', 'focus', 'preload'] as $name) {
+			if (!is_bool($options[$name])) {
+				throw new InvalidArgumentException("[kirby-imagex] Invalid option: {$name}. Must be a boolean.");
+			}
 		}
 
 		// Preloading defers nothing: a lazy image would be fetched up front anyway
@@ -204,7 +190,6 @@ class Imagex
 			throw new InvalidArgumentException("[kirby-imagex] Option 'preload' requires 'loading' => 'eager'. Lazy images shouldn't be preloaded.");
 		}
 
-		// Validate option: nonce
 		if ($options['nonce'] !== null && (!is_string($options['nonce']) || $options['nonce'] === '')) {
 			throw new InvalidArgumentException('[kirby-imagex] Invalid option: nonce. Must be a non-empty string (e.g. kirby()->nonce()) or null.');
 		}
@@ -430,17 +415,6 @@ class Imagex
 	private function getSrcsetPresetName(string $format): string
 	{
 		return $format === 'originalformat' ? $this->srcset : $this->srcset . '-' . $format;
-	}
-
-	/**
-	 * Get the file format of a image
-	 *
-	 * @param File|null $image Optional file object to determine format; defaults to main image.
-	 * @return string The image file format.
-	 */
-	private function getImageFormat(File|null $image = null): string
-	{
-		return normalizeFormat(($image ?? $this->image)->extension());
 	}
 
 	/**
@@ -782,7 +756,7 @@ class Imagex
 		['width' => $width, 'height' => $height] = A::first($srcsetPreset);
 
 		if ($format === 'originalformat') {
-			$format = $this->getImageFormat($image);
+			$format = normalizeFormat($image->extension());
 		}
 
 		$defaultAttributes = [
