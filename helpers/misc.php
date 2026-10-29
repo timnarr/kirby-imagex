@@ -40,7 +40,7 @@ function normalizeFormat(string $format): string
  */
 function urlHandler(string $url, bool|null $useRelativeUrls = null, string|null $siteUrl = null): string
 {
-	$useRelativeUrls = $useRelativeUrls ?? kirby()->option('timnarr.imagex.relativeUrls');
+	$useRelativeUrls ??= kirby()->option('timnarr.imagex.relativeUrls');
 
 	if (!$useRelativeUrls) {
 		return $url;
@@ -161,21 +161,18 @@ function resolveCompareFormatsWeights(mixed $weights): array
 		'desktop'  => ['small' => 0.2,  'medium' => 0.3,  'large' => 0.5],
 		'balanced' => ['small' => 0.34, 'medium' => 0.33, 'large' => 0.33],
 	];
-
-	if (!is_string($weights) && !is_array($weights)) {
-		$available = implode(', ', array_keys($presets));
-
-		throw new InvalidArgumentException("[kirby-imagex] Option 'timnarr.imagex.compareFormatsWeights' must be a preset name ({$available}) or an array with 'small', 'medium' and 'large' weights. Got: " . get_debug_type($weights));
-	}
+	$available = implode(', ', array_keys($presets));
 
 	if (is_string($weights)) {
 		if (!isset($presets[$weights])) {
-			$available = implode(', ', array_keys($presets));
-
 			throw new InvalidArgumentException("[kirby-imagex] Invalid compareFormatsWeights preset '{$weights}'. Available presets: {$available}");
 		}
 
 		return $presets[$weights];
+	}
+
+	if (!is_array($weights)) {
+		throw new InvalidArgumentException("[kirby-imagex] Option 'timnarr.imagex.compareFormatsWeights' must be a preset name ({$available}) or an array with 'small', 'medium' and 'large' weights. Got: " . get_debug_type($weights));
 	}
 
 	foreach (['small', 'medium', 'large'] as $key) {
@@ -307,14 +304,12 @@ function escapeCssIdentifier(string $value): string
  */
 function applyUrlHandlerToAttributes(array $attributes, bool|null $useRelativeUrls = null, string|null $siteUrl = null): array
 {
-	$useRelativeUrls = $useRelativeUrls ?? kirby()->option('timnarr.imagex.relativeUrls');
+	$useRelativeUrls ??= kirby()->option('timnarr.imagex.relativeUrls');
 
-	// Only process if relativeUrls option is enabled
 	if (!$useRelativeUrls) {
 		return $attributes;
 	}
 
-	// List of URL-based attributes that should be processed
 	$urlAttributes = ['src', 'srcset', 'data-src', 'data-srcset'];
 
 	foreach ($urlAttributes as $attr) {
