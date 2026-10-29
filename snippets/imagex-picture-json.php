@@ -16,6 +16,8 @@ $data = [
 	],
 	'img' => $imagex->getImgAttributes(),
 	'artDirectionStyles' => $imagex->getArtDirectionStyles(),
+	// Left out when empty, like the styles
+	'preloadLinks' => $imagex->getPreloadLinks() ?: null,
 ];
 
 $data = transformForJson($data);

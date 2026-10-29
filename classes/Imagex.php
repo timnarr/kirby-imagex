@@ -23,6 +23,8 @@ class Imagex
 	protected string $ratio;
 	protected bool $focus;
 	protected string|null $nonce;
+	protected bool $preload;
+	protected string|null $stack;
 	protected array $artDirection;
 	private string|null $artDirectionId = null;
 	private string|null $artDirectionStylesCache = null;
@@ -41,7 +43,7 @@ class Imagex
 	/** Srcset presets with ratio-based heights, keyed by resolved ratio ('x/y') and preset name. */
 	private array $dynamicSrcsetPresets = [];
 
-	/** All <source> attributes, built once per instance. */
+	/** All <source> attributes, built once (used by the <picture> and the preload links). */
 	private array|null $pictureSources = null;
 
 	/** Smallest format per image and ratio, keyed by 'imageId|ratio'. */
@@ -58,6 +60,7 @@ class Imagex
 		'image' => null,
 		'loading' => 'lazy',
 		'nonce' => null,
+		'preload' => false,
 		'ratio' => 'intrinsic',
 		'srcset' => 'default',
 	];
@@ -87,6 +90,7 @@ class Imagex
 		$this->compareFormats = $options['compareFormats'];
 		$this->focus = $options['focus'];
 		$this->nonce = $options['nonce'];
+		$this->preload = $options['preload'];
 
 		$attributes = $this->validateAttributes($options['attributes']);
 		$this->imgAttributes = normalizeAttributesStructure($attributes['img'] ?? []);
@@ -98,6 +102,11 @@ class Imagex
 
 		$this->artDirection = $this->validateArtDirection($options['artDirection']);
 
+		// Preload links need mutually exclusive media conditions — validate them up front
+		if ($this->preload) {
+			exclusiveMediaConditions(array_column($this->artDirection, 'media'));
+		}
+
 		// Plugin options from config.php
 		$this->kirby = kirby();
 		$this->customLazyloading = $this->getBoolOption('customLazyloading');
@@ -108,6 +117,7 @@ class Imagex
 		$this->formats = $options['formats'] !== null
 			? $this->resolveFormats($options['formats'], "Option 'formats'")
 			: $this->resolveFormats($this->kirby->option('timnarr.imagex.formats'), "Option 'timnarr.imagex.formats'");
+		$this->stack = $this->resolveStack($this->kirby->option('timnarr.imagex.stack'));
 
 		if ($this->compareFormats && count($this->formats) <= 1) {
 			throw new InvalidArgumentException('[kirby-imagex] Not enough formats to determine the smallest. Please set "compareFormats" to false or use at least two formats (globally or via the "formats" option).');
@@ -184,6 +194,16 @@ class Imagex
 			throw new InvalidArgumentException('[kirby-imagex] Invalid option: focus. Must be a boolean.');
 		}
 
+		// Validate option: preload
+		if (!is_bool($options['preload'])) {
+			throw new InvalidArgumentException('[kirby-imagex] Invalid option: preload. Must be a boolean.');
+		}
+
+		// Preloading defers nothing: a lazy image would be fetched up front anyway
+		if ($options['preload'] && $loading !== 'eager') {
+			throw new InvalidArgumentException("[kirby-imagex] Option 'preload' requires 'loading' => 'eager'. Lazy images shouldn't be preloaded.");
+		}
+
 		// Validate option: nonce
 		if ($options['nonce'] !== null && (!is_string($options['nonce']) || $options['nonce'] === '')) {
 			throw new InvalidArgumentException('[kirby-imagex] Invalid option: nonce. Must be a non-empty string (e.g. kirby()->nonce()) or null.');
@@ -208,6 +228,22 @@ class Imagex
 		}
 
 		return $value;
+	}
+
+	/**
+	 * Validates the `stack` plugin option: the name of a Kirby template stack.
+	 *
+	 * @param mixed $stack The option value.
+	 * @return string|null The stack name, or null if none is configured.
+	 * @throws InvalidArgumentException If it's neither null nor a non-empty string.
+	 */
+	private function resolveStack(mixed $stack): string|null
+	{
+		if ($stack !== null && (!is_string($stack) || trim($stack) === '')) {
+			throw new InvalidArgumentException("[kirby-imagex] Option 'timnarr.imagex.stack' must be a stack name (e.g. 'imagex-head') or null. Got: " . (is_string($stack) ? "'{$stack}'" : get_debug_type($stack)));
+		}
+
+		return $stack;
 	}
 
 	/**
@@ -614,6 +650,93 @@ class Imagex
 	public function getNonce(): string|null
 	{
 		return $this->nonce;
+	}
+
+	/**
+	 * Get the name of the template stack that head elements (styles, preload
+	 * links) are pushed to, as configured in `timnarr.imagex.stack`.
+	 *
+	 * @return string|null The stack name, or null to render styles inline.
+	 */
+	public function getStack(): string|null
+	{
+		return $this->stack;
+	}
+
+	/**
+	 * Get the attributes of the `<link rel="preload">` elements for this image,
+	 * if the `preload` option is enabled.
+	 *
+	 * Derived from getPictureSources(), so the links always match what <picture>
+	 * picks. Preload links can't pick the first supported format like <picture>
+	 * does: a browser fetches every link whose `type` it supports. So each source
+	 * gets one link, in its first format, which is what a browser supporting the
+	 * most modern format uses (honoring compareFormats). Browsers without support
+	 * for it skip the link.
+	 *
+	 * Art-directed sources get mutually exclusive `media` conditions (see
+	 * exclusiveMediaConditions()), so only the image <picture> uses is fetched.
+	 * `imagesizes` is the source's own `sizes`: a <source> doesn't inherit the
+	 * <img>'s `sizes`, and the link must pick the same candidate as <picture>.
+	 *
+	 * Without a default <source> (no formats, or an image Kirby can't resize),
+	 * the default link uses the <img>'s srcset.
+	 * There's no `href`, unless the <img> has no srcset (`noSrcsetInImg`, or an image Kirby can't resize):
+	 * browsers without `imagesrcset` support then skip the link instead of
+	 * fetching a possibly unused image.
+	 *
+	 * @return array List of attribute arrays, empty if `preload` is disabled.
+	 */
+	public function getPreloadLinks(): array
+	{
+		if (!$this->preload) {
+			return [];
+		}
+
+		// Mirror <picture>: per `media`, the first <source> wins (its most modern format).
+		// `media` is validated to be non-empty, so '' keys the default (no `media`).
+		$sources = [];
+
+		foreach ($this->getPictureSources() as $source) {
+			$sources[$source['media'] ?? ''] ??= $source;
+		}
+
+		// No default <source> (no formats, or an image Kirby can't resize): use the <img>
+		if (!isset($sources[''])) {
+			$img = $this->getImgAttributes();
+			$sources[''] = [
+				'srcset' => $img['srcset'] ?? null,
+				'sizes' => $img['sizes'] ?? null,
+				'href' => isset($img['srcset']) ? null : $img['src'],
+			];
+		}
+
+		$media = exclusiveMediaConditions(array_map(fn (array $source) => $source['media'] ?? null, $sources));
+
+		return array_values(array_map(fn (array $source, string|int $key) => $this->buildPreloadLink([
+			...$source,
+			'media' => $media[$key],
+		]), $sources, array_keys($sources)));
+	}
+
+	/**
+	 * Builds the attributes of a `<link rel="preload">` from source-like attributes.
+	 *
+	 * @param array $source Attributes with optional `srcset`, `sizes`, `media`, `type` and `href`.
+	 * @return array The link's attributes.
+	 */
+	private function buildPreloadLink(array $source): array
+	{
+		return [
+			'rel' => 'preload',
+			'as' => 'image',
+			'href' => $source['href'] ?? null,
+			'imagesrcset' => $source['srcset'] ?? null,
+			'imagesizes' => $source['sizes'] ?? null,
+			'media' => $source['media'] ?? null,
+			'type' => $source['type'] ?? null,
+			'fetchpriority' => 'high',
+		];
 	}
 
 	/**

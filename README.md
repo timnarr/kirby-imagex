@@ -10,7 +10,7 @@
 - 🌠 Dynamic generation of image srcsets for art-directed or media-condition-based images.
 - 📐 Helps you easily change the aspect ratio without the need to define new srcset presets.
 - 😴 Supports native lazy loading and is customizable for JavaScript lazy loading libraries.
-- 🚀 Improve the performance of your critical LCP (Largest Contentful Paint) images, utilizing `Priority Hints`.
+- 🚀 Improve the performance of your critical LCP (Largest Contentful Paint) images, utilizing `Priority Hints` and preload links in the `<head>`.
 - ⚡️ Supports multiple modern image formats, like AVIF and WebP.
 - 🧩 Can easily be integrated as a snippet into existing blocks/projects.
 - 🪄 Uses only Kirby's core capabilities for image handling.
@@ -45,6 +45,7 @@ return [
     'addOriginalFormatAsSource' => false,
     'noSrcsetInImg' => false,
     'relativeUrls' => false,
+    'stack' => null,
   ],
 ];
 ```
@@ -60,6 +61,7 @@ return [
 | `addOriginalFormatAsSource` | `false` | Boolean | Adds a `<source>` element for the image's original format (e.g. JPEG, PNG). Useful when modern formats like AVIF or WebP can't be used, but you still need art-directed picture sources at different breakpoints / media conditions. |
 | `noSrcsetInImg` | `false` | Boolean | If active this will only output the `src` attribute in the `<img>` tag. The smallest size from the given srcset-preset is used and the `srcset` attribute is omitted. |
 | `relativeUrls` | `false` | Boolean | Output root-relative image URLs (`/media/…`) when active. Only the origin of your site URL is removed, so subfolder installs and multi-language sites keep working. |
+| `stack` | `null` | String or `null` | Name of a Kirby [template stack](#head-elements-via-template-stacks) in your `<head>` (e.g. `'imagex-head'`). When set, Imagex pushes its `<style>` elements and preload links into it instead of rendering styles next to the `<picture>`. Required for the `preload` snippet option. |
 
 ## Adjust Kirby's Thumbs Config and Add Srcset Presets
 The srcset configuration is still set up as you know it from Kirby, [like described here](https://getkirby.com/docs/reference/objects/cms/file/srcset#define-presets__extended-example).
@@ -179,6 +181,7 @@ Only `image` is required — everything else has sane defaults. Unknown options 
 | `focus` | `false` | Boolean | Applies the image's Kirby `focus` field (the same one `thumb(['crop' => true])` already uses for cropping) as `object-position` on the `<img>`, plus `object-fit: cover`. Falls back to `'center'` when no focus point is set. [Read more here](#focus-point-support). |
 | `nonce` | `null` | String | CSP nonce for the generated `<style>` element. With a nonce set, the `focus` styles are also moved from the `<img>`'s `style` attribute into that `<style>` element, so the output works with a strict Content Security Policy. [Read more here](#content-security-policy-csp). |
 | `formats` | `null` | Array or `null` | Overrides the global [`formats`](#global-options) for this image, e.g. `['webp']` or `[]` for no modern formats at all. `null` uses the global option. Each format needs its srcset preset (`my-srcset-webp`, …). `addOriginalFormatAsSource` still applies. Useful for animated GIFs, see "[Files Kirby Can't Resize and Animated GIFs](#files-kirby-cant-resize-and-animated-gifs)". |
+| `preload` | `false` | Boolean | Adds `<link rel="preload">` elements for this image to the `<head>`, so the browser starts fetching it before it reaches the `<picture>`. Requires `loading: 'eager'`, and for `imagex-picture` also the global `stack` option (`imagex-picture-json` returns the links under `preloadLinks` instead). Use it for your LCP image only. [Read more here](#preload-links). |
 
 ```php
 <?php
@@ -323,7 +326,7 @@ $options = [
 </picture>
 ```
 
-Rules are only generated when at least one source actually changes the `aspect-ratio` or `object-position` — if none does, there's no `<style>` element and no generated `id`. Once one source changes a property, every source gets a rule for it, output in reverse order: several media queries can match at once, and CSS applies the last matching rule while `<picture>` uses the first matching `<source>`. When using `imagex-picture-json` for headless output, the same CSS string is available under the top-level `artDirectionStyles` key (omitted when empty) so the consuming frontend can inject it itself.
+Rules are only generated when at least one source actually changes the `aspect-ratio` or `object-position` — if none does, there's no `<style>` element and no generated `id`. Once one source changes a property, every source gets a rule for it, output in reverse order: several media queries can match at once, and CSS applies the last matching rule while `<picture>` uses the first matching `<source>`. When using `imagex-picture-json` for headless output, the same CSS string is available under the top-level `artDirectionStyles` key (omitted when empty) so the consuming frontend can inject it itself. With the global [`stack` option](#head-elements-via-template-stacks) set, the `<style>` element goes into the `<head>` instead.
 
 ### Content Security Policy (CSP)
 Imagex can output inline CSS in two places: the `<style>` element with [art-directed `<img>` styles](#art-directed-img-styles), and the `<img>`'s `style` attribute for [`focus`](#focus-point-support). A strict CSP (`style-src` without `'unsafe-inline'`) blocks both.
@@ -362,6 +365,32 @@ Art-directed sources need a resizable image. An `artDirection` entry whose image
   'formats' => $image->extension() === 'gif' ? ['webp'] : null,
 ]) ?>
 ```
+
+### Head Elements via Template Stacks
+Kirby 6 [template stacks](https://getkirby.com/releases/6) let snippets add content to another place of the page, like the `<head>` — even if it was rendered before. Imagex uses this for its `<style>` elements and [preload links](#preload-links). Output a stack in your `<head>` and tell Imagex its name:
+
+```php
+// site/config/config.php
+return [
+  'timnarr.imagex' => [
+    'stack' => 'imagex-head',
+  ],
+];
+```
+
+```php
+// site/snippets/header.php
+<head>
+  <!-- … -->
+  <?php stack('imagex-head') ?>
+</head>
+```
+
+Every `imagex-picture` snippet on the page now pushes its head elements into that stack, which keeps the `<body>` free of `<style>` elements. Identical preload links (e.g. the same image rendered twice) are only added once.
+
+Any stack name works. A dedicated one like `imagex-head` makes clear where the output comes from and lets you place it independently, e.g. preload links before your stylesheets, while a general `head` stack you use for other things stays separate. You can also reuse an existing stack.
+
+⚠️ Only set `stack` if the stack is actually output on every page that renders Imagex snippets — otherwise the art-direction styles are lost. Without `stack`, styles are rendered next to the `<picture>` as before.
 
 ## File Methods
 
@@ -410,7 +439,7 @@ These are the parts of Imagex covered by semantic versioning. Breaking changes t
 - The JSON structure returned by `imagex-picture-json` (see the [JSON output example](/docs/examples/json-output.md))
 - The [global plugin options](#global-options)
 - The [`thumbRatio()` file method](#thumbratiostring-ratio-array-options--)
-- The `TimNarr\Imagex` class: its constructor (same options as the snippets) and `getPictureAttributes()`, `getPictureSources()`, `getImgAttributes()`, `getArtDirectionStyles()` and `getNonce()`
+- The `TimNarr\Imagex` class: its constructor (same options as the snippets) and `getPictureAttributes()`, `getPictureSources()`, `getImgAttributes()`, `getArtDirectionStyles()`, `getNonce()`, `getPreloadLinks()` and `getStack()`
 
 Everything else is internal and may change in any release. That includes the helper functions in the `TimNarr` namespace (e.g. `getAspectRatio()`, `mergeHTMLAttributes()`) and `Imagex::getSmallestFormatForImage()`. They are marked `@internal`.
 
@@ -422,7 +451,7 @@ Cache entries don't expire. Stale entries (e.g. for replaced or deleted images) 
 Srcset heights (derived from width and ratio) are plain arithmetic and are only memoized per `Imagex` instance, not cached persistently.
 
 ## Performance Improvements for Critical Images
-Imagex provides features like Priority Hints for improving the loading times of critical images.
+Imagex provides features like Priority Hints and preload links for improving the loading times of critical images.
 
 ### Automatic Width & Height (CLS Prevention)
 Imagex automatically sets `width` and `height` attributes on every `<img>` and `<source>` element. The values are derived from the srcset preset and the `ratio` you pass to the snippet — no manual configuration needed. This lets the browser reserve the correct amount of space before the image loads, preventing [Cumulative Layout Shift (CLS)](https://web.dev/articles/cls).
@@ -432,6 +461,42 @@ Imagex sets `decoding="async"` on every `<img>` by default. This allows the brow
 
 ### Priority Hints
 Imagex will set the priority hint `fetchpriority="high"` to critical images to get the browser to load it sooner. Imagex sets this automatically when you use `'loading' => 'eager'`. You can override this behavior via `attributes.img`. Read more about [fetchpriority here](https://web.dev/articles/fetch-priority#the_fetchpriority_attribute).
+
+### Preload Links
+An image is only fetched once the browser's preload scanner reaches its `<picture>`. For your LCP image (e.g. a hero), a preload link in the `<head>` starts the download earlier. Set up a [template stack](#head-elements-via-template-stacks) and enable `preload` for that image:
+
+```php
+<?php snippet('imagex-picture', [
+  'image' => $image->toFile(),
+  'ratio' => '16/9',
+  'loading' => 'eager',
+  'preload' => true,
+  'attributes' => [
+    'sources' => ['sizes' => '100vw'],
+  ],
+  'artDirection' => [
+    ['media' => '(width >= 800px)', 'ratio' => '21/9'],
+  ],
+]) ?>
+```
+
+```html
+<head>
+  <!-- … -->
+  <link as="image" fetchpriority="high" imagesizes="100vw" imagesrcset="/media/…/image-400x171-crop.avif 400w, …" media="(width >= 800px)" rel="preload" type="image/avif">
+  <link as="image" fetchpriority="high" imagesizes="100vw" imagesrcset="/media/…/image-400x225-crop.avif 400w, …" media="(width < 800px)" rel="preload" type="image/avif">
+</head>
+```
+
+How Imagex builds the links:
+
+- **One format per source.** `<picture>` uses the first `<source>` with a supported format, but a browser fetches *every* preload link whose `type` it supports. So Imagex only preloads the format a browser supporting your most modern format would use — with `compareFormats`, the smallest one. Browsers without support for it simply skip the link.
+- **Mutually exclusive media.** `<picture>` uses the first matching `<source>`, but every preload link with a matching `media` is fetched. Imagex therefore extends each art-directed source's `media` so it excludes all earlier ones, and the default source only matches when no art-directed source does. Earlier conditions are negated in [range syntax](https://www.w3.org/TR/mediaqueries-4/#mq-range-context) where possible (`(width >= 800px)` or `(min-width: 800px)` → `(width < 800px)`), otherwise with `not (…)`. This requires media *conditions* like `(width >= 800px)` — media types (`screen and …`) and comma-separated lists throw an error when `preload` is enabled.
+- **`imagesizes` is the `<source>`'s `sizes`.** A `<source>` doesn't inherit the `<img>`'s `sizes`, so set `sizes` via `attributes.sources` (or per `artDirection` entry). Otherwise both the `<picture>` and the preload link fall back to `100vw`.
+- **No `href`.** Browsers without `imagesrcset` support skip the link instead of fetching an image that might not be used. Only images without any `srcset` get an `href`: files Kirby can't resize (e.g. SVGs), or no formats combined with `noSrcsetInImg`.
+- `fetchpriority="high"` is set on every link.
+
+Preload only what's visible above the fold, usually a single image: preloads compete with other critical resources like CSS and fonts. In the `imagex-picture-json` snippet, the links are available under the top-level `preloadLinks` key (omitted when `preload` is off). See the [preload links example](/docs/examples/preload-links.md).
 
 ## Why Order Matters?
 ### Format Order and Media Attribute
@@ -467,7 +532,7 @@ Imagex uses a **weighted multi-sample approach** to determine the smallest forma
 
 ## Roadmap / Ideas
 - [x] Add tests for Imagex class
-- [ ] Use Preload Resource Hints?! See [feature-branch](https://github.com/timnarr/kirby-imagex/tree/feature/preload-links)
+- [x] Use Preload Resource Hints
 
 ## License
 [MIT License](./LICENSE) Copyright © 2024-present Tim Narr

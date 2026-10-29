@@ -13,6 +13,7 @@ Kirby::plugin('timnarr/imagex', [
 		'addOriginalFormatAsSource' => false,
 		'noSrcsetInImg' => false,
 		'relativeUrls' => false,
+		'stack' => null,
 	],
 	'snippets' => [
 		'imagex-picture' => __DIR__ . '/snippets/imagex-picture.php',

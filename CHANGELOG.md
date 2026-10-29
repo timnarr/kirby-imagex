@@ -5,6 +5,9 @@ All notable changes to this project will be documented in this file.
 ## Unreleased
 
 ### Added
+- New `stack` plugin option: the name of a Kirby 6 template stack in your `<head>`. When set, the `imagex-picture` snippet pushes its `<style>` element (art-direction and `focus` styles) into it instead of rendering it next to the `<picture>`. Defaults to `null`, which keeps the previous output.
+- New `preload` snippet option: adds `<link rel="preload" as="image">` elements with `imagesrcset`/`imagesizes` for critical images to the `stack`. One format per source (respecting `compareFormats`), and art-directed sources get mutually exclusive `media` conditions, so only the image `<picture>` actually uses is fetched. The exclusions use the Media Queries Level 4 range syntax where possible: `(width >= 800px)` and `(min-width: 800px)` are negated as `(width < 800px)`. Requires `loading: 'eager'` and the `stack` option, both validated with a descriptive error.
+- New public `Imagex::getPreloadLinks()` and `Imagex::getStack()` getters. The `imagex-picture-json` snippet outputs the links under the new top-level `preloadLinks` key (omitted when empty).
 - New `formats` snippet option: overrides the global `formats` for a single image, e.g. `['webp']` for animated GIFs (Kirby converts them to a still AVIF) or `[]` for no modern formats. `null` (default) uses the global option.
 
 ### Fixed
