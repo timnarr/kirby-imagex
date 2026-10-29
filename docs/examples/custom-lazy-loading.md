@@ -161,15 +161,15 @@ $options = [
       https://example.com/different-image-400x171-crop-51-52-q65-sharpen25.avif 400w,
       https://example.com/different-image-800x343-crop-51-52-q65-sharpen25.avif 800w">
   <source
-    width="400" height="267" data-aspectratio="3/2" data-sizes="auto" type="image/avif"
-    data-srcset="
-      https://example.com/image-400x267-crop-52-65-q65-sharpen25.avif 400w,
-      https://example.com/image-800x533-crop-52-65-q65-sharpen25.avif 800w">
-  <source
     width="400" height="171" data-aspectratio="21/9" data-sizes="auto" media="(width >= 800px)" type="image/webp"
     data-srcset="
       https://example.com/different-image-400x171-crop-51-52-q75-sharpen10.webp 400w,
       https://example.com/different-image-800x343-crop-51-52-q75-sharpen10.webp 800w">
+  <source
+    width="400" height="267" data-aspectratio="3/2" data-sizes="auto" type="image/avif"
+    data-srcset="
+      https://example.com/image-400x267-crop-52-65-q65-sharpen25.avif 400w,
+      https://example.com/image-800x533-crop-52-65-q65-sharpen25.avif 800w">
   <source
     width="400" height="267" data-sizes="auto" data-aspectratio="3/2" type="image/webp"
     data-srcset="

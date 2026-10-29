@@ -58,15 +58,15 @@ $options = [
       https://example.com/image-400x171-crop-52-65-q65-sharpen25.avif 400w,
       https://example.com/image-800x343-crop-52-65-q65-sharpen25.avif 800w">
   <source
-    width="400" height="267" type="image/avif"
-    srcset="
-      https://example.com/image-400x267-crop-52-65-q65-sharpen25.avif 400w,
-      https://example.com/image-800x533-crop-52-65-q65-sharpen25.avif 800w">
-  <source
     width="400" height="171"  media="(width >= 800px)" type="image/webp"
     srcset="
       https://example.com/image-400x171-crop-52-65-q75-sharpen10.webp 400w,
       https://example.com/image-800x343-crop-52-65-q75-sharpen10.webp 800w">
+  <source
+    width="400" height="267" type="image/avif"
+    srcset="
+      https://example.com/image-400x267-crop-52-65-q65-sharpen25.avif 400w,
+      https://example.com/image-800x533-crop-52-65-q65-sharpen25.avif 800w">
   <source
     width="400" height="267" type="image/webp"
     srcset="
@@ -119,15 +119,15 @@ $options = [
       https://example.com/different-image-400x171-crop-52-65-q65-sharpen25.avif 400w,
       https://example.com/different-image-800x343-crop-52-65-q65-sharpen25.avif 800w">
   <source
-    width="400" height="267" type="image/avif"
-    srcset="
-      https://example.com/image-400x267-crop-52-65-q65-sharpen25.avif 400w,
-      https://example.com/image-800x533-crop-52-65-q65-sharpen25.avif 800w">
-  <source
     width="400" height="171"  media="(width >= 800px)" type="image/webp"
     srcset="
       https://example.com/different-image-400x171-crop-52-65-q75-sharpen10.webp 400w,
       https://example.com/different-image-800x343-crop-52-65-q75-sharpen10.webp 800w">
+  <source
+    width="400" height="267" type="image/avif"
+    srcset="
+      https://example.com/image-400x267-crop-52-65-q65-sharpen25.avif 400w,
+      https://example.com/image-800x533-crop-52-65-q65-sharpen25.avif 800w">
   <source
     width="400" height="267" type="image/webp"
     srcset="

@@ -11,6 +11,23 @@ use Kirby\Filesystem\Dir;
 use Kirby\Toolkit\A;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Imagex with a fixed compareFormats result per image filename, so tests can
+ * cover every outcome instead of whatever the image encoders happen to produce.
+ */
+class PinnedFormatsImagex extends Imagex
+{
+	public static array $smallest = [];
+	public static int $calls = 0;
+
+	public function getSmallestFormatForImage(File|null $image = null, string|null $ratio = null): string
+	{
+		self::$calls++;
+
+		return self::$smallest[($image ?? $this->image)->filename()];
+	}
+}
+
 class ImagexTest extends TestCase
 {
 	private string $root;
@@ -501,19 +518,82 @@ class ImagexTest extends TestCase
 		$this->imagex(['compareFormats' => true]);
 	}
 
-	public function testCompareFormatsRendersOnlyFormatsUpToTheSmallest()
+	/**
+	 * Creates an Imagex with compareFormats enabled and a fixed smallest format per image filename.
+	 */
+	private function pinnedImagex(array $smallest, array $options = []): PinnedFormatsImagex
+	{
+		PinnedFormatsImagex::$smallest = $smallest;
+		PinnedFormatsImagex::$calls = 0;
+
+		return new PinnedFormatsImagex([
+			'image' => $this->image(),
+			'ratio' => '16/9',
+			'compareFormats' => true,
+			...$options,
+		]);
+	}
+
+	public function testCompareFormatsKeepsAllFormatsWhenTheFirstIsSmallest()
+	{
+		$this->assertSame(['image/avif', 'image/webp'], array_column($this->pinnedImagex(['image.jpg' => 'avif'])->getPictureSources(), 'type'));
+	}
+
+	public function testCompareFormatsSkipsFormatsBeforeTheSmallest()
+	{
+		$this->assertSame(['image/webp'], array_column($this->pinnedImagex(['image.jpg' => 'webp'])->getPictureSources(), 'type'));
+	}
+
+	public function testCompareFormatsCanPickTheOriginalFormat()
 	{
 		$this->app([
 			'timnarr.imagex.formats' => ['webp'],
 			'timnarr.imagex.addOriginalFormatAsSource' => true,
 		]);
-		$imagex = $this->imagex(['compareFormats' => true]);
 
-		$smallest = $imagex->getSmallestFormatForImage();
-		$types = array_column($imagex->getPictureSources(), 'type');
+		$this->assertSame(['image/jpeg'], array_column($this->pinnedImagex(['image.jpg' => 'originalformat'])->getPictureSources(), 'type'));
+	}
 
-		$this->assertContains($smallest, ['webp', 'originalformat']);
-		$this->assertSame($smallest === 'webp' ? ['image/webp', 'image/jpeg'] : ['image/jpeg'], $types);
+	public function testArtDirectedSourcesKeepTheirFormatsBeforeTheDefault()
+	{
+		// Regression: sources were grouped by format, so the default AVIF source
+		// (no media, always matches) came before the art-directed WebP source,
+		// and AVIF browsers never used the art-directed image.
+		$sources = $this->pinnedImagex(['image.jpg' => 'avif', 'landscape.jpg' => 'webp'], [
+			'artDirection' => [['media' => '(width >= 800px)', 'image' => $this->image('landscape.jpg')]],
+		])->getPictureSources();
+
+		$this->assertSame(['image/webp', 'image/avif', 'image/webp'], array_column($sources, 'type'));
+		$this->assertSame(['(width >= 800px)', null, null], array_map(fn ($source) => $source['media'] ?? null, $sources));
+	}
+
+	public function testArtDirectedImageKeepsFormatsTheMainImageSkips()
+	{
+		$sources = $this->pinnedImagex(['image.jpg' => 'webp', 'landscape.jpg' => 'avif'], [
+			'artDirection' => [['media' => '(width >= 800px)', 'image' => $this->image('landscape.jpg')]],
+		])->getPictureSources();
+
+		$this->assertSame(['image/avif', 'image/webp', 'image/webp'], array_column($sources, 'type'));
+	}
+
+	public function testArtDirectionWithoutImageFollowsTheMainImageFormats()
+	{
+		$sources = $this->pinnedImagex(['image.jpg' => 'webp'], [
+			'artDirection' => [['media' => '(width >= 800px)', 'ratio' => '1/1']],
+		])->getPictureSources();
+
+		$this->assertSame(['image/webp', 'image/webp'], array_column($sources, 'type'));
+		$this->assertSame('(width >= 800px)', $sources[0]['media']);
+	}
+
+	public function testPictureSourcesAreBuiltOncePerInstance()
+	{
+		$imagex = $this->pinnedImagex(['image.jpg' => 'webp']);
+		$imagex->getPictureSources();
+		$calls = PinnedFormatsImagex::$calls;
+		$imagex->getPictureSources();
+
+		$this->assertSame($calls, PinnedFormatsImagex::$calls);
 	}
 
 	public function testRenderingDoesNotCacheSrcsetPresetsPersistently()

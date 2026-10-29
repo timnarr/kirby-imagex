@@ -39,6 +39,9 @@ class Imagex
 	/** Srcset presets with ratio-based heights, keyed by resolved ratio ('x/y') and preset name. */
 	private array $dynamicSrcsetPresets = [];
 
+	/** All <source> attributes, built once per instance. */
+	private array|null $pictureSources = null;
+
 	/** Smallest format per image and ratio, keyed by 'imageId|ratio'. */
 	private array $smallestFormats = [];
 
@@ -723,49 +726,57 @@ class Imagex
 	}
 
 	/**
-	 * Get art-directed picture sources for a specific format.
-	 * When compareFormats is enabled and a different image is used,
-	 * performs per-image format comparison.
+	 * Get the <source> attributes of one source in every format, in configured
+	 * order, minus the formats compareFormats skips for its image.
 	 *
-	 * @param string $format Image format.
-	 * @return array HTML attributes for art-directed picture sources.
+	 * An art-directed entry with its own image gets its own format decision. Without
+	 * one, it follows the main image's decision, so no extra thumbs are compared.
+	 *
+	 * @param array|null $source A validated artDirection source, or null for the main image.
+	 * @return array HTML attributes for the source's <source> elements.
 	 */
-	private function getArtDirectedSourcesPerFormat(string $format): array
+	private function getSourcesPerFormat(array|null $source = null): array
 	{
 		$sources = [];
 
-		foreach ($this->artDirection as $source) {
-			// Per-image format decision when using a different image
-			if (isset($source['image']) && $this->isFormatSkipped($format, $source['image'], $source['ratio'])) {
-				continue;
-			}
+		foreach ($this->formats as $format) {
+			$isSkipped = isset($source['image'])
+				? $this->isFormatSkipped($format, $source['image'], $source['ratio'])
+				: $this->isFormatSkipped($format);
 
-			$sources[] = $this->getSourceAttributes($format, $source);
+			if (!$isSkipped) {
+				$sources[] = $this->getSourceAttributes($format, $source);
+			}
 		}
 
 		return $sources;
 	}
 
 	/**
-	 * Get all picture sources, including both art-directed and default sources for formats.
+	 * Get all picture sources: every art-directed entry in all its formats, then
+	 * the main image in all its formats.
+	 *
+	 * Grouped by source, not by format: browsers use the first <source> with a
+	 * matching `media` and supported `type`. Grouped by format, the default AVIF
+	 * source (no `media`, always matches) would come before an art-directed source
+	 * that compareFormats limited to WebP, so AVIF browsers would never use it.
 	 *
 	 * @return array Compiled data of all picture sources.
 	 */
 	public function getPictureSources(): array
 	{
-		$sources = [];
-
-		foreach ($this->formats as $format) {
-			// Skip format if a smaller format exists for main image
-			if ($this->isFormatSkipped($format)) {
-				continue;
-			}
-
-			// Art-directed sources come first: browsers use the first matching <source>
-			array_push($sources, ...$this->getArtDirectedSourcesPerFormat($format));
-			$sources[] = $this->getSourceAttributes($format);
+		if ($this->pictureSources !== null) {
+			return $this->pictureSources;
 		}
 
-		return $sources;
+		$sources = [];
+
+		foreach ($this->artDirection as $source) {
+			array_push($sources, ...$this->getSourcesPerFormat($source));
+		}
+
+		array_push($sources, ...$this->getSourcesPerFormat());
+
+		return $this->pictureSources = $sources;
 	}
 }
