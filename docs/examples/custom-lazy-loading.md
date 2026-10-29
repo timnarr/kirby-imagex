@@ -135,7 +135,7 @@ $options = [
   ],
   'artDirection' => [
     [
-      'media' => '(min-width: 800px)',
+      'media' => '(width >= 800px)',
       'ratio' => '21/9',
       'image' => $block->imagetwo()->toFile(), // let's assume: `different-image.png`
       'attributes' => [
@@ -156,7 +156,7 @@ $options = [
 <!-- And then JS kicks in of course and swap data-srcset to srcset and so on... -->
 <picture>
   <source
-    width="400" height="171" data-aspectratio="21/9" data-sizes="auto" media="(min-width: 800px)" type="image/avif"
+    width="400" height="171" data-aspectratio="21/9" data-sizes="auto" media="(width >= 800px)" type="image/avif"
     data-srcset="
       https://example.com/different-image-400x171-crop-51-52-q65-sharpen25.avif 400w,
       https://example.com/different-image-800x343-crop-51-52-q65-sharpen25.avif 800w">
@@ -166,7 +166,7 @@ $options = [
       https://example.com/image-400x267-crop-52-65-q65-sharpen25.avif 400w,
       https://example.com/image-800x533-crop-52-65-q65-sharpen25.avif 800w">
   <source
-    width="400" height="171" data-aspectratio="21/9" data-sizes="auto" media="(min-width: 800px)" type="image/webp"
+    width="400" height="171" data-aspectratio="21/9" data-sizes="auto" media="(width >= 800px)" type="image/webp"
     data-srcset="
       https://example.com/different-image-400x171-crop-51-52-q75-sharpen10.webp 400w,
       https://example.com/different-image-800x343-crop-51-52-q75-sharpen10.webp 800w">

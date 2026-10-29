@@ -35,7 +35,7 @@ return [
 ],
 'artDirection' => [
   [
-    'media' => '(min-width: 800px)',
+    'media' => '(width >= 800px)',
     'ratio' => '21/9',
     'image' => $block->imagetwo()->toFile(), // let's assume: `different-image.png`
   ]
@@ -46,7 +46,7 @@ return [
 ```html
 <picture>
   <source
-    width="400" height="171" media="(min-width: 800px)" sizes="400px" type="image/avif"
+    width="400" height="171" media="(width >= 800px)" sizes="400px" type="image/avif"
     srcset="
       https://example.com/different-image-400x171-crop-51-52-q65-sharpen25.avif 400w,
       https://example.com/different-image-800x343-crop-51-52-q65-sharpen25.avif 800w">
@@ -56,7 +56,7 @@ return [
       https://example.com/image-400x267-crop-52-65-q65-sharpen25.avif 400w,
       https://example.com/image-800x533-crop-52-65-q65-sharpen25.avif 800w">
   <source
-    width="400" height="171" media="(min-width: 800px)" sizes="400px" type="image/webp"
+    width="400" height="171" media="(width >= 800px)" sizes="400px" type="image/webp"
     srcset="
       https://example.com/different-image-400x171-crop-51-52-q75-sharpen10.webp 400w,
       https://example.com/different-image-800x343-crop-51-52-q75-sharpen10.webp 800w">
@@ -99,7 +99,7 @@ return [
 ```html
 <picture>
   <source
-    width="400" height="171" media="(min-width: 800px)" sizes="400px" type="image/avif"
+    width="400" height="171" media="(width >= 800px)" sizes="400px" type="image/avif"
     srcset="
       https://example.com/different-image-400x171-crop-51-52-q65-sharpen25.avif 400w,
       https://example.com/different-image-800x343-crop-51-52-q65-sharpen25.avif 800w">
@@ -109,7 +109,7 @@ return [
       https://example.com/image-400x267-crop-52-65-q65-sharpen25.avif 400w,
       https://example.com/image-800x533-crop-52-65-q65-sharpen25.avif 800w">
   <source
-    width="400" height="171" media="(min-width: 800px)" sizes="400px" type="image/webp"
+    width="400" height="171" media="(width >= 800px)" sizes="400px" type="image/webp"
     srcset="
       https://example.com/different-image-400x171-crop-51-52-q75-sharpen10.webp 400w,
       https://example.com/different-image-800x343-crop-51-52-q75-sharpen10.webp 800w">
@@ -183,7 +183,7 @@ return [
 ```html
 <picture>
   <source
-    width="400" height="171" media="(min-width: 800px)" sizes="400px" type="image/webp"
+    width="400" height="171" media="(width >= 800px)" sizes="400px" type="image/webp"
     srcset="
       /different-image-400x171-crop-51-52-q75-sharpen10.webp 400w,
       /different-image-800x343-crop-51-52-q75-sharpen10.webp 800w">
@@ -230,7 +230,7 @@ $options = [
   'compareFormats' => true,
   'artDirection' => [
     [
-      'media' => '(min-width: 800px)',
+      'media' => '(width >= 800px)',
       'ratio' => '21/9',
       'image' => $differentImage->toFile(), // let's assume: `illustration.png` where webp is smaller than avif
     ]
@@ -245,7 +245,7 @@ In this example, the main image uses `avif` (smaller), while the art-directed il
 <picture>
   <!-- Art-directed source: webp is smaller for this illustration -->
   <source
-    width="400" height="171" media="(min-width: 800px)" type="image/webp"
+    width="400" height="171" media="(width >= 800px)" type="image/webp"
     srcset="
       /illustration-400x171-crop-51-52-q75-sharpen10.webp 400w,
       /illustration-800x343-crop-51-52-q75-sharpen10.webp 800w">

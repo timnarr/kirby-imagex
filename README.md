@@ -174,7 +174,7 @@ Only `image` is required — everything else has sane defaults. Unknown options 
 | `srcset` | `'default'` | String | Name of the srcset preset (e.g. `'my-srcset'`, without format suffix), configured in [Kirby's config](#adjust-kirbys-thumbs-config-and-add-srcset-presets). Imagex automatically resolves the format-specific variants (`my-srcset-webp`, `my-srcset-avif`) — you only pass the base name. |
 | `ratio` | `'intrinsic'` | String | Set the desired aspect ratio here. Can be omitted, default is `intrinsic`, which means the ratio of the provided image is used. Pass your ratio in this format: `x/y`. |
 | `attributes` | `[]` | Array | HTML attributes grouped by element: `picture`, `img`, `sources`. Each can be flat (auto-converted to `shared`) or use the full `shared`/`eager`/`lazy` structure for loading-mode-specific attributes. Other keys (e.g. `image` instead of `img`) throw an error. |
-| `artDirection` | `[]` | Array | Art-directed sources with `media` (required), `ratio`, `image`, and `attributes` options. Other keys throw an error. Order matters! Browsers use the first `<source>` with a matching media condition. Order width-based media queries from large to small. Per entry: `attributes` can be flat or structured, just like `attributes.sources`. `image` is optional — omit it to reuse the main `image` at a different ratio without needing a second file. `ratio` is optional — falls back to `'intrinsic'` (not the main `ratio`). [Read more about art-directed `<img>` styles here](#art-directed-img-styles). |
+| `artDirection` | `[]` | Array | Art-directed sources with `media` (required, a media condition — we recommend the [range syntax](https://www.w3.org/TR/mediaqueries-4/#mq-range-context) like `(width >= 800px)`), `ratio`, `image`, and `attributes` options. Other keys throw an error. Order matters! Browsers use the first `<source>` with a matching media condition. Order width-based media queries from large to small. Per entry: `attributes` can be flat or structured, just like `attributes.sources`. `image` is optional — omit it to reuse the main `image` at a different ratio without needing a second file. `ratio` is optional — falls back to `'intrinsic'` (not the main `ratio`). [Read more about art-directed `<img>` styles here](#art-directed-img-styles). |
 | `compareFormats` | `false` | Boolean | In some cases AVIF files can be larger than WebP. If this option is set to true, it enables a dynamic size comparison between the specified image formats. ⚠️ The `formats` order in `config.php` matters here! The comparison weighting can be configured globally via `compareFormatsWeights`. [Read more about it here](#dynamic-format-size-handling). |
 | `focus` | `false` | Boolean | Applies the image's Kirby `focus` field (the same one `thumb(['crop' => true])` already uses for cropping) as `object-position` on the `<img>`, plus `object-fit: cover`. Falls back to `'center'` when no focus point is set. [Read more here](#focus-point-support). |
 | `nonce` | `null` | String | CSP nonce for the generated `<style>` element. With a nonce set, the `focus` styles are also moved from the `<img>`'s `style` attribute into that `<style>` element, so the output works with a strict Content Security Policy. [Read more here](#content-security-policy-csp). |
@@ -221,11 +221,11 @@ $options = [
   // Art direction with media query in each item
   'artDirection' => [
     [
-      'media' => '(min-width: 1200px)',
+      'media' => '(width >= 1200px)',
       'ratio' => '21/9',
     ],
     [
-      'media' => '(min-width: 820px)',
+      'media' => '(width >= 820px)',
       'image' => $artDirectedImage,
     ],
     [
@@ -303,7 +303,7 @@ $options = [
   'focus' => true,
   'artDirection' => [
     [
-      'media' => '(min-width: 800px)',
+      'media' => '(width >= 800px)',
       'ratio' => '21/9',
       'image' => $wideImage->toFile(),
     ],
@@ -315,7 +315,7 @@ $options = [
 ```
 
 ```html
-<style>@media (min-width: 800px) { #imagex-a1b2c3d4 { aspect-ratio: 21 / 9 !important; object-position: 30% 60% !important; } }</style>
+<style>@media (width >= 800px) { #imagex-a1b2c3d4 { aspect-ratio: 21 / 9 !important; object-position: 30% 60% !important; } }</style>
 <picture>
   <!-- sources ... -->
   <img id="imagex-a1b2c3d4" style="object-fit: cover; object-position: 40% 50%;" ...>

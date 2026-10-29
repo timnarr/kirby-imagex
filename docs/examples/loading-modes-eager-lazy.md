@@ -107,7 +107,7 @@ You can also use `eager` and `lazy` attributes with art-directed images like thi
 ```php
 'artDirection' => [
   [
-    'media' => '(min-width: 800px)',
+    'media' => '(width >= 800px)',
     'ratio' => '21/9',
     'image' => $block->imagetwo()->toFile(),
     'attributes' => [

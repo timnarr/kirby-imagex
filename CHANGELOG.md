@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - **BREAKING:** Kirby 6 is now required (`extra.kirby.compatible` is `^6.0`). Kirby 5 is no longer supported. Migration: upgrade your site to Kirby 6, or stay on `0.5.x` while you are on Kirby 5. No option names, snippet variables or output changed.
 - **BREAKING:** PHP 8.3 is now the minimum version (Kirby 6 requires it). PHP 8.2 is no longer supported.
+- README, examples and error messages use the Media Queries Level 4 range syntax, e.g. `(width >= 800px)` instead of `(min-width: 800px)`. Your own `media` strings are output unchanged.
 
 ## [0.5.1] - October 13, 2026
 

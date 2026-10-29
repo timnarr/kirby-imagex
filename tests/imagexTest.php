@@ -85,7 +85,7 @@ class ImagexTest extends TestCase
 	public function testArtDirectionStylesAreEmptyWhenNoSourceChangesAnything()
 	{
 		$imagex = $this->imagex(['artDirection' => [
-			['media' => '(min-width: 800px)', 'ratio' => '16/9'],
+			['media' => '(width >= 800px)', 'ratio' => '16/9'],
 		]]);
 
 		$this->assertSame('', $imagex->getArtDirectionStyles());
@@ -97,11 +97,11 @@ class ImagexTest extends TestCase
 		// <picture> picks the first matching <source>; CSS applies the last matching
 		// rule. With both queries matching (>= 1200px), 21/9 must win.
 		$css = $this->imagex(['artDirection' => [
-			['media' => '(min-width: 1200px)', 'ratio' => '21/9'],
-			['media' => '(min-width: 600px)', 'ratio' => '4/3'],
+			['media' => '(width >= 1200px)', 'ratio' => '21/9'],
+			['media' => '(width >= 600px)', 'ratio' => '4/3'],
 		]])->getArtDirectionStyles();
 
-		$this->assertMatchesRegularExpression('/min-width: 600px.*aspect-ratio: 4 \/ 3.*min-width: 1200px.*aspect-ratio: 21 \/ 9/', $css);
+		$this->assertMatchesRegularExpression('/width >= 600px.*aspect-ratio: 4 \/ 3.*width >= 1200px.*aspect-ratio: 21 \/ 9/', $css);
 	}
 
 	public function testArtDirectionStylesResetRatioForEarlierSourceMatchingTheDefault()
@@ -109,17 +109,17 @@ class ImagexTest extends TestCase
 		// The 1200px source uses the default ratio, but must still get a rule —
 		// otherwise the also-matching 600px rule would apply 4/3 to it.
 		$css = $this->imagex(['artDirection' => [
-			['media' => '(min-width: 1200px)', 'ratio' => '16/9'],
-			['media' => '(min-width: 600px)', 'ratio' => '4/3'],
+			['media' => '(width >= 1200px)', 'ratio' => '16/9'],
+			['media' => '(width >= 600px)', 'ratio' => '4/3'],
 		]])->getArtDirectionStyles();
 
-		$this->assertMatchesRegularExpression('/min-width: 600px.*aspect-ratio: 4 \/ 3.*min-width: 1200px.*aspect-ratio: 16 \/ 9/', $css);
+		$this->assertMatchesRegularExpression('/width >= 600px.*aspect-ratio: 4 \/ 3.*width >= 1200px.*aspect-ratio: 16 \/ 9/', $css);
 	}
 
 	public function testArtDirectionStylesUseSourceImageRatioForIntrinsic()
 	{
 		$css = $this->imagex(['artDirection' => [
-			['media' => '(min-width: 800px)', 'image' => $this->image('landscape.jpg')],
+			['media' => '(width >= 800px)', 'image' => $this->image('landscape.jpg')],
 		]])->getArtDirectionStyles();
 
 		$this->assertStringContainsString('aspect-ratio: 7 / 3 !important;', $css);
@@ -128,7 +128,7 @@ class ImagexTest extends TestCase
 	public function testArtDirectionStylesTargetTheImgId()
 	{
 		$imagex = $this->imagex(['artDirection' => [
-			['media' => '(min-width: 800px)', 'ratio' => '1/1'],
+			['media' => '(width >= 800px)', 'ratio' => '1/1'],
 		]]);
 		$id = $imagex->getImgAttributes()['id'];
 
@@ -249,7 +249,7 @@ class ImagexTest extends TestCase
 	{
 		$css = $this->imagex([
 			'attributes' => ['img' => ['id' => '1-hero']],
-			'artDirection' => [['media' => '(min-width: 800px)', 'ratio' => '1/1']],
+			'artDirection' => [['media' => '(width >= 800px)', 'ratio' => '1/1']],
 		])->getArtDirectionStyles();
 
 		$this->assertStringContainsString('#\31 -hero {', $css);
@@ -268,7 +268,7 @@ class ImagexTest extends TestCase
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage('artDirection[0] has unknown key(s): ratios');
 
-		$this->imagex(['artDirection' => [['media' => '(min-width: 800px)', 'ratios' => '1/1']]]);
+		$this->imagex(['artDirection' => [['media' => '(width >= 800px)', 'ratios' => '1/1']]]);
 	}
 
 	public function testArtDirectionSourceWithInvalidImageThrows()
@@ -276,7 +276,7 @@ class ImagexTest extends TestCase
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage("artDirection[0]: 'image' must be an instance of Kirby\\Cms\\File or null.");
 
-		$this->imagex(['artDirection' => [['media' => '(min-width: 800px)', 'image' => 'landscape.jpg']]]);
+		$this->imagex(['artDirection' => [['media' => '(width >= 800px)', 'image' => 'landscape.jpg']]]);
 	}
 
 	public function testArtDirectionSourceWithInvalidRatioThrowsOnConstruction()
@@ -284,7 +284,7 @@ class ImagexTest extends TestCase
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage("artDirection[0]: Invalid ratio format '16:9'");
 
-		$this->imagex(['artDirection' => [['media' => '(min-width: 800px)', 'ratio' => '16:9']]]);
+		$this->imagex(['artDirection' => [['media' => '(width >= 800px)', 'ratio' => '16:9']]]);
 	}
 
 	public function testArtDirectionIntrinsicRatioErrorNamesEntry()
@@ -293,15 +293,15 @@ class ImagexTest extends TestCase
 		$this->expectExceptionMessage("artDirection[1]: Cannot use ratio 'intrinsic' for 'test/logo.svg'");
 
 		$this->imagex(['artDirection' => [
-			['media' => '(min-width: 1200px)', 'ratio' => '1/1'],
-			['media' => '(min-width: 800px)', 'image' => $this->image('logo.svg')],
+			['media' => '(width >= 1200px)', 'ratio' => '1/1'],
+			['media' => '(width >= 800px)', 'image' => $this->image('logo.svg')],
 		]]);
 	}
 
 	public function testArtDirectionSourceWithNullImageFallsBackToMainImage()
 	{
 		$sources = $this->imagex(['artDirection' => [
-			['media' => '(min-width: 800px)', 'ratio' => '1/1', 'image' => null],
+			['media' => '(width >= 800px)', 'ratio' => '1/1', 'image' => null],
 		]])->getPictureSources();
 
 		$this->assertStringContainsString('image-400x400-crop', $sources[0]['srcset']);
@@ -376,7 +376,7 @@ class ImagexTest extends TestCase
 	public function testArtDirectionAcceptsFlatAttributes()
 	{
 		$sources = $this->imagex(['artDirection' => [
-			['media' => '(min-width: 800px)', 'attributes' => ['data-landscape' => 'true', 'class' => 'a b']],
+			['media' => '(width >= 800px)', 'attributes' => ['data-landscape' => 'true', 'class' => 'a b']],
 		]])->getPictureSources();
 
 		$this->assertSame('true', $sources[0]['data-landscape']);
@@ -386,7 +386,7 @@ class ImagexTest extends TestCase
 	public function testArtDirectionAcceptsClassStringInStructuredAttributes()
 	{
 		$sources = $this->imagex(['artDirection' => [
-			['media' => '(min-width: 800px)', 'attributes' => ['lazy' => ['class' => 'a b']]],
+			['media' => '(width >= 800px)', 'attributes' => ['lazy' => ['class' => 'a b']]],
 		]])->getPictureSources();
 
 		$this->assertSame(['a', 'b'], $sources[0]['class']);
@@ -406,8 +406,8 @@ class ImagexTest extends TestCase
 		$this->expectExceptionMessage('artDirection[1]: Type mismatch detected: attribute "style" in "lazy" expected to be array, integer given.');
 
 		$this->imagex(['artDirection' => [
-			['media' => '(min-width: 1200px)'],
-			['media' => '(min-width: 800px)', 'attributes' => ['lazy' => ['style' => 42]]],
+			['media' => '(width >= 1200px)'],
+			['media' => '(width >= 800px)', 'attributes' => ['lazy' => ['style' => 42]]],
 		]]);
 	}
 
@@ -417,7 +417,7 @@ class ImagexTest extends TestCase
 		$this->expectExceptionMessage('artDirection[0]: Attributes mix flat keys');
 
 		$this->imagex(['artDirection' => [
-			['media' => '(min-width: 800px)', 'attributes' => ['class' => 'a', 'lazy' => ['data-x' => 'y']]],
+			['media' => '(width >= 800px)', 'attributes' => ['class' => 'a', 'lazy' => ['data-x' => 'y']]],
 		]]);
 	}
 
@@ -468,7 +468,7 @@ class ImagexTest extends TestCase
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage("Option 'artDirection' must be an array of sources.");
 
-		$this->imagex(['artDirection' => '(min-width: 800px)']);
+		$this->imagex(['artDirection' => '(width >= 800px)']);
 	}
 
 	public function testMissingSrcsetConfigThrowsOnConstruction()
@@ -518,7 +518,7 @@ class ImagexTest extends TestCase
 
 	public function testRenderingDoesNotCacheSrcsetPresetsPersistently()
 	{
-		$imagex = $this->imagex(['artDirection' => [['media' => '(min-width: 800px)', 'ratio' => '1/1']]]);
+		$imagex = $this->imagex(['artDirection' => [['media' => '(width >= 800px)', 'ratio' => '1/1']]]);
 		$imagex->getPictureSources();
 		$imagex->getImgAttributes();
 
@@ -557,7 +557,7 @@ class ImagexTest extends TestCase
 		$html = snippet('imagex-picture', [
 			'image' => $this->image(),
 			'ratio' => '16/9',
-			'artDirection' => [['media' => '(min-width: 800px)', 'ratio' => '1/1']],
+			'artDirection' => [['media' => '(width >= 800px)', 'ratio' => '1/1']],
 		], return: true);
 
 		$this->assertStringContainsString('<picture', $html);
@@ -566,7 +566,7 @@ class ImagexTest extends TestCase
 		$this->assertMatchesRegularExpression('/<img [^>]*id="(imagex-[0-9a-f]{8})"/', $html);
 
 		preg_match('/<img [^>]*id="([^"]+)"/', $html, $matches);
-		$this->assertStringContainsString('<style>@media (min-width: 800px) { #' . $matches[1] . ' {', $html);
+		$this->assertStringContainsString('<style>@media (width >= 800px) { #' . $matches[1] . ' {', $html);
 	}
 
 	public function testJsonSnippetRenders()
@@ -616,10 +616,10 @@ class ImagexTest extends TestCase
 		$css = $this->imagex([
 			'focus' => true,
 			'nonce' => 'abc123',
-			'artDirection' => [['media' => '(min-width: 800px)', 'ratio' => '1/1']],
+			'artDirection' => [['media' => '(width >= 800px)', 'ratio' => '1/1']],
 		])->getArtDirectionStyles();
 
-		$this->assertMatchesRegularExpression('/^#imagex-[0-9a-f]{8} \\{ object-fit: cover; object-position: center; \\} @media \\(min-width: 800px\\)/', $css);
+		$this->assertMatchesRegularExpression('/^#imagex-[0-9a-f]{8} \\{ object-fit: cover; object-position: center; \\} @media \\(width >= 800px\\)/', $css);
 	}
 
 	public function testNonceWithoutFocusOrArtDirectionGeneratesNoStyles()

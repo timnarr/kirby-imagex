@@ -75,7 +75,7 @@ $options = [
   'attributes' => [
     'img' => [
       'alt' => $image->toFile()->alt(),
-      'sizes' => '(min-width: 800px) 400px, 100vw',
+      'sizes' => '(width >= 800px) 400px, 100vw',
       'class' => [
         'my-image',
         $conditionalClass ? 'my-image--variant' : null // let's assume $conditionalClass is `true`
@@ -106,7 +106,7 @@ $options = [
       https://example.com/image-400x225-crop-52-65-q75-sharpen10.webp 400w,
       https://example.com/image-800x450-crop-52-65-q75-sharpen10.webp 800w">
   <img
-    class="my-image my-image--variant" sizes="(min-width: 800px) 400px, 100vw"
+    class="my-image my-image--variant" sizes="(width >= 800px) 400px, 100vw"
     style="object-fit: cover; object-position: 52% 65%;"
     width="400" height="225" decoding="async" loading="lazy"
     alt="A cat sits in the sun in front of yellow flowers."
@@ -134,7 +134,7 @@ $options = [
   'attributes' => [
     'img' => [
       'alt' => $image->toFile()->alt(),
-      'sizes' => '(min-width: 800px) 400px, 100vw',
+      'sizes' => '(width >= 800px) 400px, 100vw',
       'class' => ['my-image'],
       'style' => [
         'object-fit: cover;',
@@ -166,7 +166,7 @@ $options = [
       https://example.com/image-400x225-crop-52-65-q75-sharpen10.webp 400w,
       https://example.com/image-800x450-crop-52-65-q75-sharpen10.webp 800w">
   <img
-    class="my-image" sizes="(min-width: 800px) 400px, 100vw"
+    class="my-image" sizes="(width >= 800px) 400px, 100vw"
     style="object-fit: cover; object-position: 52% 65%;"
     width="400" height="225" decoding="async" loading="lazy"
     alt="A cat sits in the sun in front of yellow flowers."

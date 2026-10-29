@@ -263,7 +263,7 @@ class Imagex
 			}
 
 			if (!is_string($source['media'] ?? null) || trim($source['media']) === '') {
-				throw new InvalidArgumentException("{$prefix} is missing 'media' (e.g. '(min-width: 800px)'). Without it the source always matches and the default image is never used.");
+				throw new InvalidArgumentException("{$prefix} is missing 'media' (e.g. '(width >= 800px)'). Without it the source always matches and the default image is never used.");
 			}
 
 			if (isset($source['ratio']) && !is_string($source['ratio'])) {
@@ -554,7 +554,7 @@ class Imagex
 	 * is currently active. A property is only emitted if at least one source
 	 * differs from the default; if none does, no CSS (and no id) is generated.
 	 *
-	 * `media` is developer-supplied CSS syntax (e.g. '(min-width: 800px)'), passed
+	 * `media` is developer-supplied CSS syntax (e.g. '(width >= 800px)'), passed
 	 * through as-is like `ratio`/`srcset` elsewhere in Imagex — it can't be escaped
 	 * without breaking valid media-query syntax, so it must not be built from
 	 * untrusted/content-field input. `focus` values, which do come from a

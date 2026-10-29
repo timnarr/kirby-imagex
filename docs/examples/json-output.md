@@ -35,7 +35,7 @@ $options = [
   'attributes' => [
     'img' => [
       'alt' => $image->toFile()->alt(),
-      'sizes' => '(min-width: 800px) 400px, 100vw',
+      'sizes' => '(width >= 800px) 400px, 100vw',
       'class' => ['my-image'],
     ],
     'picture' => [
@@ -70,14 +70,14 @@ The JSON structure groups `picture` attributes with `sources` nested inside, and
                 "type": "image/avif",
                 "width": 400,
                 "height": 225,
-                "sizes": "(min-width: 800px) 400px, 100vw",
+                "sizes": "(width >= 800px) 400px, 100vw",
                 "srcset": "https://example.com/image-400x225-crop-52-65-q65-sharpen25.avif 400w, https://example.com/image-800x450-crop-52-65-q65-sharpen25.avif 800w"
             },
             {
                 "type": "image/webp",
                 "width": 400,
                 "height": 225,
-                "sizes": "(min-width: 800px) 400px, 100vw",
+                "sizes": "(width >= 800px) 400px, 100vw",
                 "srcset": "https://example.com/image-400x225-crop-52-65-q75-sharpen10.webp 400w, https://example.com/image-800x450-crop-52-65-q75-sharpen10.webp 800w"
             }
         ]
@@ -90,7 +90,7 @@ The JSON structure groups `picture` attributes with `sources` nested inside, and
         "loading": "lazy",
         "srcset": "https://example.com/image-400x225-crop-52-65-q80-sharpen10.jpg 400w, https://example.com/image-800x450-crop-52-65-q80-sharpen10.jpg 800w",
         "class": "my-image",
-        "sizes": "(min-width: 800px) 400px, 100vw",
+        "sizes": "(width >= 800px) 400px, 100vw",
         "alt": "A cat sits in the sun in front of yellow flowers."
     }
 }
@@ -106,7 +106,7 @@ $options = [
   'ratio' => '3/2',
   'artDirection' => [
     [
-      'media' => '(min-width: 800px)',
+      'media' => '(width >= 800px)',
       'ratio' => '21/9',
     ]
   ]
@@ -121,7 +121,7 @@ $options = [
                 "type": "image/avif",
                 "width": 400,
                 "height": 171,
-                "media": "(min-width: 800px)",
+                "media": "(width >= 800px)",
                 "srcset": "https://example.com/image-400x171-crop-52-65-q65-sharpen25.avif 400w, ..."
             },
             {

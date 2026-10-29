@@ -37,8 +37,8 @@ $options = [
   'ratio' => '3/2', // and we set it to 3/2
   'artDirection' => [
     [
-      // change ratio to 21/9 at `(min-width: 800px)` — same image, no `image` key needed
-      'media' => '(min-width: 800px)',
+      // change ratio to 21/9 at `(width >= 800px)` — same image, no `image` key needed
+      'media' => '(width >= 800px)',
       'ratio' => '21/9'
       // no `image` → Imagex reuses the main image above
     ]
@@ -53,7 +53,7 @@ $options = [
 ```html
 <picture>
   <source
-    width="400" height="171" media="(min-width: 800px)" type="image/avif"
+    width="400" height="171" media="(width >= 800px)" type="image/avif"
     srcset="
       https://example.com/image-400x171-crop-52-65-q65-sharpen25.avif 400w,
       https://example.com/image-800x343-crop-52-65-q65-sharpen25.avif 800w">
@@ -63,7 +63,7 @@ $options = [
       https://example.com/image-400x267-crop-52-65-q65-sharpen25.avif 400w,
       https://example.com/image-800x533-crop-52-65-q65-sharpen25.avif 800w">
   <source
-    width="400" height="171"  media="(min-width: 800px)" type="image/webp"
+    width="400" height="171"  media="(width >= 800px)" type="image/webp"
     srcset="
       https://example.com/image-400x171-crop-52-65-q75-sharpen10.webp 400w,
       https://example.com/image-800x343-crop-52-65-q75-sharpen10.webp 800w">
@@ -98,8 +98,8 @@ $options = [
   'ratio' => '3/2', // and we set it to 3/2
   'artDirection' => [
     [
-      // but change it to 21/9 at `(min-width: 800px)` with a different image
-      'media' => '(min-width: 800px)',
+      // but change it to 21/9 at `(width >= 800px)` with a different image
+      'media' => '(width >= 800px)',
       'ratio' => '21/9',
       'image' => $mySecondImage->toFile() // let's assume: `different-image.png`
     ]
@@ -114,7 +114,7 @@ $options = [
 ```html
 <picture>
   <source
-    width="400" height="171" media="(min-width: 800px)" type="image/avif"
+    width="400" height="171" media="(width >= 800px)" type="image/avif"
     srcset="
       https://example.com/different-image-400x171-crop-52-65-q65-sharpen25.avif 400w,
       https://example.com/different-image-800x343-crop-52-65-q65-sharpen25.avif 800w">
@@ -124,7 +124,7 @@ $options = [
       https://example.com/image-400x267-crop-52-65-q65-sharpen25.avif 400w,
       https://example.com/image-800x533-crop-52-65-q65-sharpen25.avif 800w">
   <source
-    width="400" height="171"  media="(min-width: 800px)" type="image/webp"
+    width="400" height="171"  media="(width >= 800px)" type="image/webp"
     srcset="
       https://example.com/different-image-400x171-crop-52-65-q75-sharpen10.webp 400w,
       https://example.com/different-image-800x343-crop-52-65-q75-sharpen10.webp 800w">
@@ -162,13 +162,13 @@ $options = [
   'artDirection' => [
     [
       // at large screens: wide crop of the same image — no second file needed
-      'media' => '(min-width: 1200px)',
+      'media' => '(width >= 1200px)',
       'ratio' => '21/9',
       // no `image` → falls back to main image, just cropped differently
     ],
     [
       // at medium screens: a different image entirely (e.g. a landscape version)
-      'media' => '(min-width: 600px)',
+      'media' => '(width >= 600px)',
       'ratio' => '16/9',
       'image' => $landscapeImage->toFile(), // let's assume: `landscape.jpg`
     ],
@@ -196,7 +196,7 @@ $options = [
   'focus' => true, // apply focus point as object-position, and keep it in sync per source
   'artDirection' => [
     [
-      'media' => '(min-width: 800px)',
+      'media' => '(width >= 800px)',
       'ratio' => '21/9',
       'image' => $wideImage->toFile(), // its own focus point, e.g. '30% 60%'
     ],
@@ -209,7 +209,7 @@ $options = [
 
 ### Final HTML Output
 ```html
-<style>@media (min-width: 800px) { #imagex-a1b2c3d4 { aspect-ratio: 21 / 9 !important; object-position: 30% 60% !important; } }</style>
+<style>@media (width >= 800px) { #imagex-a1b2c3d4 { aspect-ratio: 21 / 9 !important; object-position: 30% 60% !important; } }</style>
 <picture>
   <!-- sources omitted for brevity, see examples above -->
   <img
