@@ -207,6 +207,12 @@ class ImagexTest extends TestCase
 		$this->assertStringContainsString('800w', $attributes['srcset']);
 	}
 
+	public function testEagerImgGetsHighFetchpriority()
+	{
+		$this->assertSame('high', $this->imagex(['loading' => 'eager'])->getImgAttributes()['fetchpriority']);
+		$this->assertNull($this->imagex(['loading' => 'lazy'])->getImgAttributes()['fetchpriority'] ?? null);
+	}
+
 	public function testRelativeUrlsKeepSubfolderPath()
 	{
 		$this->app(['timnarr.imagex.relativeUrls' => true], 'https://example.com/blog');
@@ -617,6 +623,24 @@ class ImagexTest extends TestCase
 		$this->imagex(['compareFormats' => true])->getPictureSources();
 
 		$this->assertCount(1, $this->cacheFiles('compare-formats-'));
+	}
+
+	public function testCompareFormatsCacheIsInvalidatedWhenTheImageChanges()
+	{
+		$options = [
+			'timnarr.imagex.formats' => ['webp'],
+			'timnarr.imagex.addOriginalFormatAsSource' => true,
+		];
+		$this->app($options);
+		$this->imagex(['compareFormats' => true])->getPictureSources();
+
+		// A replaced file keeps its id, only the modification time changes
+		touch($this->root . '/content/test/image.jpg', time() + 60);
+		clearstatcache();
+		$this->app($options);
+		$this->imagex(['compareFormats' => true])->getPictureSources();
+
+		$this->assertCount(2, $this->cacheFiles('compare-formats-'));
 	}
 
 	private function cacheFiles(string $prefix): array
