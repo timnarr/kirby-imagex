@@ -142,32 +142,24 @@ function normalizeAttributesStructure(array $attributes): array
 {
 	$loadingModeKeys = ['shared', 'eager', 'lazy'];
 
-	// Check if any loading mode keys exist
-	$hasLoadingModeKeys = !empty(array_intersect(array_keys($attributes), $loadingModeKeys));
-
-	if ($hasLoadingModeKeys) {
-		$flatKeys = array_diff(array_keys($attributes), $loadingModeKeys);
-
-		if (!empty($flatKeys)) {
-			$flatList = implode(', ', array_map(fn ($key) => "'{$key}'", $flatKeys));
-
-			throw new InvalidArgumentException("[kirby-imagex] Attributes mix flat keys ({$flatList}) with loading mode keys ('shared', 'eager', 'lazy'). Move them into 'shared', or pass all attributes flat.");
-		}
-
-		// Already structured, just ensure all keys exist and coerce class/style
-		$normalized = [
-			'shared' => coerceClassStyleToArrays($attributes['shared'] ?? []),
-			'eager' => coerceClassStyleToArrays($attributes['eager'] ?? []),
-			'lazy' => coerceClassStyleToArrays($attributes['lazy'] ?? []),
-		];
-	} else {
-		// Flat structure - wrap in 'shared'
-		$normalized = [
-			'shared' => coerceClassStyleToArrays($attributes),
-			'eager' => [],
-			'lazy' => [],
-		];
+	// Flat attributes apply to both loading modes
+	if (empty(array_intersect(array_keys($attributes), $loadingModeKeys))) {
+		$attributes = ['shared' => $attributes];
 	}
+
+	$flatKeys = array_diff(array_keys($attributes), $loadingModeKeys);
+
+	if (!empty($flatKeys)) {
+		$flatList = implode(', ', array_map(fn ($key) => "'{$key}'", $flatKeys));
+
+		throw new InvalidArgumentException("[kirby-imagex] Attributes mix flat keys ({$flatList}) with loading mode keys ('shared', 'eager', 'lazy'). Move them into 'shared', or pass all attributes flat.");
+	}
+
+	$normalized = [
+		'shared' => coerceClassStyleToArrays($attributes['shared'] ?? []),
+		'eager' => coerceClassStyleToArrays($attributes['eager'] ?? []),
+		'lazy' => coerceClassStyleToArrays($attributes['lazy'] ?? []),
+	];
 
 	validateAttributeTypes($normalized);
 
