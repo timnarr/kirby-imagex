@@ -19,6 +19,12 @@ use Kirby\Exception\InvalidArgumentException;
 function wrapMediaCondition(string $media): string
 {
 	$media = trim($media);
+
+	// Doesn't start with a group, e.g. 'not (orientation: portrait)'
+	if (!str_starts_with($media, '(')) {
+		return "({$media})";
+	}
+
 	$depth = 0;
 
 	foreach (str_split($media) as $index => $char) {
@@ -30,7 +36,7 @@ function wrapMediaCondition(string $media): string
 
 		// The first group closes before the end: the condition consists of several parts
 		if ($depth === 0) {
-			return $index === strlen($media) - 1 && $media[0] === '(' ? $media : "({$media})";
+			return $index === strlen($media) - 1 ? $media : "({$media})";
 		}
 	}
 
@@ -115,7 +121,8 @@ function exclusiveMediaConditions(array $mediaList): array
 
 		if ($media !== null) {
 			$wrapped = wrapMediaCondition($media);
-			array_unshift($parts, $previous === [] ? trim($media) : $wrapped);
+			// Only combined with other conditions it needs its own parentheses
+			array_unshift($parts, $parts === [] ? trim($media) : $wrapped);
 			$previous[] = $wrapped;
 		}
 
