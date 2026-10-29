@@ -339,7 +339,7 @@ class Imagex
 			try {
 				// Flat or structured, like every other attributes option
 				$artDirection[$index]['attributes'] = normalizeAttributesStructure($source['attributes'] ?? []);
-				getAspectRatio($artDirection[$index]['ratio'], $source['image'] ?? $this->image);
+				getAspectRatio($artDirection[$index]['ratio'], $sourceImage);
 			} catch (InvalidArgumentException $e) {
 				throw new InvalidArgumentException("{$prefix}: " . str_replace('[kirby-imagex] ', '', $e->getMessage()), previous: $e);
 			}
@@ -493,12 +493,12 @@ class Imagex
 	 */
 	private function isFormatSkipped(string $format, File|null $image = null, string|null $ratio = null): bool
 	{
-		// Nothing to compare: every format would be the original file
-		if (!($image ?? $this->image)->isResizable()) {
+		// Nothing to compare for a file Kirby can't resize: every format would be the original
+		if (!$this->compareFormats || !($image ?? $this->image)->isResizable()) {
 			return false;
 		}
 
-		return $this->compareFormats && isFormatSkippable($format, $this->formats, $this->getSmallestFormatForImage($image, $ratio));
+		return isFormatSkippable($format, $this->formats, $this->getSmallestFormatForImage($image, $ratio));
 	}
 
 	/**
@@ -713,10 +713,13 @@ class Imagex
 
 		$media = exclusiveMediaConditions(array_map(fn (array $source) => $source['media'] ?? null, $sources));
 
-		return array_values(array_map(fn (array $source, string|int $key) => $this->buildPreloadLink([
-			...$source,
-			'media' => $media[$key],
-		]), $sources, array_keys($sources)));
+		$links = [];
+
+		foreach ($sources as $key => $source) {
+			$links[] = $this->buildPreloadLink([...$source, 'media' => $media[$key]]);
+		}
+
+		return $links;
 	}
 
 	/**
