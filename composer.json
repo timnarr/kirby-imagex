@@ -39,6 +39,7 @@
 			"helpers/aspectRatio.php",
 			"helpers/attributes.php",
 			"helpers/misc.php",
+			"helpers/preload.php",
 			"helpers/srcset.php"
 		]
 	},

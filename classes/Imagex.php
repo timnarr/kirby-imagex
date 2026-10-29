@@ -668,22 +668,7 @@ class Imagex
 	 * if the `preload` option is enabled.
 	 *
 	 * Derived from getPictureSources(), so the links always match what <picture>
-	 * picks. Preload links can't pick the first supported format like <picture>
-	 * does: a browser fetches every link whose `type` it supports. So each source
-	 * gets one link, in its first format, which is what a browser supporting the
-	 * most modern format uses (honoring compareFormats). Browsers without support
-	 * for it skip the link.
-	 *
-	 * Art-directed sources get mutually exclusive `media` conditions (see
-	 * exclusiveMediaConditions()), so only the image <picture> uses is fetched.
-	 * `imagesizes` is the source's own `sizes`: a <source> doesn't inherit the
-	 * <img>'s `sizes`, and the link must pick the same candidate as <picture>.
-	 *
-	 * Without a default <source> (no formats, or an image Kirby can't resize),
-	 * the default link uses the <img>'s srcset.
-	 * There's no `href`, unless the <img> has no srcset (`noSrcsetInImg`, or an image Kirby can't resize):
-	 * browsers without `imagesrcset` support then skip the link instead of
-	 * fetching a possibly unused image.
+	 * picks (see buildPreloadLinks()).
 	 *
 	 * @return array List of attribute arrays, empty if `preload` is disabled.
 	 */
@@ -693,53 +678,7 @@ class Imagex
 			return [];
 		}
 
-		// Mirror <picture>: per `media`, the first <source> wins (its most modern format).
-		// `media` is validated to be non-empty, so '' keys the default (no `media`).
-		$sources = [];
-
-		foreach ($this->getPictureSources() as $source) {
-			$sources[$source['media'] ?? ''] ??= $source;
-		}
-
-		// No default <source> (no formats, or an image Kirby can't resize): use the <img>
-		if (!isset($sources[''])) {
-			$img = $this->getImgAttributes();
-			$sources[''] = [
-				'srcset' => $img['srcset'] ?? null,
-				'sizes' => $img['sizes'] ?? null,
-				'href' => isset($img['srcset']) ? null : $img['src'],
-			];
-		}
-
-		$media = exclusiveMediaConditions(array_map(fn (array $source) => $source['media'] ?? null, $sources));
-
-		$links = [];
-
-		foreach ($sources as $key => $source) {
-			$links[] = $this->buildPreloadLink([...$source, 'media' => $media[$key]]);
-		}
-
-		return $links;
-	}
-
-	/**
-	 * Builds the attributes of a `<link rel="preload">` from source-like attributes.
-	 *
-	 * @param array $source Attributes with optional `srcset`, `sizes`, `media`, `type` and `href`.
-	 * @return array The link's attributes.
-	 */
-	private function buildPreloadLink(array $source): array
-	{
-		return [
-			'rel' => 'preload',
-			'as' => 'image',
-			'href' => $source['href'] ?? null,
-			'imagesrcset' => $source['srcset'] ?? null,
-			'imagesizes' => $source['sizes'] ?? null,
-			'media' => $source['media'] ?? null,
-			'type' => $source['type'] ?? null,
-			'fetchpriority' => 'high',
-		];
+		return buildPreloadLinks($this->getPictureSources(), $this->getImgAttributes());
 	}
 
 	/**
