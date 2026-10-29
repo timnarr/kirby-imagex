@@ -59,8 +59,9 @@ abstract class ImagexTestCase extends TestCase
 	/**
 	 * Boots a fresh Kirby instance with srcset presets for all default formats.
 	 * `$options` are merged into the config options (flat keys, e.g. 'timnarr.imagex.formats').
+	 * `$components` replace Kirby core components, e.g. to count 'file::version' (thumb) calls.
 	 */
-	protected function app(array $options = [], string $indexUrl = 'https://example.com'): App
+	protected function app(array $options = [], string $indexUrl = 'https://example.com', array $components = []): App
 	{
 		$preset = fn (string|null $format = null) => [
 			'400w' => array_filter(['width' => 400, 'format' => $format]),
@@ -70,6 +71,7 @@ abstract class ImagexTestCase extends TestCase
 		return new App([
 			'roots' => ['index' => $this->root],
 			'urls' => ['index' => $indexUrl],
+			'components' => $components,
 			'options' => [
 				'thumbs' => ['srcsets' => [
 					'default' => $preset(),

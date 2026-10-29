@@ -46,6 +46,9 @@ class Imagex
 	/** All <source> attributes, built once (used by the <picture> and the preload links). */
 	private array|null $pictureSources = null;
 
+	/** The <img> attributes, built once (used by the <img> and the preload links). */
+	private array|null $imgAttributesCache = null;
+
 	/** Smallest format per image and ratio, keyed by 'imageId|ratio'. */
 	private array $smallestFormats = [];
 
@@ -513,6 +516,10 @@ class Imagex
 	 */
 	public function getImgAttributes(): array
 	{
+		if ($this->imgAttributesCache !== null) {
+			return $this->imgAttributesCache;
+		}
+
 		$srcsetPreset = $this->getDynamicSrcsetPreset();
 		$smallestEntry = A::first($srcsetPreset);
 		['width' => $width, 'height' => $height] = $smallestEntry;
@@ -552,7 +559,7 @@ class Imagex
 		$mergedAttributes = mergeHTMLAttributes($this->imgAttributes, $this->loading, $defaultAttributes);
 
 		// Apply urlHandler to all URL-based attributes (handles user-overridden attributes)
-		return applyUrlHandlerToAttributes($mergedAttributes, $this->relativeUrls);
+		return $this->imgAttributesCache = applyUrlHandlerToAttributes($mergedAttributes, $this->relativeUrls);
 	}
 
 	/**

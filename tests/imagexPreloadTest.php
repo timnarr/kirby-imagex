@@ -4,6 +4,7 @@ declare(strict_types = 1);
 
 namespace TimNarr;
 
+use Kirby\Cms\App;
 use Kirby\Exception\InvalidArgumentException;
 use Kirby\Filesystem\Dir;
 
@@ -26,6 +27,27 @@ class ImagexPreloadTest extends ImagexTestCase
 	public function testPreloadLinksAreEmptyWithoutPreload()
 	{
 		$this->assertSame([], $this->imagex(['loading' => 'eager'])->getPreloadLinks());
+	}
+
+	public function testPreloadLinksReuseTheBuiltSourcesAndImg()
+	{
+		$thumbs = 0;
+		$version = App::instance()->component('file::version');
+		$this->app(components: ['file::version' => function (...$args) use ($version, &$thumbs) {
+			$thumbs++;
+
+			return $version(...$args);
+		}]);
+
+		$imagex = $this->imagex(['loading' => 'eager', 'preload' => true]);
+		$imagex->getPictureSources();
+		$imagex->getImgAttributes();
+		$calls = $thumbs;
+		$imagex->getPreloadLinks();
+
+		// Every thumb() call costs Kirby filename building and file_exists() checks
+		$this->assertGreaterThan(0, $calls);
+		$this->assertSame($calls, $thumbs);
 	}
 
 	public function testPreloadLinkUsesOnlyTheFirstFormat()
