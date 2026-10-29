@@ -493,12 +493,10 @@ class Imagex
 	 */
 	private function isFormatSkipped(string $format, File|null $image = null, string|null $ratio = null): bool
 	{
-		// Nothing to compare for a file Kirby can't resize: every format would be the original
-		if (!$this->compareFormats || !($image ?? $this->image)->isResizable()) {
-			return false;
-		}
-
-		return isFormatSkippable($format, $this->formats, $this->getSmallestFormatForImage($image, $ratio));
+		// Only called for resizable images: getPictureSources() leaves out the main image
+		// if Kirby can't resize it, and validateArtDirection() rejects such files
+		return $this->compareFormats
+			&& isFormatSkippable($format, $this->formats, $this->getSmallestFormatForImage($image, $ratio));
 	}
 
 	/**
