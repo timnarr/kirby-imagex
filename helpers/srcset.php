@@ -7,34 +7,32 @@ namespace TimNarr;
 use Kirby\Exception\InvalidArgumentException;
 
 /**
- * Adds height property to each source in a srcset preset based on a specified aspect ratio.
+ * Adds a height based on the aspect ratio to every entry of the given srcset presets.
  *
- * This function iterates over a srcset preset array, calculating and adding a height for each source
- * based on the given aspect ratio and the width specified in the srcset.
- *
- * @param array $srcsetPreset An array of srcset preset configuration, each containing a 'width' key.
+ * @param array $srcsetPresets Normalized srcset presets keyed by preset name, each entry with a 'width'
+ *                             (e.g. ['my-srcset' => ['400w' => ['width' => 400]]]).
  * @param int $ratioX The width part of the aspect ratio.
  * @param int $ratioY The height part of the aspect ratio.
- * @return array The modified srcset preset array with 'height' added to each source configuration.
+ * @return array The srcset presets with 'height' (and 'crop') set on every entry.
  *
  * @internal Not part of the public API — may change in any release.
  */
-function addRatioBasedHeightToSrcsetPreset(array $srcsetPreset, int $ratioX, int $ratioY): array
+function addRatioBasedHeightToSrcsetPreset(array $srcsetPresets, int $ratioX, int $ratioY): array
 {
 	$ratio = $ratioY / $ratioX;
 
-	foreach ($srcsetPreset as $format => $srcset) {
-		foreach ($srcset as $key => $src) {
-			$width = (int)$src['width'];
-			$srcsetPreset[$format][$key]['height'] = (int)round($width * $ratio);
-			// 'crop' option must be enabled when height is ratio calculated; explicit false is invalid in this context
-			if (empty($srcsetPreset[$format][$key]['crop'])) {
-				$srcsetPreset[$format][$key]['crop'] = true;
+	foreach ($srcsetPresets as $presetName => $preset) {
+		foreach ($preset as $condition => $options) {
+			$srcsetPresets[$presetName][$condition]['height'] = (int)round((int)$options['width'] * $ratio);
+
+			// A ratio-based height only works with cropping; an explicit false is invalid here
+			if (empty($options['crop'])) {
+				$srcsetPresets[$presetName][$condition]['crop'] = true;
 			}
 		}
 	}
 
-	return $srcsetPreset;
+	return $srcsetPresets;
 }
 
 /**
