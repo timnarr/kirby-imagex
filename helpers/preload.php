@@ -61,23 +61,24 @@ function negateRangeMediaFeature(string $condition): string|null
 	$features = 'width|height|aspect-ratio|resolution|device-width|device-height|device-aspect-ratio|color|color-index|monochrome';
 	$value = '[^()<>=:]+?';
 	$inverse = ['>=' => '<', '>' => '<=', '<=' => '>', '<' => '>='];
+	$range = fn (string $feature, string $operator, string $featureValue) => '(' . strtolower($feature) . " {$operator} {$featureValue})";
 	$condition = trim($condition);
 
 	// Legacy prefixed syntax: (min-width: 800px) / (max-width: 800px)
 	if (preg_match("/^\(\s*(min|max)-({$features})\s*:\s*({$value})\s*\)$/i", $condition, $m)) {
-		return '(' . strtolower($m[2]) . ' ' . (strtolower($m[1]) === 'min' ? '<' : '>') . ' ' . $m[3] . ')';
+		return $range($m[2], strtolower($m[1]) === 'min' ? '<' : '>', $m[3]);
 	}
 
 	// Range syntax, feature first: (width >= 800px)
 	if (preg_match("/^\(\s*({$features})\s*(>=|<=|>|<)\s*({$value})\s*\)$/i", $condition, $m)) {
-		return '(' . strtolower($m[1]) . ' ' . $inverse[$m[2]] . ' ' . $m[3] . ')';
+		return $range($m[1], $inverse[$m[2]], $m[3]);
 	}
 
 	// Range syntax, value first: (800px <= width) means width >= 800px
 	if (preg_match("/^\(\s*({$value})\s*(>=|<=|>|<)\s*({$features})\s*\)$/i", $condition, $m)) {
 		$flipped = ['>=' => '<=', '>' => '<', '<=' => '>=', '<' => '>'][$m[2]];
 
-		return '(' . strtolower($m[3]) . ' ' . $inverse[$flipped] . ' ' . $m[1] . ')';
+		return $range($m[3], $inverse[$flipped], $m[1]);
 	}
 
 	return null;
