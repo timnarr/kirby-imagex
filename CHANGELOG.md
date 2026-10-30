@@ -2,7 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
-## Unreleased
+## [0.6.0-beta.1] - October 30, 2026
+
+Beta for Kirby 6. Install it with `composer require timnarr/kirby-imagex:^0.6@beta`. For Kirby 5, stay on `0.5.x`.
 
 ### Added
 - New `stack` plugin option: the name of a Kirby 6 template stack in your `<head>`. When set, the `imagex-picture` snippet pushes its `<style>` element (art-direction and `focus` styles) into it instead of rendering it next to the `<picture>`. Defaults to `null`, which keeps the previous output.
