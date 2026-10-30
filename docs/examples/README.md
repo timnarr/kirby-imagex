@@ -13,3 +13,4 @@ Every example is using the same `thumbs` config you can [see here](/docs/example
 7. [JSON Output](/docs/examples/json-output.md)
 8. [`thumbRatio()` File Method](/docs/examples/thumb-ratio.md)
 9. [Overriding Default Attributes](/docs/examples/overriding-attributes.md)
+10. [Preload Links via Template Stacks](/docs/examples/preload-links.md)

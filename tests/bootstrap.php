@@ -17,3 +17,6 @@ App::$enableWhoops = false;
 // Integration tests create a fresh App per test; plugin registrations are static
 // and survive that, so this must not be repeated (or undone via App::destroy()).
 require_once __DIR__ . '/../index.php';
+
+// Shared base class of the Imagex integration tests
+require_once __DIR__ . '/imagexTestCase.php';

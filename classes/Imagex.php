@@ -16,11 +16,15 @@ class Imagex
 	protected bool $customLazyloading;
 	protected array $formats;
 	protected File $image;
+	/** Whether Kirby can resize/convert the main image (false e.g. for SVGs). */
+	protected bool $resizable;
 	protected array $imgAttributes;
 	protected array $pictureAttributes;
 	protected string $ratio;
 	protected bool $focus;
 	protected string|null $nonce;
+	protected bool $preload;
+	protected string|null $stack;
 	protected array $artDirection;
 	private string|null $artDirectionId = null;
 	private string|null $artDirectionStylesCache = null;
@@ -39,6 +43,12 @@ class Imagex
 	/** Srcset presets with ratio-based heights, keyed by resolved ratio ('x/y') and preset name. */
 	private array $dynamicSrcsetPresets = [];
 
+	/** All <source> attributes, built once (used by the <picture> and the preload links). */
+	private array|null $pictureSources = null;
+
+	/** The <img> attributes, built once (used by the <img> and the preload links). */
+	private array|null $imgAttributesCache = null;
+
 	/** Smallest format per image and ratio, keyed by 'imageId|ratio'. */
 	private array $smallestFormats = [];
 
@@ -48,9 +58,12 @@ class Imagex
 		'attributes' => [],
 		'compareFormats' => false,
 		'focus' => false,
+		// null: use the global 'timnarr.imagex.formats' option
+		'formats' => null,
 		'image' => null,
 		'loading' => 'lazy',
 		'nonce' => null,
+		'preload' => false,
 		'ratio' => 'intrinsic',
 		'srcset' => 'default',
 	];
@@ -74,11 +87,13 @@ class Imagex
 
 		$this->loading = $options['loading'];
 		$this->image = $options['image'];
+		$this->resizable = $this->image->isResizable();
 		$this->ratio = $options['ratio'];
 		$this->srcset = $options['srcset'];
 		$this->compareFormats = $options['compareFormats'];
 		$this->focus = $options['focus'];
 		$this->nonce = $options['nonce'];
+		$this->preload = $options['preload'];
 
 		$attributes = $this->validateAttributes($options['attributes']);
 		$this->imgAttributes = normalizeAttributesStructure($attributes['img'] ?? []);
@@ -90,6 +105,11 @@ class Imagex
 
 		$this->artDirection = $this->validateArtDirection($options['artDirection']);
 
+		// Preload links need mutually exclusive media conditions — validate them up front
+		if ($this->preload) {
+			exclusiveMediaConditions(array_column($this->artDirection, 'media'));
+		}
+
 		// Plugin options from config.php
 		$this->kirby = kirby();
 		$this->customLazyloading = $this->getBoolOption('customLazyloading');
@@ -97,10 +117,13 @@ class Imagex
 		$this->addOriginalFormatAsSource = $this->getBoolOption('addOriginalFormatAsSource');
 		$this->noSrcsetInImg = $this->getBoolOption('noSrcsetInImg');
 		$this->relativeUrls = $this->getBoolOption('relativeUrls');
-		$this->formats = $this->resolveFormats($this->kirby->option('timnarr.imagex.formats'));
+		$this->formats = $options['formats'] !== null
+			? $this->resolveFormats($options['formats'], "Option 'formats'")
+			: $this->resolveFormats($this->kirby->option('timnarr.imagex.formats'), "Option 'timnarr.imagex.formats'");
+		$this->stack = $this->resolveStack($this->kirby->option('timnarr.imagex.stack'));
 
 		if ($this->compareFormats && count($this->formats) <= 1) {
-			throw new InvalidArgumentException('[kirby-imagex] Not enough formats to determine the smallest. Please set "compareFormats" to false or add at least two formats in the configuration.');
+			throw new InvalidArgumentException('[kirby-imagex] Not enough formats to determine the smallest. Please set "compareFormats" to false or use at least two formats (globally or via the "formats" option).');
 		}
 
 		$this->srcsetPresets = $this->resolveSrcsetPresets();
@@ -137,44 +160,39 @@ class Imagex
 
 		$options = [...self::DEFAULT_OPTIONS, ...array_filter($options, fn ($value) => $value !== null)];
 
-		// Validate required option: image
 		if ($options['image'] === null) {
 			throw new InvalidArgumentException('[kirby-imagex] Missing required option: image');
 		}
 
-		// Type validation for image
 		if (!($options['image'] instanceof File)) {
 			throw new InvalidArgumentException("[kirby-imagex] Option 'image' must be an instance of Kirby\Cms\File");
 		}
 
-		// Validate loading option
 		$loading = $options['loading'];
 
 		if (!in_array($loading, ['eager', 'lazy'], true)) {
 			throw new InvalidArgumentException("[kirby-imagex] Option 'loading' must be 'eager' or 'lazy'. Got: " . (is_string($loading) ? "'{$loading}'" : get_debug_type($loading)));
 		}
 
-		// Validate option: ratio
 		if (!is_string($options['ratio'])) {
 			throw new InvalidArgumentException('[kirby-imagex] Invalid option: ratio. Must be a string (e.g. "16/9" or "intrinsic").');
 		}
 
-		// Validate option: srcset
 		if (!is_string($options['srcset'])) {
 			throw new InvalidArgumentException('[kirby-imagex] Invalid option: srcset. Must be a string matching a "thumbs.srcsets" preset name.');
 		}
 
-		// Validate option: compareFormats
-		if (!is_bool($options['compareFormats'])) {
-			throw new InvalidArgumentException('[kirby-imagex] Invalid option: compareFormats. Must be a boolean.');
+		foreach (['compareFormats', 'focus', 'preload'] as $name) {
+			if (!is_bool($options[$name])) {
+				throw new InvalidArgumentException("[kirby-imagex] Invalid option: {$name}. Must be a boolean.");
+			}
 		}
 
-		// Validate option: focus
-		if (!is_bool($options['focus'])) {
-			throw new InvalidArgumentException('[kirby-imagex] Invalid option: focus. Must be a boolean.');
+		// Preloading defers nothing: a lazy image would be fetched up front anyway
+		if ($options['preload'] && $loading !== 'eager') {
+			throw new InvalidArgumentException("[kirby-imagex] Option 'preload' requires 'loading' => 'eager'. Lazy images shouldn't be preloaded.");
 		}
 
-		// Validate option: nonce
 		if ($options['nonce'] !== null && (!is_string($options['nonce']) || $options['nonce'] === '')) {
 			throw new InvalidArgumentException('[kirby-imagex] Invalid option: nonce. Must be a non-empty string (e.g. kirby()->nonce()) or null.');
 		}
@@ -198,6 +216,22 @@ class Imagex
 		}
 
 		return $value;
+	}
+
+	/**
+	 * Validates the `stack` plugin option: the name of a Kirby template stack.
+	 *
+	 * @param mixed $stack The option value.
+	 * @return string|null The stack name, or null if none is configured.
+	 * @throws InvalidArgumentException If it's neither null nor a non-empty string.
+	 */
+	private function resolveStack(mixed $stack): string|null
+	{
+		if ($stack !== null && (!is_string($stack) || trim($stack) === '')) {
+			throw new InvalidArgumentException("[kirby-imagex] Option 'timnarr.imagex.stack' must be a stack name (e.g. 'imagex-head') or null. Got: " . (is_string($stack) ? "'{$stack}'" : get_debug_type($stack)));
+		}
+
+		return $stack;
 	}
 
 	/**
@@ -263,7 +297,7 @@ class Imagex
 			}
 
 			if (!is_string($source['media'] ?? null) || trim($source['media']) === '') {
-				throw new InvalidArgumentException("{$prefix} is missing 'media' (e.g. '(min-width: 800px)'). Without it the source always matches and the default image is never used.");
+				throw new InvalidArgumentException("{$prefix} is missing 'media' (e.g. '(width >= 800px)'). Without it the source always matches and the default image is never used.");
 			}
 
 			if (isset($source['ratio']) && !is_string($source['ratio'])) {
@@ -279,13 +313,21 @@ class Imagex
 				throw new InvalidArgumentException("{$prefix}: 'attributes' must be an array.");
 			}
 
+			// A <source> of a file Kirby can't resize would list the original under every
+			// width and format type; art direction is pointless for it
+			$sourceImage = $source['image'] ?? $this->image;
+
+			if (!$sourceImage->isResizable()) {
+				throw new InvalidArgumentException("{$prefix}: Kirby can't resize '{$sourceImage->filename()}' (e.g. an SVG), so it can't be used for art direction. Use a resizable image (JPEG, PNG, WebP, AVIF …) for this entry.");
+			}
+
 			$artDirection[$index]['ratio'] = $source['ratio'] ?? 'intrinsic';
 
 			// Attribute and ratio errors come from shared helpers; prefix them with the entry index
 			try {
 				// Flat or structured, like every other attributes option
 				$artDirection[$index]['attributes'] = normalizeAttributesStructure($source['attributes'] ?? []);
-				getAspectRatio($artDirection[$index]['ratio'], $source['image'] ?? $this->image);
+				getAspectRatio($artDirection[$index]['ratio'], $sourceImage);
 			} catch (InvalidArgumentException $e) {
 				throw new InvalidArgumentException("{$prefix}: " . str_replace('[kirby-imagex] ', '', $e->getMessage()), previous: $e);
 			}
@@ -298,16 +340,17 @@ class Imagex
 	 * Resolves the formats to render <source> elements for: normalized, unique,
 	 * in configured order, plus 'originalformat' if addOriginalFormatAsSource is set.
 	 *
-	 * @param mixed $configFormats Formats from the plugin config.
+	 * @param mixed $configFormats Formats from the snippet option or the plugin config.
+	 * @param string $label Name of the option for error messages.
 	 * @return array List of format names.
-	 * @throws InvalidArgumentException If the config isn't an array of non-empty strings.
+	 * @throws InvalidArgumentException If it isn't an array of non-empty strings.
 	 */
-	private function resolveFormats(mixed $configFormats): array
+	private function resolveFormats(mixed $configFormats, string $label): array
 	{
 		$isFormatName = fn ($format) => is_string($format) && $format !== '';
 
 		if (!is_array($configFormats) || !A::every($configFormats, $isFormatName)) {
-			throw new InvalidArgumentException("[kirby-imagex] Option 'timnarr.imagex.formats' must be an array of format names (e.g. ['avif', 'webp']).");
+			throw new InvalidArgumentException("[kirby-imagex] {$label} must be an array of format names (e.g. ['avif', 'webp']).");
 		}
 
 		$formats = $this->addOriginalFormatAsSource ? [...$configFormats, 'originalformat'] : $configFormats;
@@ -348,7 +391,7 @@ class Imagex
 		if (!empty($missing)) {
 			$missingList = implode(', ', array_map(fn ($name) => "'{$name}'", $missing));
 
-			throw new InvalidArgumentException("[kirby-imagex] Missing srcset preset(s) for active formats: {$missingList}. Add them to 'thumbs.srcsets' in config.php, or remove the corresponding format from 'timnarr.imagex.formats'. Available presets: {$available}");
+			throw new InvalidArgumentException("[kirby-imagex] Missing srcset preset(s) for active formats: {$missingList}. Add them to 'thumbs.srcsets' in config.php, or remove the corresponding format from the 'formats' option. Available presets: {$available}");
 		}
 
 		$normalize = fn (string $name) => is_array($allPresets[$name])
@@ -375,17 +418,6 @@ class Imagex
 	private function getSrcsetPresetName(string $format): string
 	{
 		return $format === 'originalformat' ? $this->srcset : $this->srcset . '-' . $format;
-	}
-
-	/**
-	 * Get the file format of a image
-	 *
-	 * @param File|null $image Optional file object to determine format; defaults to main image.
-	 * @return string The image file format.
-	 */
-	private function getImageFormat(File|null $image = null): string
-	{
-		return normalizeFormat(($image ?? $this->image)->extension());
 	}
 
 	/**
@@ -438,7 +470,10 @@ class Imagex
 	 */
 	private function isFormatSkipped(string $format, File|null $image = null, string|null $ratio = null): bool
 	{
-		return $this->compareFormats && isFormatSkippable($format, $this->formats, $this->getSmallestFormatForImage($image, $ratio));
+		// Only called for resizable images: getPictureSources() leaves out the main image
+		// if Kirby can't resize it, and validateArtDirection() rejects such files
+		return $this->compareFormats
+			&& isFormatSkippable($format, $this->formats, $this->getSmallestFormatForImage($image, $ratio));
 	}
 
 	/**
@@ -470,7 +505,7 @@ class Imagex
 				$formatSizes[$format] = calculateWeightedFormatSize($image, $this->getDynamicSrcsetPreset($format, $ratio, $image), $this->compareFormatsWeights);
 			}
 
-			return findSmallestValueAndKey($formatSizes);
+			return findKeyOfSmallestValue($formatSizes);
 		});
 	}
 
@@ -481,11 +516,16 @@ class Imagex
 	 */
 	public function getImgAttributes(): array
 	{
+		if ($this->imgAttributesCache !== null) {
+			return $this->imgAttributesCache;
+		}
+
 		$srcsetPreset = $this->getDynamicSrcsetPreset();
 		$smallestEntry = A::first($srcsetPreset);
 		['width' => $width, 'height' => $height] = $smallestEntry;
+		// Kirby returns the original for files it can't resize, so a srcset would only repeat it
 		$src = $this->image->thumb($smallestEntry)->url();
-		$srcset = $this->noSrcsetInImg ? null : $this->image->srcset($srcsetPreset);
+		$srcset = $this->noSrcsetInImg || !$this->resizable ? null : $this->image->srcset($srcsetPreset);
 
 		// An id is only needed (and generated) when there are actual art-direction
 		// style overrides to scope to this <img> — see getArtDirectionStyles().
@@ -519,7 +559,7 @@ class Imagex
 		$mergedAttributes = mergeHTMLAttributes($this->imgAttributes, $this->loading, $defaultAttributes);
 
 		// Apply urlHandler to all URL-based attributes (handles user-overridden attributes)
-		return applyUrlHandlerToAttributes($mergedAttributes, $this->relativeUrls);
+		return $this->imgAttributesCache = applyUrlHandlerToAttributes($mergedAttributes, $this->relativeUrls);
 	}
 
 	/**
@@ -554,7 +594,7 @@ class Imagex
 	 * is currently active. A property is only emitted if at least one source
 	 * differs from the default; if none does, no CSS (and no id) is generated.
 	 *
-	 * `media` is developer-supplied CSS syntax (e.g. '(min-width: 800px)'), passed
+	 * `media` is developer-supplied CSS syntax (e.g. '(width >= 800px)'), passed
 	 * through as-is like `ratio`/`srcset` elsewhere in Imagex — it can't be escaped
 	 * without breaking valid media-query syntax, so it must not be built from
 	 * untrusted/content-field input. `focus` values, which do come from a
@@ -589,6 +629,35 @@ class Imagex
 	public function getNonce(): string|null
 	{
 		return $this->nonce;
+	}
+
+	/**
+	 * Get the name of the template stack that head elements (styles, preload
+	 * links) are pushed to, as configured in `timnarr.imagex.stack`.
+	 *
+	 * @return string|null The stack name, or null to render styles inline.
+	 */
+	public function getStack(): string|null
+	{
+		return $this->stack;
+	}
+
+	/**
+	 * Get the attributes of the `<link rel="preload">` elements for this image,
+	 * if the `preload` option is enabled.
+	 *
+	 * Derived from getPictureSources(), so the links always match what <picture>
+	 * picks (see buildPreloadLinks()).
+	 *
+	 * @return array List of attribute arrays, empty if `preload` is disabled.
+	 */
+	public function getPreloadLinks(): array
+	{
+		if (!$this->preload) {
+			return [];
+		}
+
+		return buildPreloadLinks($this->getPictureSources(), $this->getImgAttributes());
 	}
 
 	/**
@@ -694,7 +763,7 @@ class Imagex
 		['width' => $width, 'height' => $height] = A::first($srcsetPreset);
 
 		if ($format === 'originalformat') {
-			$format = $this->getImageFormat($image);
+			$format = normalizeFormat($image->extension());
 		}
 
 		$defaultAttributes = [
@@ -723,49 +792,60 @@ class Imagex
 	}
 
 	/**
-	 * Get art-directed picture sources for a specific format.
-	 * When compareFormats is enabled and a different image is used,
-	 * performs per-image format comparison.
+	 * Get the <source> attributes of one source in every format, in configured
+	 * order, minus the formats compareFormats skips for its image.
 	 *
-	 * @param string $format Image format.
-	 * @return array HTML attributes for art-directed picture sources.
+	 * An art-directed entry with its own image gets its own format decision. Without
+	 * one, it follows the main image's decision, so no extra thumbs are compared.
+	 *
+	 * @param array|null $source A validated artDirection source, or null for the main image.
+	 * @return array HTML attributes for the source's <source> elements.
 	 */
-	private function getArtDirectedSourcesPerFormat(string $format): array
+	private function getSourcesPerFormat(array|null $source = null): array
 	{
 		$sources = [];
 
-		foreach ($this->artDirection as $source) {
-			// Per-image format decision when using a different image
-			if (isset($source['image']) && $this->isFormatSkipped($format, $source['image'], $source['ratio'])) {
-				continue;
-			}
+		foreach ($this->formats as $format) {
+			$isSkipped = isset($source['image'])
+				? $this->isFormatSkipped($format, $source['image'], $source['ratio'])
+				: $this->isFormatSkipped($format);
 
-			$sources[] = $this->getSourceAttributes($format, $source);
+			if (!$isSkipped) {
+				$sources[] = $this->getSourceAttributes($format, $source);
+			}
 		}
 
 		return $sources;
 	}
 
 	/**
-	 * Get all picture sources, including both art-directed and default sources for formats.
+	 * Get all picture sources: every art-directed entry in all its formats, then
+	 * the main image in all its formats.
+	 *
+	 * Grouped by source, not by format: browsers use the first <source> with a
+	 * matching `media` and supported `type`. Grouped by format, the default AVIF
+	 * source (no `media`, always matches) would come before an art-directed source
+	 * that compareFormats limited to WebP, so AVIF browsers would never use it.
 	 *
 	 * @return array Compiled data of all picture sources.
 	 */
 	public function getPictureSources(): array
 	{
-		$sources = [];
-
-		foreach ($this->formats as $format) {
-			// Skip format if a smaller format exists for main image
-			if ($this->isFormatSkipped($format)) {
-				continue;
-			}
-
-			// Art-directed sources come first: browsers use the first matching <source>
-			array_push($sources, ...$this->getArtDirectedSourcesPerFormat($format));
-			$sources[] = $this->getSourceAttributes($format);
+		if ($this->pictureSources !== null) {
+			return $this->pictureSources;
 		}
 
-		return $sources;
+		$sources = [];
+
+		foreach ($this->artDirection as $source) {
+			array_push($sources, ...$this->getSourcesPerFormat($source));
+		}
+
+		// A file Kirby can't resize (e.g. SVG) is only served as the <img>'s src
+		if ($this->resizable) {
+			array_push($sources, ...$this->getSourcesPerFormat());
+		}
+
+		return $this->pictureSources = $sources;
 	}
 }

@@ -19,9 +19,7 @@ use Kirby\Exception\InvalidArgumentException;
 function greatestCommonDivisor(int $a, int $b): int
 {
 	while ($b !== 0) {
-		$t = $b;
-		$b = $a % $b;
-		$a = $t;
+		[$a, $b] = [$b, $a % $b];
 	}
 
 	return $a;
@@ -62,13 +60,12 @@ function getAspectRatioFromImage(int $width, int $height): array
  */
 function getAspectRatioFromRatioString(string $ratioString): array
 {
-	if (!preg_match('/^\d+\/\d+$/', $ratioString)) {
+	if (!preg_match('/^(\d+)\/(\d+)$/', $ratioString, $matches)) {
 		throw new InvalidArgumentException("[kirby-imagex] Invalid ratio format '{$ratioString}'. Expected format \"x/y\" (e.g. \"16/9\") or \"intrinsic\".");
 	}
 
-	$ratioArray = explode('/', $ratioString);
-	$ratioX = (int)$ratioArray[0];
-	$ratioY = (int)$ratioArray[1];
+	$ratioX = (int)$matches[1];
+	$ratioY = (int)$matches[2];
 
 	if ($ratioX === 0 || $ratioY === 0) {
 		throw new InvalidArgumentException("[kirby-imagex] Invalid ratio '{$ratioString}'. \"x\" and \"y\" must be greater than 0.");

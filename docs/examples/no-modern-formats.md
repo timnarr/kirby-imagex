@@ -60,8 +60,8 @@ $options = [
   'ratio' => '3/2', // and we set it to 3/2
   'artDirection' => [
     [
-      // but change it to 21/9 at `(min-width: 800px)`
-      'media' => '(min-width: 800px)',
+      // but change it to 21/9 at `(width >= 800px)`
+      'media' => '(width >= 800px)',
       'ratio' => '21/9',
       'image' => $mySecondImage->toFile() // let's assume: `different-image.png`
     ]
@@ -76,7 +76,7 @@ $options = [
 ```html
 <picture>
   <source
-    width="400" height="171" media="(min-width: 800px)" type="image/png"
+    width="400" height="171" media="(width >= 800px)" type="image/png"
     srcset="
       https://example.com/different-image-400x171-crop-51-52-q80-sharpen10.png 400w,
       https://example.com/different-image-800x343-crop-51-52-q80-sharpen10.png 800w">

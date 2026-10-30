@@ -43,17 +43,17 @@ class OthersTest extends TestCase
 		$this->assertEquals('https://external.com/image.jpg', urlHandler('https://external.com/image.jpg', true, 'http://example.com'));
 	}
 
-	public function testFindSmallestValueAndKey()
+	public function testFindKeyOfSmallestValue()
 	{
 		$array = ['large' => 3, 'small' => 1, 'medium' => 2];
 		$expected = 'small';
-		$this->assertEquals($expected, findSmallestValueAndKey($array));
+		$this->assertEquals($expected, findKeyOfSmallestValue($array));
 	}
 
-	public function testFindSmallestValueAndKeyEmptyArray()
+	public function testFindKeyOfSmallestValueEmptyArray()
 	{
 		$this->expectExceptionMessage('[kirby-imagex] Input array cannot be empty.');
-		findSmallestValueAndKey([]);
+		findKeyOfSmallestValue([]);
 	}
 
 	public function testGetSampleElementsWithThreeElements()

@@ -28,7 +28,7 @@ With `thumbRatio` you reuse the same `$ratio` variable:
 ```php
 <?php
 $ratio = '16/9';
-$image = $page->image()->toFile();
+$image = $page->cover()->toFile(); // a files field (not 'image': $page->image() is a built-in page method)
 
 $options = [
   'image' => $image,
@@ -62,7 +62,7 @@ You can also use `thumbRatio` to supply a different ratio for crawlers only. Bro
 ```php
 <?php
 $ratio = '16/9';
-$image = $page->image()->toFile();
+$image = $page->cover()->toFile(); // a files field (not 'image': $page->image() is a built-in page method)
 
 $options = [
   'image' => $image,

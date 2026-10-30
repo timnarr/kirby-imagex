@@ -35,7 +35,7 @@ return [
 ],
 'artDirection' => [
   [
-    'media' => '(min-width: 800px)',
+    'media' => '(width >= 800px)',
     'ratio' => '21/9',
     'image' => $block->imagetwo()->toFile(), // let's assume: `different-image.png`
   ]
@@ -46,25 +46,25 @@ return [
 ```html
 <picture>
   <source
-    width="400" height="171" media="(min-width: 800px)" sizes="400px" type="image/avif"
+    width="400" height="171" media="(width >= 800px)" sizes="400px" type="image/avif"
     srcset="
       https://example.com/different-image-400x171-crop-51-52-q65-sharpen25.avif 400w,
       https://example.com/different-image-800x343-crop-51-52-q65-sharpen25.avif 800w">
+  <source
+    width="400" height="171" media="(width >= 800px)" sizes="400px" type="image/webp"
+    srcset="
+      https://example.com/different-image-400x171-crop-51-52-q80-sharpen10.webp 400w,
+      https://example.com/different-image-800x343-crop-51-52-q80-sharpen10.webp 800w">
   <source
     width="400" height="267" sizes="400px" type="image/avif"
     srcset="
       https://example.com/image-400x267-crop-52-65-q65-sharpen25.avif 400w,
       https://example.com/image-800x533-crop-52-65-q65-sharpen25.avif 800w">
   <source
-    width="400" height="171" media="(min-width: 800px)" sizes="400px" type="image/webp"
-    srcset="
-      https://example.com/different-image-400x171-crop-51-52-q75-sharpen10.webp 400w,
-      https://example.com/different-image-800x343-crop-51-52-q75-sharpen10.webp 800w">
-  <source
     width="400" height="267" sizes="400px" type="image/webp"
     srcset="
-      https://example.com/image-400x267-crop-52-65-q75-sharpen10.webp 400w,
-      https://example.com/image-800x533-crop-52-65-q75-sharpen10.webp 800w">
+      https://example.com/image-400x267-crop-52-65-q80-sharpen10.webp 400w,
+      https://example.com/image-800x533-crop-52-65-q80-sharpen10.webp 800w">
   <img
     width="400" height="267" sizes="400px" decoding="async" loading="lazy"
     src="https://example.com/image-400x267-crop-52-65-q80-sharpen10.jpg"
@@ -99,25 +99,25 @@ return [
 ```html
 <picture>
   <source
-    width="400" height="171" media="(min-width: 800px)" sizes="400px" type="image/avif"
+    width="400" height="171" media="(width >= 800px)" sizes="400px" type="image/avif"
     srcset="
       https://example.com/different-image-400x171-crop-51-52-q65-sharpen25.avif 400w,
       https://example.com/different-image-800x343-crop-51-52-q65-sharpen25.avif 800w">
+  <source
+    width="400" height="171" media="(width >= 800px)" sizes="400px" type="image/webp"
+    srcset="
+      https://example.com/different-image-400x171-crop-51-52-q80-sharpen10.webp 400w,
+      https://example.com/different-image-800x343-crop-51-52-q80-sharpen10.webp 800w">
   <source
     width="400" height="267" sizes="400px" type="image/avif"
     srcset="
       https://example.com/image-400x267-crop-52-65-q65-sharpen25.avif 400w,
       https://example.com/image-800x533-crop-52-65-q65-sharpen25.avif 800w">
   <source
-    width="400" height="171" media="(min-width: 800px)" sizes="400px" type="image/webp"
-    srcset="
-      https://example.com/different-image-400x171-crop-51-52-q75-sharpen10.webp 400w,
-      https://example.com/different-image-800x343-crop-51-52-q75-sharpen10.webp 800w">
-  <source
     width="400" height="267" sizes="400px" type="image/webp"
     srcset="
-      https://example.com/image-400x267-crop-52-65-q75-sharpen10.webp 400w,
-      https://example.com/image-800x533-crop-52-65-q75-sharpen10.webp 800w">
+      https://example.com/image-400x267-crop-52-65-q80-sharpen10.webp 400w,
+      https://example.com/image-800x533-crop-52-65-q80-sharpen10.webp 800w">
   <img
     width="400" height="267" sizes="400px" decoding="async" loading="lazy"
     src="https://example.com/image-400x267-crop-52-65-q80-sharpen10.jpg">
@@ -151,8 +151,8 @@ return [
   <source
     width="400" height="267" sizes="400px" type="image/webp"
     srcset="
-      https://example.com/image-400x267-crop-52-65-q75-sharpen10.webp 400w,
-      https://example.com/image-800x533-crop-52-65-q75-sharpen10.webp 800w">
+      https://example.com/image-400x267-crop-52-65-q80-sharpen10.webp 400w,
+      https://example.com/image-800x533-crop-52-65-q80-sharpen10.webp 800w">
   <img
     width="400" height="267" sizes="400px" decoding="async" loading="lazy"
     src="https://example.com/image-400x267-crop-52-65-q80-sharpen10.jpg">
@@ -183,15 +183,15 @@ return [
 ```html
 <picture>
   <source
-    width="400" height="171" media="(min-width: 800px)" sizes="400px" type="image/webp"
+    width="400" height="171" media="(width >= 800px)" sizes="400px" type="image/webp"
     srcset="
-      /different-image-400x171-crop-51-52-q75-sharpen10.webp 400w,
-      /different-image-800x343-crop-51-52-q75-sharpen10.webp 800w">
+      /different-image-400x171-crop-51-52-q80-sharpen10.webp 400w,
+      /different-image-800x343-crop-51-52-q80-sharpen10.webp 800w">
   <source
     width="400" height="267" sizes="400px" type="image/webp"
     srcset="
-      /image-400x267-crop-52-65-q75-sharpen10.webp 400w,
-      /image-800x533-crop-52-65-q75-sharpen10.webp 800w">
+      /image-400x267-crop-52-65-q80-sharpen10.webp 400w,
+      /image-800x533-crop-52-65-q80-sharpen10.webp 800w">
   <img
     width="400" height="267" sizes="400px" decoding="async" loading="lazy"
     src="/image-400x267-crop-52-65-q80-sharpen10.jpg">
@@ -207,7 +207,7 @@ When using `compareFormats` together with art-directed images that have differen
 1. Imagex samples three srcset widths (first, middle, last) for each image
 2. Applies mobile-first weighting: 50% smallest, 30% middle, 20% largest
 3. Compares the weighted file sizes between formats
-4. Outputs only the smallest format for each image
+4. Outputs the smallest format for each image, plus the formats after it in the `formats` order as fallbacks. Formats before it are left out.
 
 ### Global Plugin Config
 ```php
@@ -230,7 +230,7 @@ $options = [
   'compareFormats' => true,
   'artDirection' => [
     [
-      'media' => '(min-width: 800px)',
+      'media' => '(width >= 800px)',
       'ratio' => '21/9',
       'image' => $differentImage->toFile(), // let's assume: `illustration.png` where webp is smaller than avif
     ]
@@ -239,22 +239,27 @@ $options = [
 ```
 
 ### Final HTML Output
-In this example, the main image uses `avif` (smaller), while the art-directed illustration uses `webp` (smaller for that specific image):
+In this example, the main image uses `avif` (smaller) with `webp` as fallback, while the art-directed illustration only uses `webp` (smaller for that specific image). All `<source>` elements of the art-directed image come first, so browsers supporting AVIF still use the illustration at 800px and up:
 
 ```html
 <picture>
   <!-- Art-directed source: webp is smaller for this illustration -->
   <source
-    width="400" height="171" media="(min-width: 800px)" type="image/webp"
+    width="400" height="171" media="(width >= 800px)" type="image/webp"
     srcset="
-      /illustration-400x171-crop-51-52-q75-sharpen10.webp 400w,
-      /illustration-800x343-crop-51-52-q75-sharpen10.webp 800w">
-  <!-- Main image: avif is smaller for this photo -->
+      /illustration-400x171-crop-51-52-q80-sharpen10.webp 400w,
+      /illustration-800x343-crop-51-52-q80-sharpen10.webp 800w">
+  <!-- Main image: avif is smaller for this photo, webp is kept as fallback -->
   <source
     width="400" height="267" type="image/avif"
     srcset="
       /image-400x267-crop-52-65-q65-sharpen25.avif 400w,
       /image-800x533-crop-52-65-q65-sharpen25.avif 800w">
+  <source
+    width="400" height="267" type="image/webp"
+    srcset="
+      /image-400x267-crop-52-65-q80-sharpen10.webp 400w,
+      /image-800x533-crop-52-65-q80-sharpen10.webp 800w">
   <img
     width="400" height="267" decoding="async" loading="lazy"
     src="/image-400x267-crop-52-65-q80-sharpen10.jpg">

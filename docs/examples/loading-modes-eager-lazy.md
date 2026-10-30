@@ -64,8 +64,8 @@ $options = [
   <source
     width="400" height="267" sizes="400px" type="image/webp"
     srcset="
-      https://example.com/image-400x267-crop-52-65-q75-sharpen10.webp 400w,
-      https://example.com/image-800x533-crop-52-65-q75-sharpen10.webp 800w">
+      https://example.com/image-400x267-crop-52-65-q80-sharpen10.webp 400w,
+      https://example.com/image-800x533-crop-52-65-q80-sharpen10.webp 800w">
   <img
     width="400" height="267" class="my-img-component my-img-component--lazy"
     decoding="async" loading="lazy" sizes="400px"
@@ -88,8 +88,8 @@ If we now use the same image and config and switch this image to eager (`'loadin
   <source
     width="400" height="267" sizes="400px" type="image/webp"
     srcset="
-      https://example.com/image-400x267-crop-52-65-q75-sharpen10.webp 400w,
-      https://example.com/image-800x533-crop-52-65-q75-sharpen10.webp 800w">
+      https://example.com/image-400x267-crop-52-65-q80-sharpen10.webp 400w,
+      https://example.com/image-800x533-crop-52-65-q80-sharpen10.webp 800w">
   <!-- fetchpriority="high" is added automatically when loading='eager' -->
   <!-- You can override it by setting 'fetchpriority' => null in attributes.img -->
   <img
@@ -107,7 +107,7 @@ You can also use `eager` and `lazy` attributes with art-directed images like thi
 ```php
 'artDirection' => [
   [
-    'media' => '(min-width: 800px)',
+    'media' => '(width >= 800px)',
     'ratio' => '21/9',
     'image' => $block->imagetwo()->toFile(),
     'attributes' => [
