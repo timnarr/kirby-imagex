@@ -2,7 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [0.6.0-beta.2] - November 2, 2026
+
+Second beta for Kirby 6. Install it with `composer require timnarr/kirby-imagex:^0.6@beta`. For Kirby 5, stay on `0.5.x`. If you use the `imagex-picture-json` output, see the migration guide below: its structure changed.
 
 ### Added
 - New `$file->imagex($options)` file method: creates an `Imagex` instance for the file with the same options as the snippets. Echo it to render the `<picture>` (via the `imagex-picture` snippet, including your own override), or use `toArray()`/`json_encode()` for the JSON data. Unlike the snippets, it only gets the options you pass: unknown options throw, and controller variables named like an option (e.g. `$ratio`, `$image`) are never picked up, which Kirby otherwise passes to every snippet.
