@@ -600,7 +600,35 @@ class ImagexTest extends ImagexTestCase
 
 		$this->assertSame(400, $data['img']['width']);
 		$this->assertSame(225, $data['img']['height']);
-		$this->assertCount(2, $data['picture']['sources']);
+		$this->assertCount(2, $data['sources']);
+	}
+
+	public function testJsonSnippetAlwaysOutputsAllKeys()
+	{
+		$json = snippet('imagex-picture-json', ['image' => $this->image(), 'formats' => []], return: true);
+
+		$this->assertSame(['picture', 'sources', 'img', 'artDirectionStyles', 'preloadLinks'], array_keys(json_decode($json, true)));
+		// Attribute maps are objects even when empty, lists stay lists
+		$this->assertStringStartsWith('{"picture":{},"sources":[],"img":{', $json);
+		$this->assertStringEndsWith(',"artDirectionStyles":"","preloadLinks":[]}', $json);
+	}
+
+	public function testJsonSnippetSeparatesPictureAttributesFromSources()
+	{
+		$json = snippet('imagex-picture-json', ['image' => $this->image(), 'attributes' => ['picture' => ['class' => 'frame']]], return: true);
+		$data = json_decode($json, true, flags: JSON_THROW_ON_ERROR);
+
+		$this->assertSame(['class' => 'frame'], $data['picture']);
+		$this->assertSame(['image/avif', 'image/webp'], array_column($data['sources'], 'type'));
+	}
+
+	public function testToArrayMatchesTheJsonSnippet()
+	{
+		$options = ['image' => $this->image(), 'ratio' => '16/9', 'attributes' => ['img' => ['class' => 'hero']]];
+		$json = snippet('imagex-picture-json', $options, return: true);
+
+		$this->assertSame(json_decode($json, true), (new Imagex($options))->toArray());
+		$this->assertSame('hero', (new Imagex($options))->toArray()['img']['class']);
 	}
 
 	public function testJsonSnippetOutputsFieldsAsStrings()
@@ -627,8 +655,6 @@ class ImagexTest extends ImagexTestCase
 		$this->assertStringNotContainsString('decoding=', $html);
 		$this->assertArrayNotHasKey('class', $data['img']);
 		$this->assertStringNotContainsString('class=', $html);
-		// Still left out when empty
-		$this->assertArrayNotHasKey('artDirectionStyles', $data);
 	}
 
 	public function testSnippetWithOnlyImageUsesClassDefaults()

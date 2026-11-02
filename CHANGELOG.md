@@ -5,9 +5,11 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- New public `Imagex::toArray()`: everything needed to render the `<picture>`, in the structure of the `imagex-picture-json` snippet, e.g. to return it from a Kirby route. `Imagex` also implements `JsonSerializable`, so `json_encode($imagex)` returns the snippet's JSON.
 - Ratios may have spaces around the slash, like in CSS: `'16 / 9'`.
 
 ### Changed
+- **BREAKING:** New structure for the `imagex-picture-json` output. `sources` moved from `picture.sources` to the top level, so `picture`, `img` and every source are plain attribute objects that can be spread onto their element (previously `picture` mixed its attributes with the `sources` list). `artDirectionStyles` and `preloadLinks` are always present: an empty string and an empty list when there's nothing to output (previously both were left out). The structure is now defined by `Imagex::toArray()`. Migration: read the sources from `data.sources` instead of `data.picture.sources`, and check `artDirectionStyles`/`preloadLinks` for emptiness instead of existence. See "Migration Guide" below.
 - **BREAKING:** `thumbRatio()` throws an `InvalidArgumentException` when `height` is passed. The height is derived from the ratio, so it was overwritten silently. Migration: remove `height` and pass a `width`.
 - `Imagex::getSmallestFormatForImage()` is now `protected`. It was `@internal` and only public so tests could override it.
 
@@ -17,6 +19,23 @@ All notable changes to this project will be documented in this file.
 - `class` and `style` set to `null`, `false` or a Kirby field threw a type mismatch error. `null` and `false` now add nothing, e.g. `'class' => $isActive ? 'active' : null`, and fields are converted to strings. `class` strings are split at any whitespace (tabs, line breaks), not only at spaces.
 - **Bug:** `style` declarations without a trailing semicolon ran together when combined, e.g. `'color: red'` in `shared` and `'margin: 0'` in `lazy` became `style="color: red margin: 0"`. Each declaration now ends with a semicolon.
 - **Bug:** `thumbRatio()` with `'crop' => false` returned a thumb in the image's own ratio instead of the requested one, e.g. 600×450 for `thumbRatio('16/9', ['width' => 800, 'crop' => false])`. Like in srcset presets, `false` is now replaced with `true`. Crop positions like `'top left'` still work. Migration: for an uncropped thumb, use Kirby's `thumb()` directly.
+
+### Migration Guide
+
+#### JSON output
+
+```js
+// Before
+const { sources, ...pictureAttributes } = data.picture;
+if (data.artDirectionStyles) { /* inject */ }
+if (data.preloadLinks) { /* add links */ }
+
+// After
+const pictureAttributes = data.picture;
+const sources = data.sources;
+if (data.artDirectionStyles !== '') { /* inject */ }
+if (data.preloadLinks.length) { /* add links */ }
+```
 
 ## [0.6.0-beta.1] - October 30, 2026
 

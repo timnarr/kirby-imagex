@@ -261,10 +261,10 @@ class ImagexPreloadTest extends ImagexTestCase
 		$this->assertArrayNotHasKey('href', $data['preloadLinks'][0]);
 	}
 
-	public function testJsonSnippetOmitsEmptyPreloadLinks()
+	public function testJsonSnippetOutputsEmptyPreloadLinks()
 	{
 		$json = snippet('imagex-picture-json', ['image' => $this->image()], return: true);
 
-		$this->assertArrayNotHasKey('preloadLinks', json_decode($json, true, flags: JSON_THROW_ON_ERROR));
+		$this->assertSame([], json_decode($json, true, flags: JSON_THROW_ON_ERROR)['preloadLinks']);
 	}
 }

@@ -4,6 +4,7 @@ declare(strict_types = 1);
 
 namespace TimNarr;
 
+use JsonSerializable;
 use Kirby\Cms\File;
 use Kirby\Exception\InvalidArgumentException;
 use Kirby\Filesystem\F;
@@ -18,7 +19,7 @@ use Kirby\Toolkit\Str;
  * boolean attribute, `class` and `style` are lists of strings, and `width`/`height`
  * are integers. Other values are strings, or what you passed via `attributes`.
  */
-class Imagex
+class Imagex implements JsonSerializable
 {
 	protected string $loading;
 	protected bool $customLazyloading;
@@ -667,6 +668,45 @@ class Imagex
 		}
 
 		return buildPreloadLinks($this->getPictureSources(), $this->getImgAttributes());
+	}
+
+	/**
+	 * Get everything needed to render the <picture>, as output by the `imagex-picture-json` snippet.
+	 *
+	 * All keys are always present. The attribute arrays are prepared like Kirby's attr()
+	 * renders them: `class` and `style` are strings, and attributes set to null or false
+	 * are left out (see transformForJson()).
+	 *
+	 * @return array{picture: array<string, mixed>, sources: list<array<string, mixed>>, img: array<string, mixed>, artDirectionStyles: string, preloadLinks: list<array<string, mixed>>}
+	 */
+	public function toArray(): array
+	{
+		return transformForJson([
+			'picture' => $this->getPictureAttributes(),
+			'sources' => $this->getPictureSources(),
+			'img' => $this->getImgAttributes(),
+			'artDirectionStyles' => $this->getArtDirectionStyles(),
+			'preloadLinks' => $this->getPreloadLinks(),
+		]);
+	}
+
+	/**
+	 * Like toArray(), but with every attribute array as an object, so it's a JSON object even when empty.
+	 *
+	 * @return array The data for json_encode().
+	 */
+	public function jsonSerialize(): array
+	{
+		$data = $this->toArray();
+		$toObject = fn (array $attributes) => (object)$attributes;
+
+		return [
+			...$data,
+			'picture' => $toObject($data['picture']),
+			'sources' => array_map($toObject, $data['sources']),
+			'img' => $toObject($data['img']),
+			'preloadLinks' => array_map($toObject, $data['preloadLinks']),
+		];
 	}
 
 	/**

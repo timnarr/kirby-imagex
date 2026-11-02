@@ -187,7 +187,14 @@ echo $json;
 ?>
 ```
 
-The JSON output contains structured data with `picture` (including nested `sources`) and `img` attributes. See the [JSON output example](/docs/examples/json-output.md) for more details.
+The JSON output always has the same five keys:
+
+- `picture`, `img`: attribute objects for the `<picture>` and `<img>` elements
+- `sources`: a list of attribute objects, one per `<source>`, in output order
+- `artDirectionStyles`: the [art-directed `<img>` styles](#art-directed-img-styles) as a CSS string, empty if there are none
+- `preloadLinks`: a list of attribute objects for the [preload links](#preload-links), empty unless `preload` is enabled
+
+Each attribute object can be spread onto its element as is, e.g. `<img {...data.img} />` in JSX. In PHP, `Imagex::toArray()` returns the same data as an array. See the [JSON output example](/docs/examples/json-output.md) for more details.
 
 ### Snippet Options
 Only `image` is required — everything else has sane defaults. Unknown options throw an error, so typos like `ration` don't go unnoticed when you use the `Imagex` class directly. (Snippets only forward the options listed below, so a misspelled snippet option is still ignored there.)
@@ -360,7 +367,7 @@ $options = [
 </picture>
 ```
 
-Rules are only generated when at least one source actually changes the `aspect-ratio` or `object-position` — if none does, there's no `<style>` element and no generated `id`. Once one source changes a property, every source gets a rule for it, output in reverse order: several media queries can match at once, and CSS applies the last matching rule while `<picture>` uses the first matching `<source>`. When using `imagex-picture-json` for headless output, the same CSS string is available under the top-level `artDirectionStyles` key (omitted when empty) so the consuming frontend can inject it itself. With the global [`stack` option](#head-elements-via-template-stacks) set, the `<style>` element goes into the `<head>` instead.
+Rules are only generated when at least one source actually changes the `aspect-ratio` or `object-position` — if none does, there's no `<style>` element and no generated `id`. Once one source changes a property, every source gets a rule for it, output in reverse order: several media queries can match at once, and CSS applies the last matching rule while `<picture>` uses the first matching `<source>`. When using `imagex-picture-json` for headless output, the same CSS string is available under the top-level `artDirectionStyles` key (an empty string if there are no rules) so the consuming frontend can inject it itself. With the global [`stack` option](#head-elements-via-template-stacks) set, the `<style>` element goes into the `<head>` instead.
 
 ### Content Security Policy (CSP)
 Imagex can output inline CSS in two places: the `<style>` element with [art-directed `<img>` styles](#art-directed-img-styles), and the `<img>`'s `style` attribute for [`focus`](#focus-point-support). A strict CSP (`style-src` without `'unsafe-inline'`) blocks both.
@@ -538,7 +545,7 @@ How Imagex builds the links:
 - **No `href`.** Browsers without `imagesrcset` support skip the link instead of fetching an image that might not be used. Only images without any `srcset` get an `href`: files Kirby can't resize (e.g. SVGs), or no formats combined with `noSrcsetInImg`.
 - `fetchpriority="high"` is set on every link.
 
-Preload only what's visible above the fold, usually a single image: preloads compete with other critical resources like CSS and fonts. In the `imagex-picture-json` snippet, the links are available under the top-level `preloadLinks` key (omitted when `preload` is off). See the [preload links example](/docs/examples/preload-links.md).
+Preload only what's visible above the fold, usually a single image: preloads compete with other critical resources like CSS and fonts. In the `imagex-picture-json` snippet, the links are available under the top-level `preloadLinks` key (an empty list when `preload` is off). See the [preload links example](/docs/examples/preload-links.md).
 
 ## Why Order Matters?
 ### Format Order and Media Attribute
