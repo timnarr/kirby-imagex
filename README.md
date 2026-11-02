@@ -194,7 +194,8 @@ Only `image` is required — everything else has sane defaults. Unknown options 
 
 - **Flat attribute syntax:** Attributes passed directly to `picture`/`img`/`sources` are auto-treated as `shared`. Use the full `shared`/`eager`/`lazy` structure when you need loading-mode-specific values.
 - **Override anything:** Developer-defined attributes always win. `class` and `style` are merged; all others are replaced. Defaults: `loading: 'eager'` → `fetchpriority: 'high'`; `decoding: 'async'`.
-- **`class` and `style` accept strings or arrays** — strings are auto-converted (`'foo bar'` → `['foo', 'bar']`). `null`/`false` values inside arrays are filtered out automatically, useful for conditional classes: `$condition ? 'my-class' : null`.
+- **`class` and `style` accept strings or arrays** — strings are auto-converted (`'foo bar'` → `['foo', 'bar']`). `null`/`false`, as the value or inside arrays, add nothing, useful for conditional classes: `$condition ? 'my-class' : null`. Each `style` declaration gets a trailing `;` if it's missing, so declarations from `shared` and `eager`/`lazy` don't run together.
+- **Kirby fields work as values**, e.g. `'alt' => $image->alt()`: they are converted to strings, so the HTML and JSON output get the same value.
 - ⚠️ When overriding `width`, `height`, `src`, or `srcset`, you are responsible for keeping dimensions consistent with your ratio. [See details here](#overriding-default-attributes).
 
 | Option | Default | Type | Description |

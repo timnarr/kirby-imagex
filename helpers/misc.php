@@ -322,8 +322,10 @@ function applyUrlHandlerToAttributes(array $attributes, bool|null $useRelativeUr
 }
 
 /**
- * Transforms data for JSON output by converting class/style arrays to strings
- * and removing null values and empty strings.
+ * Transforms data for JSON output, leaving out attributes exactly like Kirby's
+ * `attr()` does in the HTML output: class/style arrays become strings, null,
+ * false and empty class/style arrays are removed. Empty strings are kept, e.g.
+ * `alt=""` for decorative images.
  *
  * @param mixed $data The data to transform.
  * @return mixed The transformed data.
@@ -339,16 +341,14 @@ function transformForJson(mixed $data): mixed
 	$result = [];
 
 	foreach ($data as $key => $value) {
-		// Convert class and style arrays to strings
 		if (($key === 'class' || $key === 'style') && is_array($value)) {
-			$value = implode(' ', $value);
+			$value = $value === [] ? null : implode(' ', $value);
 		}
 
 		// Recursively transform nested arrays
 		$transformed = transformForJson($value);
 
-		// Skip null values and empty strings
-		if ($transformed !== null && $transformed !== '') {
+		if ($transformed !== null && $transformed !== false) {
 			$result[$key] = $transformed;
 		}
 	}

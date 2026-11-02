@@ -6,6 +6,7 @@ namespace TimNarr;
 
 use Kirby\Cms\App;
 use Kirby\Cms\File;
+use Kirby\Content\Field;
 use Kirby\Exception\InvalidArgumentException;
 use Kirby\Toolkit\A;
 
@@ -600,6 +601,34 @@ class ImagexTest extends ImagexTestCase
 		$this->assertSame(400, $data['img']['width']);
 		$this->assertSame(225, $data['img']['height']);
 		$this->assertCount(2, $data['picture']['sources']);
+	}
+
+	public function testJsonSnippetOutputsFieldsAsStrings()
+	{
+		$json = snippet('imagex-picture-json', [
+			'image' => $this->image(),
+			'attributes' => ['img' => ['alt' => new Field(null, 'alt', 'A cat'), 'class' => new Field(null, 'class', 'hero')]],
+		], return: true);
+		$data = json_decode($json, true, flags: JSON_THROW_ON_ERROR);
+
+		$this->assertSame('A cat', $data['img']['alt']);
+		$this->assertSame('hero', $data['img']['class']);
+	}
+
+	public function testJsonSnippetLeavesOutAttributesLikeTheHtmlSnippet()
+	{
+		$options = ['image' => $this->image(), 'attributes' => ['img' => ['alt' => '', 'decoding' => false, 'class' => null]]];
+		$data = json_decode(snippet('imagex-picture-json', $options, return: true), true, flags: JSON_THROW_ON_ERROR);
+		$html = snippet('imagex-picture', $options, return: true);
+
+		$this->assertSame('', $data['img']['alt']);
+		$this->assertStringContainsString('alt=""', $html);
+		$this->assertArrayNotHasKey('decoding', $data['img']);
+		$this->assertStringNotContainsString('decoding=', $html);
+		$this->assertArrayNotHasKey('class', $data['img']);
+		$this->assertStringNotContainsString('class=', $html);
+		// Still left out when empty
+		$this->assertArrayNotHasKey('artDirectionStyles', $data);
 	}
 
 	public function testSnippetWithOnlyImageUsesClassDefaults()

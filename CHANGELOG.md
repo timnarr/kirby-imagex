@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Fixed
+- **Bug:** The `imagex-picture-json` snippet output Kirby fields as objects: `'alt' => $image->alt()`, as used in the README, became `"alt": {"value": "…"}`. Attribute values that are `Stringable` (e.g. Kirby fields) are now converted to strings when the `Imagex` instance is created, so the HTML and JSON output get the same value.
+- **Bug:** The `imagex-picture-json` snippet left out empty strings, e.g. `alt=""` for decorative images, while the HTML kept them. Attributes in the JSON output are now left out exactly like in the HTML output: `null` and `false` remove an attribute (previously `false` was output as `false`), empty strings are kept.
+- `class` and `style` set to `null`, `false` or a Kirby field threw a type mismatch error. `null` and `false` now add nothing, e.g. `'class' => $isActive ? 'active' : null`, and fields are converted to strings. `class` strings are split at any whitespace (tabs, line breaks), not only at spaces.
+- **Bug:** `style` declarations without a trailing semicolon ran together when combined, e.g. `'color: red'` in `shared` and `'margin: 0'` in `lazy` became `style="color: red margin: 0"`. Each declaration now ends with a semicolon.
 - **Bug:** `thumbRatio()` with `'crop' => false` returned a thumb in the image's own ratio instead of the requested one, e.g. 600×450 for `thumbRatio('16/9', ['width' => 800, 'crop' => false])`. Like in srcset presets, `false` is now replaced with `true`. Crop positions like `'top left'` still work. Migration: for an uncropped thumb, use Kirby's `thumb()` directly.
 
 ## [0.6.0-beta.1] - October 30, 2026

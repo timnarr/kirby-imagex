@@ -58,7 +58,7 @@ $data = json_decode($json, true);
 ```
 
 ### JSON Output
-The JSON structure groups `picture` attributes with `sources` nested inside, and `img` attributes separately. Note that `class` and `style` arrays are converted to strings in the JSON output.
+The JSON structure groups `picture` attributes with `sources` nested inside, and `img` attributes separately. Note that `class` and `style` arrays are converted to strings in the JSON output. Attributes are left out exactly like in the HTML output: `null` and `false` remove an attribute, while empty strings like `alt=""` (decorative images) are kept. Kirby fields like `$image->alt()` are output as strings.
 
 ```json
 {

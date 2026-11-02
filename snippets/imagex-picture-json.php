@@ -15,8 +15,8 @@ $data = [
 		'sources' => $imagex->getPictureSources(),
 	],
 	'img' => $imagex->getImgAttributes(),
-	'artDirectionStyles' => $imagex->getArtDirectionStyles(),
-	// Left out when empty, like the styles
+	// Both left out when empty
+	'artDirectionStyles' => $imagex->getArtDirectionStyles() ?: null,
 	'preloadLinks' => $imagex->getPreloadLinks() ?: null,
 ];
 

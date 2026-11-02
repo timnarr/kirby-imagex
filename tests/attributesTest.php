@@ -4,6 +4,7 @@ declare(strict_types = 1);
 
 namespace TimNarr;
 
+use Kirby\Content\Field;
 use Kirby\Exception\InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
@@ -321,5 +322,45 @@ class HtmlAttributesTest extends TestCase
 		$this->expectExceptionMessage('[kirby-imagex] Type mismatch detected: attribute "class" in "lazy" expected to be array, integer given.');
 
 		normalizeAttributesStructure(['lazy' => ['class' => 42]]);
+	}
+
+	public function testNormalizeAttributeValuesConvertsStringablesToStrings()
+	{
+		$result = normalizeAttributeValues([
+			'alt' => new Field(null, 'alt', 'A cat'),
+			'class' => new Field(null, 'class', 'hero wide'),
+			'style' => [new Field(null, 'style', 'color: red;')],
+		]);
+
+		$this->assertSame(['alt' => 'A cat', 'class' => ['hero', 'wide'], 'style' => ['color: red;']], $result);
+	}
+
+	public function testNormalizeAttributeValuesTreatsNullAndFalseClassAndStyleAsEmpty()
+	{
+		$this->assertSame(['class' => [], 'style' => []], normalizeAttributeValues(['class' => null, 'style' => false]));
+	}
+
+	public function testNormalizeAttributeValuesSplitsClassesByAnyWhitespace()
+	{
+		$this->assertSame(['class' => ['a', 'b', 'c']], normalizeAttributeValues(['class' => " a\tb\n c "]));
+	}
+
+	public function testNormalizeAttributeValuesEndsStyleDeclarationsWithASemicolon()
+	{
+		$result = normalizeAttributeValues(['style' => ['color: red', 'margin: 0; ', 'padding: 0;', null]]);
+
+		$this->assertSame(['style' => ['color: red;', 'margin: 0;', 'padding: 0;', null]], $result);
+	}
+
+	public function testNormalizeAttributeValuesKeepsEmptyStrings()
+	{
+		$this->assertSame(['alt' => ''], normalizeAttributeValues(['alt' => '']));
+	}
+
+	public function testMergeHTMLAttributesKeepsStyleDeclarationsSeparate()
+	{
+		$attributes = normalizeAttributesStructure(['shared' => ['style' => 'color: red'], 'lazy' => ['style' => 'margin: 0']]);
+
+		$this->assertSame(['color: red;', 'margin: 0;'], mergeHTMLAttributes($attributes, 'lazy')['style']);
 	}
 }
