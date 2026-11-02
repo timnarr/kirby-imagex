@@ -16,6 +16,7 @@ All notable changes to this project will be documented in this file.
 - **BREAKING:** `thumbRatio()` throws an `InvalidArgumentException` when `height` is passed. The height is derived from the ratio, so it was overwritten silently. Migration: remove `height` and pass a `width`.
 - Renamed the global options `customLazyloading` to `customLazyLoading` (camelCase) and `noSrcsetInImg` to `srcsetInImg` (default `true`, the opposite value: no double negation like `noSrcsetInImg: false`). The old names still work, with a deprecation warning in debug mode, and will be removed in a future release. Migration: `'customLazyloading' => true` becomes `'customLazyLoading' => true`, `'noSrcsetInImg' => true` becomes `'srcsetInImg' => false`.
 - `Imagex::getSmallestFormatForImage()` is now `protected`. It was `@internal` and only public so tests could override it.
+- The internal helper functions moved from the `TimNarr` namespace to `TimNarr\Imagex`, so they can't collide with functions of other `timnarr/*` packages. They are `@internal`; if you called them directly anyway, update the namespace.
 
 ### Fixed
 - **Bug:** The `imagex-picture-json` snippet output Kirby fields as objects: `'alt' => $image->alt()`, as used in the README, became `"alt": {"value": "…"}`. Attribute values that are `Stringable` (e.g. Kirby fields) are now converted to strings when the `Imagex` instance is created, so the HTML and JSON output get the same value.

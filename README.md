@@ -516,7 +516,7 @@ The attribute getters return arrays ready for Kirby's `attr()`, keyed by attribu
 - `width` and `height` are integers.
 - Other values are strings, or what you passed via `attributes`.
 
-Everything else is internal and may change in any release. That includes the helper functions in the `TimNarr` namespace (e.g. `getAspectRatio()`, `mergeHTMLAttributes()`) and `Imagex::fromSnippetData()`. They are marked `@internal`.
+Everything else is internal and may change in any release. That includes the helper functions in the `TimNarr\Imagex` namespace (e.g. `getAspectRatio()`, `mergeHTMLAttributes()`) and `Imagex::fromSnippetData()`. They are marked `@internal`.
 
 ## Cache
 When `compareFormats` is enabled, the result of the weighted format size comparison is cached per image. The cache key includes the image ID, its last-modified timestamp, the ratio, the srcset preset, and the active formats — so a new entry is used automatically whenever the image is replaced or updated.

@@ -11,6 +11,9 @@ use Kirby\Exception\InvalidArgumentException;
 use Kirby\Toolkit\A;
 use PHPUnit\Framework\Attributes\IgnoreDeprecations;
 
+use function TimNarr\Imagex\getAspectRatio;
+use function TimNarr\Imagex\urlHandler;
+
 class ImagexTest extends ImagexTestCase
 {
 	public function testArtDirectionStylesAreEmptyWithoutArtDirection()

@@ -12,6 +12,23 @@ use Kirby\Filesystem\F;
 use Kirby\Toolkit\A;
 use Kirby\Toolkit\Str;
 
+use function TimNarr\Imagex\addRatioBasedHeightToSrcsetPreset;
+use function TimNarr\Imagex\applyUrlHandlerToAttributes;
+use function TimNarr\Imagex\buildPreloadLinks;
+use function TimNarr\Imagex\calculateWeightedFormatSize;
+use function TimNarr\Imagex\escapeCssIdentifier;
+use function TimNarr\Imagex\exclusiveMediaConditions;
+use function TimNarr\Imagex\findKeyOfSmallestValue;
+use function TimNarr\Imagex\getAspectRatio;
+use function TimNarr\Imagex\isFormatSkippable;
+use function TimNarr\Imagex\mergeHTMLAttributes;
+use function TimNarr\Imagex\normalizeAttributesStructure;
+use function TimNarr\Imagex\normalizeFormat;
+use function TimNarr\Imagex\normalizeSrcsetPreset;
+use function TimNarr\Imagex\resolveCompareFormatsWeights;
+use function TimNarr\Imagex\resolveFocusValue;
+use function TimNarr\Imagex\transformForJson;
+
 /**
  * Builds the attributes of a responsive, art-directed <picture> from a Kirby image.
  *

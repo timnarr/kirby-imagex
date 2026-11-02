@@ -2,7 +2,7 @@
 
 declare(strict_types = 1);
 
-namespace TimNarr;
+namespace TimNarr\Imagex;
 
 use Kirby\Exception\InvalidArgumentException;
 

@@ -50,7 +50,7 @@ Kirby::plugin('timnarr/imagex', [
 				throw new Kirby\Exception\InvalidArgumentException("[kirby-imagex] thumbRatio() derives the height from the ratio. Remove 'height' from the options and pass a 'width' instead.");
 			}
 
-			['x' => $ratioX, 'y' => $ratioY] = \TimNarr\getAspectRatio($ratio, $this);
+			['x' => $ratioX, 'y' => $ratioY] = \TimNarr\Imagex\getAspectRatio($ratio, $this);
 			$width = $options['width'] ?? $this->width();
 			$height = (int)round($width * $ratioY / $ratioX);
 
