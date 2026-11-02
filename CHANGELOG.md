@@ -2,6 +2,69 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.0-beta.2] - November 2, 2026
+
+Second beta for Kirby 6. Install it with `composer require timnarr/kirby-imagex:^0.6@beta`. For Kirby 5, stay on `0.5.x`. If you use the `imagex-picture-json` output, see the migration guide below: its structure changed.
+
+### Added
+- New `$file->imagex($options)` file method: creates an `Imagex` instance for the file with the same options as the snippets. Echo it to render the `<picture>` (via the `imagex-picture` snippet, including your own override), or use `toArray()`/`json_encode()` for the JSON data. Unlike the snippets, it only gets the options you pass: unknown options throw, and controller variables named like an option (e.g. `$ratio`, `$image`) are never picked up, which Kirby otherwise passes to every snippet.
+- New public `Imagex::toArray()`: everything needed to render the `<picture>`, in the structure of the `imagex-picture-json` snippet, e.g. to return it from a Kirby route. `Imagex` also implements `JsonSerializable`, so `json_encode($imagex)` returns the snippet's JSON.
+- Ratios may have spaces around the slash, like in CSS: `'16 / 9'`.
+- Every global option except `cache` and `stack` can now be overridden per image with the snippet option of the same name: `addOriginalFormatAsSource`, `compareFormatsWeights`, `customLazyLoading`, `relativeUrls` and `srcsetInImg`, like `formats` already could. `null` (default) uses the global option.
+- `'originalformat'` in `formats` is now documented: it adds a `<source>` in the image's own format (e.g. JPEG), using the base srcset preset, at that position in the order. It already worked, but was undocumented.
+
+### Changed
+- **BREAKING:** New structure for the `imagex-picture-json` output. `sources` moved from `picture.sources` to the top level, so `picture`, `img` and every source are plain attribute objects that can be spread onto their element (previously `picture` mixed its attributes with the `sources` list). `artDirectionStyles` and `preloadLinks` are always present: an empty string and an empty list when there's nothing to output (previously both were left out). The structure is now defined by `Imagex::toArray()`. Migration: read the sources from `data.sources` instead of `data.picture.sources`, and check `artDirectionStyles`/`preloadLinks` for emptiness instead of existence. See "Migration Guide" below.
+- **BREAKING:** `thumbRatio()` throws an `InvalidArgumentException` when `height` is passed. The height is derived from the ratio, so it was overwritten silently. Migration: remove `height` and pass a `width`.
+- Renamed the global options `customLazyloading` to `customLazyLoading` (camelCase) and `noSrcsetInImg` to `srcsetInImg` (default `true`, the opposite value: no double negation like `noSrcsetInImg: false`). The old names still work, with a deprecation warning in debug mode, and will be removed in a future release. Migration: `'customLazyloading' => true` becomes `'customLazyLoading' => true`, `'noSrcsetInImg' => true` becomes `'srcsetInImg' => false`.
+- `Imagex::getSmallestFormatForImage()` is now `protected`. It was `@internal` and only public so tests could override it.
+- The internal helper functions moved from the `TimNarr` namespace to `TimNarr\Imagex`, so they can't collide with functions of other `timnarr/*` packages. They are `@internal`; if you called them directly anyway, update the namespace.
+
+### Fixed
+- **Bug:** The `imagex-picture-json` snippet output Kirby fields as objects: `'alt' => $image->alt()`, as used in the README, became `"alt": {"value": "…"}`. Attribute values that are `Stringable` (e.g. Kirby fields) are now converted to strings when the `Imagex` instance is created, so the HTML and JSON output get the same value.
+- **Bug:** The `imagex-picture-json` snippet left out empty strings, e.g. `alt=""` for decorative images, while the HTML kept them. Attributes in the JSON output are now left out exactly like in the HTML output: `null` and `false` remove an attribute (previously `false` was output as `false`), empty strings are kept.
+- `class` and `style` set to `null`, `false` or a Kirby field threw a type mismatch error. `null` and `false` now add nothing, e.g. `'class' => $isActive ? 'active' : null`, and fields are converted to strings. `class` strings are split at any whitespace (tabs, line breaks), not only at spaces.
+- **Bug:** `style` declarations without a trailing semicolon ran together when combined, e.g. `'color: red'` in `shared` and `'margin: 0'` in `lazy` became `style="color: red margin: 0"`. Each declaration now ends with a semicolon.
+- **Bug:** `thumbRatio()` with `'crop' => false` returned a thumb in the image's own ratio instead of the requested one, e.g. 600×450 for `thumbRatio('16/9', ['width' => 800, 'crop' => false])`. Like in srcset presets, `false` is now replaced with `true`. Crop positions like `'top left'` still work. Migration: for an uncropped thumb, use Kirby's `thumb()` directly.
+
+### Migration Guide
+
+#### JSON output
+
+```js
+// Before
+const { sources, ...pictureAttributes } = data.picture;
+if (data.artDirectionStyles) { /* inject */ }
+if (data.preloadLinks) { /* add links */ }
+
+// After
+const pictureAttributes = data.picture;
+const sources = data.sources;
+if (data.artDirectionStyles !== '') { /* inject */ }
+if (data.preloadLinks.length) { /* add links */ }
+```
+
+## [0.6.0-beta.1] - October 30, 2026
+
+Beta for Kirby 6. Install it with `composer require timnarr/kirby-imagex:^0.6@beta`. For Kirby 5, stay on `0.5.x`.
+
+### Added
+- New `stack` plugin option: the name of a Kirby 6 template stack in your `<head>`. When set, the `imagex-picture` snippet pushes its `<style>` element (art-direction and `focus` styles) into it instead of rendering it next to the `<picture>`. Defaults to `null`, which keeps the previous output.
+- New `preload` snippet option: adds `<link rel="preload" as="image">` elements with `imagesrcset`/`imagesizes` for critical images to the `stack`. One format per source (respecting `compareFormats`), and art-directed sources get mutually exclusive `media` conditions, so only the image `<picture>` actually uses is fetched. The exclusions use the Media Queries Level 4 range syntax where possible: `(width >= 800px)` and `(min-width: 800px)` are negated as `(width < 800px)`. Requires `loading: 'eager'` and the `stack` option, both validated with a descriptive error.
+- New public `Imagex::getPreloadLinks()` and `Imagex::getStack()` getters. The `imagex-picture-json` snippet outputs the links under the new top-level `preloadLinks` key (omitted when empty).
+- New `formats` snippet option: overrides the global `formats` for a single image, e.g. `['webp']` for animated GIFs (Kirby converts them to a still AVIF) or `[]` for no modern formats. `null` (default) uses the global option.
+
+### Fixed
+- **Bug:** With `compareFormats` and an art-directed `image`, the art-directed image could be ignored. `<source>` elements were grouped by format, so when the art-directed image skipped AVIF but the main image didn't, the default AVIF `<source>` (no `media`) came first and always matched in AVIF browsers. `<source>` elements are now grouped by source: each `artDirection` entry in all its formats, then the main image in all its formats. **The order of `<source>` elements changes for every art-directed `<picture>` with more than one format**; browsers still pick the same image, except in the buggy case above. Migration: if your CSS or JavaScript relies on the position of `<source>` elements, select them by `media` or `type` instead.
+- An `artDirection` entry with its own `image` now keeps every format its own comparison keeps, even if `compareFormats` skipped that format for the main image. Previously a format skipped for the main image was skipped for every source.
+- Files Kirby can't resize (e.g. SVGs) are rendered as a plain `<img>` with the original file as `src`. Previously every format got a `<source>` listing the original SVG under every width, with a wrong `type` like `image/avif`. `compareFormats` is skipped for them.
+
+### Changed
+- **BREAKING:** An `artDirection` entry using a file Kirby can't resize (e.g. an SVG), directly via its own `image` or by falling back to the main image, now throws a descriptive `InvalidArgumentException`. Previously it rendered `<source>` elements that repeated the original file under every width and format. Migration: give the entry its own resizable `image` (JPEG, PNG, WebP, AVIF …), or leave out `artDirection` for such files.
+- **BREAKING:** Kirby 6 is now required (`extra.kirby.compatible` is `^6.0`). Kirby 5 is no longer supported. Migration: upgrade your site to Kirby 6, or stay on `0.5.x` while you are on Kirby 5. A `conflict` with `getkirby/cms` < 6.0 keeps Composer from installing this version into a Kirby 5 project. No option names, snippet variables or output changed.
+- **BREAKING:** PHP 8.3 is now the minimum version (Kirby 6 requires it). PHP 8.2 is no longer supported.
+- README, examples and error messages use the Media Queries Level 4 range syntax, e.g. `(width >= 800px)` instead of `(min-width: 800px)`. Your own `media` strings are output unchanged.
+
 ## [0.5.1] - October 13, 2026
 
 ### Changed

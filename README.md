@@ -3,14 +3,14 @@
 # Kirby Imagex
 **Modern Images for Kirby CMS** – Imagex helps you orchestrate modern, responsive and performant images in Kirby.
 
-**Requirements:** Kirby 5 · PHP 8.2–8.5
+**Requirements:** Kirby 6 · PHP 8.3–8.5 (for Kirby 5 use [v0.5.x](https://github.com/timnarr/kirby-imagex/releases/tag/0.5.1))
 
 
 ## Features
 - 🌠 Dynamic generation of image srcsets for art-directed or media-condition-based images.
 - 📐 Helps you easily change the aspect ratio without the need to define new srcset presets.
 - 😴 Supports native lazy loading and is customizable for JavaScript lazy loading libraries.
-- 🚀 Improve the performance of your critical LCP (Largest Contentful Paint) images, utilizing `Priority Hints`.
+- 🚀 Improve the performance of your critical LCP (Largest Contentful Paint) images, utilizing `Priority Hints` and preload links in the `<head>`.
 - ⚡️ Supports multiple modern image formats, like AVIF and WebP.
 - 🧩 Can easily be integrated as a snippet into existing blocks/projects.
 - 🪄 Uses only Kirby's core capabilities for image handling.
@@ -40,26 +40,32 @@ return [
   'timnarr.imagex' => [
     'cache' => true,
     'compareFormatsWeights' => 'mobile',
-    'customLazyloading' => false,
+    'customLazyLoading' => false,
     'formats' => ['avif', 'webp'],
     'addOriginalFormatAsSource' => false,
-    'noSrcsetInImg' => false,
+    'srcsetInImg' => true,
     'relativeUrls' => false,
+    'stack' => null,
   ],
 ];
 ```
 
 ### Global Options
 
+Every global option except `cache` and `stack` can be overridden for a single image with the [snippet option](#snippet-options) of the same name.
+
 | Option | Default | Type | Description |
 | ------ | ------- | ---- | ----------- |
 | `cache` | `true` | Boolean | Imagex will cache some calculations. Read more about it here: "[Cache](#cache)" |
 | `compareFormatsWeights` | `'mobile'` | String or Array | Controls the weighting used when comparing format sizes via `compareFormats`. Preset strings: `'mobile'` (50/30/20), `'desktop'` (20/30/50), `'balanced'` (34/33/33). For custom weights pass an array: `['small' => 0.4, 'medium' => 0.4, 'large' => 0.2]` — values must sum to `1.0`. Read more: "[Dynamic Format Size Handling](#dynamic-format-size-handling)". |
-| `customLazyloading` | `false` | Boolean | Imagex will initially use native lazy loading with the `loading` attribute. Enable this option if you want to use a custom lazy loading library like lazysizes or any other JS-based solution. Imagex will then automatically use `data-src` and `data-srcset`. If you need something like `data-sizes="auto"` please use the snippet options to add it as a lazy HTML attribute. |
-| `formats` | `['avif', 'webp']` | Array with Strings | Define the modern image formats you want to use. ⚠️ Order matters here! You should go from the most to less modern format. The order in this array also affects the `compareFormats` snippet-option. [Read more about why the correct order is important](#why-order-matters). You **shouldn't add the original image format here** like PNG or JPEG. |
-| `addOriginalFormatAsSource` | `false` | Boolean | Adds a `<source>` element for the image's original format (e.g. JPEG, PNG). Useful when modern formats like AVIF or WebP can't be used, but you still need art-directed picture sources at different breakpoints / media conditions. |
-| `noSrcsetInImg` | `false` | Boolean | If active this will only output the `src` attribute in the `<img>` tag. The smallest size from the given srcset-preset is used and the `srcset` attribute is omitted. |
+| `customLazyLoading` | `false` | Boolean | Imagex will initially use native lazy loading with the `loading` attribute. Enable this option if you want to use a custom lazy loading library like lazysizes or any other JS-based solution. Imagex will then automatically use `data-src` and `data-srcset`. If you need something like `data-sizes="auto"` please use the snippet options to add it as a lazy HTML attribute. |
+| `formats` | `['avif', 'webp']` | Array with Strings | Define the modern image formats you want to use. ⚠️ Order matters here! You should go from the most to less modern format. The order in this array also affects the `compareFormats` snippet-option. [Read more about why the correct order is important](#why-order-matters). Don't add the original format by name (e.g. `'jpeg'`), since the image's format differs per upload. Use `'originalformat'` instead: it adds a `<source>` in the image's own format, using the base srcset preset, at this position in the order. |
+| `addOriginalFormatAsSource` | `false` | Boolean | Adds a `<source>` element for the image's original format (e.g. JPEG, PNG) after the `formats`, like `'originalformat'` at the end of `formats`. Useful when modern formats like AVIF or WebP can't be used, but you still need art-directed picture sources at different breakpoints / media conditions. |
+| `srcsetInImg` | `true` | Boolean | Set to `false` to only output the `src` attribute in the `<img>` tag. The smallest size from the given srcset-preset is used and the `srcset` attribute is omitted. |
 | `relativeUrls` | `false` | Boolean | Output root-relative image URLs (`/media/…`) when active. Only the origin of your site URL is removed, so subfolder installs and multi-language sites keep working. |
+| `stack` | `null` | String or `null` | Name of a Kirby [template stack](#head-elements-via-template-stacks) in your `<head>` (e.g. `'imagex-head'`). When set, Imagex pushes its `<style>` elements and preload links into it instead of rendering styles next to the `<picture>`. Required for the `preload` snippet option. |
+
+`customLazyloading` and `noSrcsetInImg` were renamed to `customLazyLoading` and `srcsetInImg` (with the opposite value). The old names still work, with a deprecation warning in debug mode, but will be removed in a future release.
 
 ## Adjust Kirby's Thumbs Config and Add Srcset Presets
 The srcset configuration is still set up as you know it from Kirby, [like described here](https://getkirby.com/docs/reference/objects/cms/file/srcset#define-presets__extended-example).
@@ -68,9 +74,32 @@ Set your srcset preset, like `my-srcset`, and define only the `width` — no `he
 
 Kirby's shorthand forms work too: `'my-srcset' => [400, 800, 1200]` or `[400 => '1x', 800 => '2x']`.
 
+You don't need to set `crop`: Imagex sets a missing or `false` `crop` to `true`, since a thumb would otherwise lose its ratio. With `true`, Kirby anchors the crop at the image's [focus point](#focus-point-support). A crop position like `'top left'` is kept, but overrides the focus point.
+
 If you use AVIF and/or WebP, add a separate preset per format by copying the base preset, appending `-{format}` to the name, and setting the `format` option. This gives you full control over quality per format.
 
-The quality settings for the modern formats shouldn't simply be taken from the default preset. To really benefit from smaller image files due to modern formats, you should slightly adjust your quality settings. My rule of thumb is to take the quality value from JPEG/PNG and reduce it by 5 for WebP and 15 for AVIF. Here is a good [read](https://www.industrialempathy.com/posts/avif-webp-quality-settings/) with more detail, but I've also noticed that this isn't completely applicable to images in Kirby.
+The quality settings for the modern formats shouldn't simply be taken from the default preset: AVIF and WebP need different quality values than JPEG to look the same. As a rule of thumb, use **AVIF = JPEG − 15** and **WebP = JPEG + 5**. From JPEG 80 upwards, use the same value for WebP as for JPEG.
+
+<details>
+<summary>Where the rule of thumb comes from</summary>
+
+The table compares the formats by [SSIMULACRA 2](https://github.com/cloudinary/ssimulacra2), a metric for perceived image quality: for each JPEG quality, it shows the AVIF and WebP quality that reach the same score.
+
+| JPEG | SSIMULACRA 2 | AVIF | Δ | WebP | Δ |
+|---:|---:|---:|---:|---:|---:|
+| 60 | 67.9 | 51 | −9 | 66 | +6 |
+| 65 | 70.0 | 53 | −12 | 72 | +7 |
+| 70 | 72.5 | 56 | −14 | 76 | +6 |
+| 75 | 75.0 | 60 | −15 | 79 | +4 |
+| 80 | 77.8 | 66 | −14 | 82 | +2 |
+| 85 | 80.7 | 71 | −14 | 86 | +1 |
+| 90 | 84.3 | 79 | −11 | 89 | −1 |
+| 95 | 88.3 | 89 | −6 | 95 | ±0 |
+
+For more background, see this [article on AVIF and WebP quality settings](https://www.industrialempathy.com/posts/avif-webp-quality-settings/).
+
+</details>
+
 
 ```php
 // config.php
@@ -82,9 +111,9 @@ The quality settings for the modern formats shouldn't simply be taken from the d
       '1200w' => ['width' => 1200, 'crop' => true, 'quality' => 80],
     ],
     'my-srcset-webp' => [ // preset for webp
-      '400w'  => ['width' =>  400, 'crop' => true, 'quality' => 75, 'format' => 'webp', 'sharpen' => 10],
-      '800w'  => ['width' =>  800, 'crop' => true, 'quality' => 75, 'format' => 'webp', 'sharpen' => 10],
-      '1200w' => ['width' => 1200, 'crop' => true, 'quality' => 75, 'format' => 'webp', 'sharpen' => 10],
+      '400w'  => ['width' =>  400, 'crop' => true, 'quality' => 80, 'format' => 'webp', 'sharpen' => 10],
+      '800w'  => ['width' =>  800, 'crop' => true, 'quality' => 80, 'format' => 'webp', 'sharpen' => 10],
+      '1200w' => ['width' => 1200, 'crop' => true, 'quality' => 80, 'format' => 'webp', 'sharpen' => 10],
     ],
     'my-srcset-avif' => [ // preset for avif
       '400w'  => ['width' =>  400, 'crop' => true, 'quality' => 65, 'format' => 'avif', 'sharpen' => 25],
@@ -108,6 +137,9 @@ $options = [
       'style' => ['background: red;'],
       'sizes' => '100vw',
     ],
+    'sources' => [
+      'sizes' => '100vw',
+    ],
   ],
   'ratio' => '16/9',
   'srcset' => 'my-srcset',
@@ -117,6 +149,8 @@ $options = [
 
 <?php snippet('imagex-picture', $options) ?>
 ```
+
+Set `sizes` for both `img` and `sources`: a `<source>` doesn't inherit the `<img>`'s `sizes`. Without its own `sizes`, the browser assumes `100vw` for it and may load a larger image than needed. As most browsers use one of the AVIF or WebP `<source>` elements, their `sizes` is the one that usually counts.
 
 Imagex outputs a `<picture>` element with `<source>` elements and one `<img>`. If you need extra HTML you can wrap the Imagex snippet accordingly. Handle `svg` or `gif` files differently as needed!
 
@@ -157,14 +191,24 @@ echo $json;
 ?>
 ```
 
-The JSON output contains structured data with `picture` (including nested `sources`) and `img` attributes. See the [JSON output example](/docs/examples/json-output.md) for more details.
+The JSON output always has the same five keys:
+
+- `picture`, `img`: attribute objects for the `<picture>` and `<img>` elements
+- `sources`: a list of attribute objects, one per `<source>`, in output order
+- `artDirectionStyles`: the [art-directed `<img>` styles](#art-directed-img-styles) as a CSS string, empty if there are none
+- `preloadLinks`: a list of attribute objects for the [preload links](#preload-links), empty unless `preload` is enabled
+
+Each attribute object can be spread onto its element as is, e.g. `<img {...data.img} />` in JSX. In PHP, `Imagex::toArray()` returns the same data as an array. See the [JSON output example](/docs/examples/json-output.md) for more details.
 
 ### Snippet Options
-Only `image` is required — everything else has sane defaults. Unknown options throw an error, so typos like `ration` don't go unnoticed when you use the `Imagex` class directly. (Snippets only forward the options listed below, so a misspelled snippet option is still ignored there.)
+Only `image` is required — everything else has sane defaults. The same options work for the snippets, [`$file->imagex()`](#imagexarray-options--) and the `Imagex` class.
+
+⚠️ Snippets can't tell your options apart from other variables in their scope: a misspelled option like `ration` is ignored, and since Kirby passes controller data to every snippet, a controller variable named like an option (e.g. `$ratio` or `$image`) is used whenever you don't pass that option yourself. [`$file->imagex()`](#imagexarray-options--) only gets the options you pass and throws on unknown ones.
 
 - **Flat attribute syntax:** Attributes passed directly to `picture`/`img`/`sources` are auto-treated as `shared`. Use the full `shared`/`eager`/`lazy` structure when you need loading-mode-specific values.
 - **Override anything:** Developer-defined attributes always win. `class` and `style` are merged; all others are replaced. Defaults: `loading: 'eager'` → `fetchpriority: 'high'`; `decoding: 'async'`.
-- **`class` and `style` accept strings or arrays** — strings are auto-converted (`'foo bar'` → `['foo', 'bar']`). `null`/`false` values inside arrays are filtered out automatically, useful for conditional classes: `$condition ? 'my-class' : null`.
+- **`class` and `style` accept strings or arrays** — strings are auto-converted (`'foo bar'` → `['foo', 'bar']`). `null`/`false`, as the value or inside arrays, add nothing, useful for conditional classes: `$condition ? 'my-class' : null`. Each `style` declaration gets a trailing `;` if it's missing, so declarations from `shared` and `eager`/`lazy` don't run together.
+- **Kirby fields work as values**, e.g. `'alt' => $image->alt()`: they are converted to strings, so the HTML and JSON output get the same value.
 - ⚠️ When overriding `width`, `height`, `src`, or `srcset`, you are responsible for keeping dimensions consistent with your ratio. [See details here](#overriding-default-attributes).
 
 | Option | Default | Type | Description |
@@ -174,10 +218,13 @@ Only `image` is required — everything else has sane defaults. Unknown options 
 | `srcset` | `'default'` | String | Name of the srcset preset (e.g. `'my-srcset'`, without format suffix), configured in [Kirby's config](#adjust-kirbys-thumbs-config-and-add-srcset-presets). Imagex automatically resolves the format-specific variants (`my-srcset-webp`, `my-srcset-avif`) — you only pass the base name. |
 | `ratio` | `'intrinsic'` | String | Set the desired aspect ratio here. Can be omitted, default is `intrinsic`, which means the ratio of the provided image is used. Pass your ratio in this format: `x/y`. |
 | `attributes` | `[]` | Array | HTML attributes grouped by element: `picture`, `img`, `sources`. Each can be flat (auto-converted to `shared`) or use the full `shared`/`eager`/`lazy` structure for loading-mode-specific attributes. Other keys (e.g. `image` instead of `img`) throw an error. |
-| `artDirection` | `[]` | Array | Art-directed sources with `media` (required), `ratio`, `image`, and `attributes` options. Other keys throw an error. Order matters! Browsers use the first `<source>` with a matching media condition. Order width-based media queries from large to small. Per entry: `attributes` can be flat or structured, just like `attributes.sources`. `image` is optional — omit it to reuse the main `image` at a different ratio without needing a second file. `ratio` is optional — falls back to `'intrinsic'` (not the main `ratio`). [Read more about art-directed `<img>` styles here](#art-directed-img-styles). |
+| `artDirection` | `[]` | Array | Art-directed sources with `media` (required, a media condition — we recommend the [range syntax](https://www.w3.org/TR/mediaqueries-4/#mq-range-context) like `(width >= 800px)`), `ratio`, `image`, and `attributes` options. Other keys throw an error. Order matters! Browsers use the first `<source>` with a matching media condition. Order width-based media queries from large to small. Per entry: `attributes` can be flat or structured, just like `attributes.sources`. `image` is optional — omit it to reuse the main `image` at a different ratio without needing a second file. `ratio` is optional — falls back to `'intrinsic'` (not the main `ratio`). [Read more about art-directed `<img>` styles here](#art-directed-img-styles). |
 | `compareFormats` | `false` | Boolean | In some cases AVIF files can be larger than WebP. If this option is set to true, it enables a dynamic size comparison between the specified image formats. ⚠️ The `formats` order in `config.php` matters here! The comparison weighting can be configured globally via `compareFormatsWeights`. [Read more about it here](#dynamic-format-size-handling). |
 | `focus` | `false` | Boolean | Applies the image's Kirby `focus` field (the same one `thumb(['crop' => true])` already uses for cropping) as `object-position` on the `<img>`, plus `object-fit: cover`. Falls back to `'center'` when no focus point is set. [Read more here](#focus-point-support). |
 | `nonce` | `null` | String | CSP nonce for the generated `<style>` element. With a nonce set, the `focus` styles are also moved from the `<img>`'s `style` attribute into that `<style>` element, so the output works with a strict Content Security Policy. [Read more here](#content-security-policy-csp). |
+| `formats` | `null` | Array or `null` | Overrides the global [`formats`](#global-options) for this image, e.g. `['webp']` or `[]` for no modern formats at all. `null` uses the global option. Each format needs its srcset preset (`my-srcset-webp`, …). `addOriginalFormatAsSource` still applies. Useful for animated GIFs, see "[Files Kirby Can't Resize and Animated GIFs](#files-kirby-cant-resize-and-animated-gifs)". |
+| `preload` | `false` | Boolean | Adds `<link rel="preload">` elements for this image to the `<head>`, so the browser starts fetching it before it reaches the `<picture>`. Requires `loading: 'eager'`, and for `imagex-picture` also the global `stack` option (`imagex-picture-json` returns the links under `preloadLinks` instead). Use it for your LCP image only. [Read more here](#preload-links). |
+| `addOriginalFormatAsSource`, `compareFormatsWeights`, `customLazyLoading`, `relativeUrls`, `srcsetInImg` | `null` | Like the global option | Override the [global option](#global-options) of the same name for this image, e.g. `'srcsetInImg' => false`. `null` uses the global option. |
 
 ```php
 <?php
@@ -216,16 +263,21 @@ $options = [
         'class' => ['js-lazyload'],
       ],
     ],
+
+    // A <source> doesn't inherit the <img>'s `sizes`
+    'sources' => [
+      'sizes' => '760px',
+    ],
   ],
 
   // Art direction with media query in each item
   'artDirection' => [
     [
-      'media' => '(min-width: 1200px)',
+      'media' => '(width >= 1200px)',
       'ratio' => '21/9',
     ],
     [
-      'media' => '(min-width: 820px)',
+      'media' => '(width >= 820px)',
       'image' => $artDirectedImage,
     ],
     [
@@ -303,7 +355,7 @@ $options = [
   'focus' => true,
   'artDirection' => [
     [
-      'media' => '(min-width: 800px)',
+      'media' => '(width >= 800px)',
       'ratio' => '21/9',
       'image' => $wideImage->toFile(),
     ],
@@ -315,14 +367,14 @@ $options = [
 ```
 
 ```html
-<style>@media (min-width: 800px) { #imagex-a1b2c3d4 { aspect-ratio: 21 / 9 !important; object-position: 30% 60% !important; } }</style>
+<style>@media (width >= 800px) { #imagex-a1b2c3d4 { aspect-ratio: 21 / 9 !important; object-position: 30% 60% !important; } }</style>
 <picture>
   <!-- sources ... -->
   <img id="imagex-a1b2c3d4" style="object-fit: cover; object-position: 40% 50%;" ...>
 </picture>
 ```
 
-Rules are only generated when at least one source actually changes the `aspect-ratio` or `object-position` — if none does, there's no `<style>` element and no generated `id`. Once one source changes a property, every source gets a rule for it, output in reverse order: several media queries can match at once, and CSS applies the last matching rule while `<picture>` uses the first matching `<source>`. When using `imagex-picture-json` for headless output, the same CSS string is available under the top-level `artDirectionStyles` key (omitted when empty) so the consuming frontend can inject it itself.
+Rules are only generated when at least one source actually changes the `aspect-ratio` or `object-position` — if none does, there's no `<style>` element and no generated `id`. Once one source changes a property, every source gets a rule for it, output in reverse order: several media queries can match at once, and CSS applies the last matching rule while `<picture>` uses the first matching `<source>`. When using `imagex-picture-json` for headless output, the same CSS string is available under the top-level `artDirectionStyles` key (an empty string if there are no rules) so the consuming frontend can inject it itself. With the global [`stack` option](#head-elements-via-template-stacks) set, the `<style>` element goes into the `<head>` instead.
 
 ### Content Security Policy (CSP)
 Imagex can output inline CSS in two places: the `<style>` element with [art-directed `<img>` styles](#art-directed-img-styles), and the `<img>`'s `style` attribute for [`focus`](#focus-point-support). A strict CSP (`style-src` without `'unsafe-inline'`) blocks both.
@@ -347,9 +399,69 @@ Pass the nonce your CSP header uses via the `nonce` option:
 
 The `<style>` element gets the `nonce` attribute, and since nonces only apply to `<style>` elements (not `style` attributes), the `focus` styles move into it as an `#id` rule. Its specificity still beats class-based CSS. Style attributes you pass yourself via `attributes` stay inline — use classes instead when your CSP is strict. In the `imagex-picture-json` snippet, the nonce only moves the focus styles into `artDirectionStyles`; your frontend adds its own nonce when injecting them.
 
+### Files Kirby Can't Resize and Animated GIFs
+**SVGs and other files Kirby can't resize** (`$file->isResizable()` is `false`) are rendered as a plain `<img>` with the original file as `src`: no `<source>` elements and no `srcset`, since every width and format would just be the original file again. `compareFormats` is skipped for them. `width` and `height` are still derived from the srcset preset and `ratio` as usual, so the `<img>` keeps reserving space (for `ratio: 'intrinsic'`, the SVG needs `width`/`height` attributes or a `viewBox`). The `<picture>` wrapper stays, so your `attributes.picture` keep working.
+
+Art-directed sources need a resizable image. An `artDirection` entry whose image can't be resized — or which falls back to a main image that can't — throws an error. A non-resizable main image with resizable art-directed images works: the art-directed `<source>` elements are rendered, the SVG is the default.
+
+**Animated GIFs** lose their animation in most modern formats: Kirby converts them to a still AVIF of the first frame, and only the `im` thumb driver is documented to keep all frames when converting to WebP. Use the `formats` snippet option to choose per image:
+
+```php
+<?php snippet('imagex-picture', [
+  'image' => $image,
+  // WebP only (needs the `im` driver to stay animated), or [] to keep the GIF
+  'formats' => $image->extension() === 'gif' ? ['webp'] : null,
+]) ?>
+```
+
+### Head Elements via Template Stacks
+Kirby 6 [template stacks](https://getkirby.com/releases/6) let snippets add content to another place of the page, like the `<head>` — even if it was rendered before. Imagex uses this for its `<style>` elements and [preload links](#preload-links). Output a stack in your `<head>` and tell Imagex its name:
+
+```php
+// site/config/config.php
+return [
+  'timnarr.imagex' => [
+    'stack' => 'imagex-head',
+  ],
+];
+```
+
+```php
+// site/snippets/header.php
+<head>
+  <!-- … -->
+  <?php stack('imagex-head') ?>
+</head>
+```
+
+Every `imagex-picture` snippet on the page now pushes its head elements into that stack, which keeps the `<body>` free of `<style>` elements. Identical preload links (e.g. the same image rendered twice) are only added once.
+
+Any stack name works. A dedicated one like `imagex-head` makes clear where the output comes from and lets you place it independently, e.g. preload links before your stylesheets, while a general `head` stack you use for other things stays separate. You can also reuse an existing stack.
+
+⚠️ Only set `stack` if the stack is actually output on every page that renders Imagex snippets — otherwise the art-direction styles are lost. Without `stack`, styles are rendered next to the `<picture>` as before.
+
 ## File Methods
 
 Imagex registers additional methods on Kirby's `File` object.
+
+### `imagex(array $options = [])`
+
+Creates an `Imagex` instance for the file, with the same [options](#snippet-options) as the snippets (without `image`). Echo it to render the `<picture>`, or use `toArray()` for the [JSON data](#json-output):
+
+```php
+<?= $image->imagex([
+  'ratio' => '16/9',
+  'loading' => 'eager',
+  'attributes' => ['img' => ['alt' => $image->alt()]],
+]) ?>
+```
+
+```php
+// e.g. in a Kirby route
+return ['hero' => $page->cover()->toFile()->imagex(['ratio' => '16/9'])->toArray()];
+```
+
+Unlike the snippets, it only gets the options you pass: unknown options like `ration` throw an error, and controller variables are never picked up. Echoing renders the `imagex-picture` snippet, including your own override in `site/snippets`. `json_encode()` returns the same JSON as the `imagex-picture-json` snippet.
 
 ### `thumbRatio(string $ratio, array $options = [])`
 
@@ -358,7 +470,7 @@ Generates a thumb whose dimensions are derived from an aspect ratio string inste
 | Parameter | Type | Description |
 | --------- | ---- | ----------- |
 | `$ratio` | String | Aspect ratio in `'x/y'` format (e.g. `'16/9'`), or `'intrinsic'` to use the image's natural ratio. |
-| `$options` | Array | Standard Kirby thumb options (`width`, `quality`, `format`, …). `crop` defaults to `true`. |
+| `$options` | Array | Standard Kirby thumb options (`width`, `quality`, `format`, …). `crop` defaults to `true` and is never `false`, so the ratio is always kept. A position like `'top left'` works too. |
 
 **Returns** the thumb `File` object, so you can chain `->url()`, `->width()`, etc.
 
@@ -393,10 +505,18 @@ These are the parts of Imagex covered by semantic versioning. Breaking changes t
 - The `imagex-picture` and `imagex-picture-json` snippets and their [options](#snippet-options)
 - The JSON structure returned by `imagex-picture-json` (see the [JSON output example](/docs/examples/json-output.md))
 - The [global plugin options](#global-options)
-- The [`thumbRatio()` file method](#thumbratiostring-ratio-array-options--)
-- The `TimNarr\Imagex` class: its constructor (same options as the snippets) and `getPictureAttributes()`, `getPictureSources()`, `getImgAttributes()`, `getArtDirectionStyles()` and `getNonce()`
+- The [`imagex()`](#imagexarray-options--) and [`thumbRatio()`](#thumbratiostring-ratio-array-options--) file methods
+- The `TimNarr\Imagex` class: its constructor (same options as the snippets), `getPictureAttributes()`, `getPictureSources()`, `getImgAttributes()`, `getArtDirectionStyles()`, `getNonce()`, `getPreloadLinks()`, `getStack()` and `toArray()`, as well as rendering it as a string (`echo`) and `json_encode()`
 
-Everything else is internal and may change in any release. That includes the helper functions in the `TimNarr` namespace (e.g. `getAspectRatio()`, `mergeHTMLAttributes()`) and `Imagex::getSmallestFormatForImage()`. They are marked `@internal`.
+The attribute getters return arrays ready for Kirby's `attr()`, keyed by attribute name. `getPictureSources()` and `getPreloadLinks()` return a list of them, one per `<source>`/`<link>`, in output order. Within an attribute array:
+
+- `null` and `false` mean the attribute is left out. `attr()` skips them; filter them out if you render the attributes yourself.
+- `true` is a boolean attribute.
+- `class` and `style` are lists of strings (`style` declarations end with `;`), joined with spaces by `attr()`.
+- `width` and `height` are integers.
+- Other values are strings, or what you passed via `attributes`.
+
+Everything else is internal and may change in any release. That includes the helper functions in the `TimNarr\Imagex` namespace (e.g. `getAspectRatio()`, `mergeHTMLAttributes()`) and `Imagex::fromSnippetData()`. They are marked `@internal`.
 
 ## Cache
 When `compareFormats` is enabled, the result of the weighted format size comparison is cached per image. The cache key includes the image ID, its last-modified timestamp, the ratio, the srcset preset, and the active formats — so a new entry is used automatically whenever the image is replaced or updated.
@@ -406,7 +526,7 @@ Cache entries don't expire. Stale entries (e.g. for replaced or deleted images) 
 Srcset heights (derived from width and ratio) are plain arithmetic and are only memoized per `Imagex` instance, not cached persistently.
 
 ## Performance Improvements for Critical Images
-Imagex provides features like Priority Hints for improving the loading times of critical images.
+Imagex provides features like Priority Hints and preload links for improving the loading times of critical images.
 
 ### Automatic Width & Height (CLS Prevention)
 Imagex automatically sets `width` and `height` attributes on every `<img>` and `<source>` element. The values are derived from the srcset preset and the `ratio` you pass to the snippet — no manual configuration needed. This lets the browser reserve the correct amount of space before the image loads, preventing [Cumulative Layout Shift (CLS)](https://web.dev/articles/cls).
@@ -417,11 +537,47 @@ Imagex sets `decoding="async"` on every `<img>` by default. This allows the brow
 ### Priority Hints
 Imagex will set the priority hint `fetchpriority="high"` to critical images to get the browser to load it sooner. Imagex sets this automatically when you use `'loading' => 'eager'`. You can override this behavior via `attributes.img`. Read more about [fetchpriority here](https://web.dev/articles/fetch-priority#the_fetchpriority_attribute).
 
+### Preload Links
+An image is only fetched once the browser's preload scanner reaches its `<picture>`. For your LCP image (e.g. a hero), a preload link in the `<head>` starts the download earlier. Set up a [template stack](#head-elements-via-template-stacks) and enable `preload` for that image:
+
+```php
+<?php snippet('imagex-picture', [
+  'image' => $image->toFile(),
+  'ratio' => '16/9',
+  'loading' => 'eager',
+  'preload' => true,
+  'attributes' => [
+    'sources' => ['sizes' => '100vw'],
+  ],
+  'artDirection' => [
+    ['media' => '(width >= 800px)', 'ratio' => '21/9'],
+  ],
+]) ?>
+```
+
+```html
+<head>
+  <!-- … -->
+  <link as="image" fetchpriority="high" imagesizes="100vw" imagesrcset="/media/…/image-400x171-crop.avif 400w, …" media="(width >= 800px)" rel="preload" type="image/avif">
+  <link as="image" fetchpriority="high" imagesizes="100vw" imagesrcset="/media/…/image-400x225-crop.avif 400w, …" media="(width < 800px)" rel="preload" type="image/avif">
+</head>
+```
+
+How Imagex builds the links:
+
+- **One format per source.** `<picture>` uses the first `<source>` with a supported format, but a browser fetches *every* preload link whose `type` it supports. So Imagex only preloads the format a browser supporting your most modern format would use — with `compareFormats`, the smallest one. Browsers without support for it simply skip the link.
+- **Mutually exclusive media.** `<picture>` uses the first matching `<source>`, but every preload link with a matching `media` is fetched. Imagex therefore extends each art-directed source's `media` so it excludes all earlier ones, and the default source only matches when no art-directed source does. Earlier conditions are negated in [range syntax](https://www.w3.org/TR/mediaqueries-4/#mq-range-context) where possible (`(width >= 800px)` or `(min-width: 800px)` → `(width < 800px)`), otherwise with `not (…)`. This requires media *conditions* like `(width >= 800px)` — media types (`screen and …`) and comma-separated lists throw an error when `preload` is enabled.
+- **`imagesizes` is the `<source>`'s `sizes`.** A `<source>` doesn't inherit the `<img>`'s `sizes`, so set `sizes` via `attributes.sources` (or per `artDirection` entry). Otherwise both the `<picture>` and the preload link fall back to `100vw`.
+- **No `href`.** Browsers without `imagesrcset` support skip the link instead of fetching an image that might not be used. Only images without any `srcset` get an `href`: files Kirby can't resize (e.g. SVGs), or no formats combined with `srcsetInImg: false`.
+- `fetchpriority="high"` is set on every link.
+
+Preload only what's visible above the fold, usually a single image: preloads compete with other critical resources like CSS and fonts. In the `imagex-picture-json` snippet, the links are available under the top-level `preloadLinks` key (an empty list when `preload` is off). See the [preload links example](/docs/examples/preload-links.md).
+
 ## Why Order Matters?
 ### Format Order and Media Attribute
 The order of `<source>` elements in a `<picture>` element is essential, as browsers select the first matching source based on supported formats and media conditions. Modern formats like AVIF should be listed first, falling back to formats like WebP or JPEG. Imagex will follow the order of the formats defined in the config and you should go from the most to less modern format: `'formats' => ['avif', 'webp']`.
 
-The `media` attribute is also important for responsive designs or art-directed images. With the media attribute you can specify the conditions under which each source should be used. This is important if you want to switch the ratio or the complete image at a specific media condition. You have to take care about the ordering of your `sources` array in the plugin options that you pass to the Imagex snippet. Imagex will create for each format all defined sources.
+The `media` attribute is also important for responsive designs or art-directed images. With the media attribute you can specify the conditions under which each source should be used. This is important if you want to switch the ratio or the complete image at a specific media condition. You have to take care about the ordering of your `artDirection` entries. Imagex outputs the `<source>` elements grouped by source: every art-directed entry in all its formats (in `artDirection` order), then the main image in all its formats. That way, an art-directed entry always wins over the default at its media condition, even if `compareFormats` picked different formats for the two images.
 
 ## Dynamic Format Size Handling
 In some cases AVIF files can be larger than WebP and you end up sending larger files and more HTML to the user. If `compareFormats` is set to true, this option enables a dynamic size comparison between the specified image formats. The comparison is based on the order of the formats listed in the format array of your configuration. With the default `formats` array, this option checks whether AVIF is smaller than WebP and only outputs or creates files for AVIF if it's smaller. So again the order of your formats array matters for this feature.
@@ -439,7 +595,7 @@ Imagex uses a **weighted multi-sample approach** to determine the smallest forma
 
    ⚠️ **At least three srcset entries are recommended** for meaningful weighting. With only two entries, the middle and last sample are identical, so the `medium` and `large` weights effectively collapse into one. With a single entry all three samples are the same and weighting has no effect at all.
 
-2. **Configurable Weighting**: The samples are weighted to reflect your audience's typical screen sizes. Configure this globally via `compareFormatsWeights` in your `config.php`. Available presets:
+2. **Configurable Weighting**: The samples are weighted to reflect your audience's typical screen sizes. Configure this globally via `compareFormatsWeights` in your `config.php`, or per image with the snippet option of the same name. Available presets:
    - `'mobile'` (default) — 50% smallest, 30% middle, 20% largest
    - `'desktop'` — 20% smallest, 30% middle, 50% largest
    - `'balanced'` — roughly equal weight across all three
@@ -451,7 +607,7 @@ Imagex uses a **weighted multi-sample approach** to determine the smallest forma
 
 ## Roadmap / Ideas
 - [x] Add tests for Imagex class
-- [ ] Use Preload Resource Hints?! See [feature-branch](https://github.com/timnarr/kirby-imagex/tree/feature/preload-links)
+- [x] Use Preload Resource Hints
 
 ## License
 [MIT License](./LICENSE) Copyright © 2024-present Tim Narr

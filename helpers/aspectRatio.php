@@ -2,7 +2,7 @@
 
 declare(strict_types = 1);
 
-namespace TimNarr;
+namespace TimNarr\Imagex;
 
 use Kirby\Cms\File;
 use Kirby\Exception\InvalidArgumentException;
@@ -19,9 +19,7 @@ use Kirby\Exception\InvalidArgumentException;
 function greatestCommonDivisor(int $a, int $b): int
 {
 	while ($b !== 0) {
-		$t = $b;
-		$b = $a % $b;
-		$a = $t;
+		[$a, $b] = [$b, $a % $b];
 	}
 
 	return $a;
@@ -52,7 +50,7 @@ function getAspectRatioFromImage(int $width, int $height): array
 }
 
 /**
- * Get the aspect ratio from a string format "x/y".
+ * Get the aspect ratio from a string format "x/y" (spaces around the slash are allowed, e.g. "16 / 9").
  *
  * @param string $ratioString The aspect ratio in string format.
  * @return array Associative array with 'x' and 'y' keys for the aspect ratio.
@@ -62,13 +60,13 @@ function getAspectRatioFromImage(int $width, int $height): array
  */
 function getAspectRatioFromRatioString(string $ratioString): array
 {
-	if (!preg_match('/^\d+\/\d+$/', $ratioString)) {
+	// Spaces around the slash are allowed, like in CSS `aspect-ratio: 16 / 9`
+	if (!preg_match('/^\s*(\d+)\s*\/\s*(\d+)\s*$/', $ratioString, $matches)) {
 		throw new InvalidArgumentException("[kirby-imagex] Invalid ratio format '{$ratioString}'. Expected format \"x/y\" (e.g. \"16/9\") or \"intrinsic\".");
 	}
 
-	$ratioArray = explode('/', $ratioString);
-	$ratioX = (int)$ratioArray[0];
-	$ratioY = (int)$ratioArray[1];
+	$ratioX = (int)$matches[1];
+	$ratioY = (int)$matches[2];
 
 	if ($ratioX === 0 || $ratioY === 0) {
 		throw new InvalidArgumentException("[kirby-imagex] Invalid ratio '{$ratioString}'. \"x\" and \"y\" must be greater than 0.");

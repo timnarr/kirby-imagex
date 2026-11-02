@@ -20,13 +20,16 @@
 		}
 	],
 	"require": {
-		"php": "~8.2.0 || ~8.3.0 || ~8.4.0 || ~8.5.0",
+		"php": "~8.3.0 || ~8.4.0 || ~8.5.0",
 		"getkirby/composer-installer": "^1"
+	},
+	"conflict": {
+		"getkirby/cms": "<6.0"
 	},
 	"require-dev": {
 		"friendsofphp/php-cs-fixer": "^3",
 		"phpunit/phpunit": "^13",
-		"getkirby/cms": "^5"
+		"getkirby/cms": "^6.0@beta"
 	},
 	"autoload": {
 		"psr-4": {
@@ -36,6 +39,7 @@
 			"helpers/aspectRatio.php",
 			"helpers/attributes.php",
 			"helpers/misc.php",
+			"helpers/preload.php",
 			"helpers/srcset.php"
 		]
 	},
@@ -53,7 +57,7 @@
 	"extra": {
 		"kirby-cms-path": false,
 		"kirby": {
-			"compatible": "^5.0"
+			"compatible": "^6.0"
 		}
 	}
 }

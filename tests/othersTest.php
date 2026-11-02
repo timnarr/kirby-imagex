@@ -2,7 +2,7 @@
 
 declare(strict_types = 1);
 
-namespace TimNarr;
+namespace TimNarr\Imagex;
 
 use Kirby\Cms\File;
 use Kirby\Cms\Page;
@@ -43,17 +43,17 @@ class OthersTest extends TestCase
 		$this->assertEquals('https://external.com/image.jpg', urlHandler('https://external.com/image.jpg', true, 'http://example.com'));
 	}
 
-	public function testFindSmallestValueAndKey()
+	public function testFindKeyOfSmallestValue()
 	{
 		$array = ['large' => 3, 'small' => 1, 'medium' => 2];
 		$expected = 'small';
-		$this->assertEquals($expected, findSmallestValueAndKey($array));
+		$this->assertEquals($expected, findKeyOfSmallestValue($array));
 	}
 
-	public function testFindSmallestValueAndKeyEmptyArray()
+	public function testFindKeyOfSmallestValueEmptyArray()
 	{
 		$this->expectExceptionMessage('[kirby-imagex] Input array cannot be empty.');
-		findSmallestValueAndKey([]);
+		findKeyOfSmallestValue([]);
 	}
 
 	public function testGetSampleElementsWithThreeElements()
@@ -272,24 +272,33 @@ class OthersTest extends TestCase
 		$this->assertEquals($expected, transformForJson($data));
 	}
 
-	public function testTransformForJsonRemovesNullAndEmpty()
+	public function testTransformForJsonLeavesOutAttributesLikeHtml()
 	{
-		// Test that null values and empty strings are removed
+		// Like Kirby's attr(): null, false and an empty class/style leave the attribute out, '' is kept (alt="")
 		$data = [
 			'valid' => 'value',
 			'null' => null,
-			'empty' => '',
-			'zero' => 0,
 			'false' => false,
+			'class' => [],
+			'style' => [],
+			'alt' => '',
+			'zero' => 0,
+			'hidden' => true,
 		];
 
 		$expected = [
 			'valid' => 'value',
+			'alt' => '',
 			'zero' => 0,
-			'false' => false,
+			'hidden' => true,
 		];
 
-		$this->assertEquals($expected, transformForJson($data));
+		$this->assertSame($expected, transformForJson($data));
+	}
+
+	public function testTransformForJsonKeepsEmptyLists()
+	{
+		$this->assertSame(['sources' => []], transformForJson(['sources' => []]));
 	}
 
 	public function testResolveFocusValueWithFocusSet()

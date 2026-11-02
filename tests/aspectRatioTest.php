@@ -2,7 +2,7 @@
 
 declare(strict_types = 1);
 
-namespace TimNarr;
+namespace TimNarr\Imagex;
 
 use Kirby\Cms\File;
 use Kirby\Cms\Page;
@@ -25,6 +25,12 @@ class AspectRatioTest extends TestCase
 	public function testGetAspectRatioFromRatioString()
 	{
 		$this->assertEquals(['x' => 16, 'y' => 9], getAspectRatioFromRatioString('16/9'));
+	}
+
+	public function testGetAspectRatioFromRatioStringAllowsSpacesLikeCss()
+	{
+		$this->assertEquals(['x' => 16, 'y' => 9], getAspectRatioFromRatioString('16 / 9'));
+		$this->assertEquals(['x' => 21, 'y' => 9], getAspectRatioFromRatioString(' 21/ 9 '));
 	}
 
 	public function testInvalidGetAspectRatioFromRatioStringColon()
