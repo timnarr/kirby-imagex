@@ -145,7 +145,7 @@ class ImagexPreloadTest extends ImagexTestCase
 
 	public function testPreloadLinkUsesHrefWithoutImgSrcset()
 	{
-		$this->app(['timnarr.imagex' => ['formats' => [], 'noSrcsetInImg' => true]]);
+		$this->app(['timnarr.imagex' => ['formats' => [], 'srcsetInImg' => false]]);
 		$links = $this->imagex(['loading' => 'eager', 'preload' => true])->getPreloadLinks();
 
 		$this->assertNull($links[0]['imagesrcset']);

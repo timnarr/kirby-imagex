@@ -13,7 +13,7 @@ Let's have a look how to configure Imagex to work with JS lazy loading libraries
 return [
   'timnarr.imagex' => [
     'formats' => ['avif', 'webp'],
-    'customLazyloading' => true,
+    'customLazyLoading' => true,
   ],
 ];
 ```

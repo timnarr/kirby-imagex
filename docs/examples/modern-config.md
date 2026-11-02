@@ -1,7 +1,7 @@
 # Examples: Modern Configuration
 
 1. [Modern Config](#example-1-modern-config)
-2. [Modern Config plus `noSrcsetInImg`](#example-2-modern-config-plus-nosrcsetinimg)
+2. [Modern Config without `srcsetInImg`](#example-2-modern-config-without-srcsetinimg)
 3. [Modern Config plus `compareFormats`](#example-3-modern-config-plus-compareformats)
 4. [Modern Config plus `relativeUrls`](#example-4-modern-config-plus-relativeurls)
 5. [`compareFormats` with Art Direction](#example-5-compareformats-with-art-direction)
@@ -14,7 +14,7 @@
 return [
   'timnarr.imagex' => [
     'formats' => ['avif', 'webp'], // our modern formats
-    'noSrcsetInImg' => false, // skip srcset in <img> with initial img-format -> less HTML
+    'srcsetInImg' => true, // false: skip srcset in <img> with initial img-format -> less HTML
     'relativeUrls' => false, // relative URLs -> less HTML
   ],
 ];
@@ -74,8 +74,8 @@ return [
 </picture>
 ```
 
-## Example 2. Modern Config plus `noSrcsetInImg`
-`webp` is pretty [well supported](https://caniuse.com/?search=webp) and if you don't need to support older browsers or be just fine with a minimal `jpeg` fallback you can activate `noSrcsetInImg` to skip the `srcset` attribute in `<img>` and output less HTML. This can save you some KB - imagine you have 8 or more widths in your srcset preset and like 10 images on a page which are using this preset. This can sum up to some KB. This will get you just a really small performance benefit, especially with gzip compression active you will not notice it this much, but you know... more such adjustments and saving some KB here and there will do it.
+## Example 2. Modern Config without `srcsetInImg`
+`webp` is pretty [well supported](https://caniuse.com/?search=webp) and if you don't need to support older browsers or be just fine with a minimal `jpeg` fallback you can set `srcsetInImg` to `false` to skip the `srcset` attribute in `<img>` and output less HTML. This can save you some KB - imagine you have 8 or more widths in your srcset preset and like 10 images on a page which are using this preset. This can sum up to some KB. This will get you just a really small performance benefit, especially with gzip compression active you will not notice it this much, but you know... more such adjustments and saving some KB here and there will do it.
 
 
 ### Global Plugin Config
@@ -84,7 +84,7 @@ return [
 return [
   'timnarr.imagex' => [
     'formats' => ['avif', 'webp'], // our modern formats
-    'noSrcsetInImg' => true, // skip srcset in <img> -> less HTML
+    'srcsetInImg' => false, // skip srcset in <img> -> less HTML
     'relativeUrls' => false,
   ],
 ];
@@ -133,7 +133,7 @@ return [
 return [
   'timnarr.imagex' => [
     'formats' => ['avif', 'webp'], // our modern formats
-    'noSrcsetInImg' => true, // skip srcset in <img> -> less HTML
+    'srcsetInImg' => false, // skip srcset in <img> -> less HTML
     'relativeUrls' => false,
   ],
 ];
@@ -168,7 +168,7 @@ You can active `relativeUrls` to use relative URLs. Some people are in favor of 
 return [
   'timnarr.imagex' => [
     'formats' => ['avif', 'webp'], // our modern formats
-    'noSrcsetInImg' => true, // skip srcset in <img> -> less HTML
+    'srcsetInImg' => false, // skip srcset in <img> -> less HTML
     'relativeUrls' => true, // relative URLs -> less HTML
   ],
 ];
@@ -215,7 +215,7 @@ When using `compareFormats` together with art-directed images that have differen
 return [
   'timnarr.imagex' => [
     'formats' => ['avif', 'webp'],
-    'noSrcsetInImg' => true,
+    'srcsetInImg' => false,
     'relativeUrls' => true,
   ],
 ];
@@ -286,7 +286,7 @@ return [
   'timnarr.imagex' => [
     'formats' => ['avif', 'webp'],
     'compareFormatsWeights' => 'desktop', // prioritises larger widths
-    'noSrcsetInImg' => true,
+    'srcsetInImg' => false,
   ],
 ];
 ```
@@ -299,7 +299,7 @@ return [
   'timnarr.imagex' => [
     'formats' => ['avif', 'webp'],
     'compareFormatsWeights' => 'balanced',
-    'noSrcsetInImg' => true,
+    'srcsetInImg' => false,
   ],
 ];
 ```
@@ -312,7 +312,7 @@ return [
   'timnarr.imagex' => [
     'formats' => ['avif', 'webp'],
     'compareFormatsWeights' => ['small' => 0.6, 'medium' => 0.3, 'large' => 0.1],
-    'noSrcsetInImg' => true,
+    'srcsetInImg' => false,
   ],
 ];
 ```

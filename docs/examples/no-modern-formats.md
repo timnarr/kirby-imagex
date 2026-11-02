@@ -11,7 +11,7 @@ return [
   'timnarr.imagex' => [
     'formats' => [],
     'addOriginalFormatAsSource' => true,
-    'noSrcsetInImg' => true,
+    'srcsetInImg' => false,
   ],
 ];
 ```

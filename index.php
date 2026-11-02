@@ -8,10 +8,10 @@ Kirby::plugin('timnarr/imagex', [
 	'options' => [
 		'cache' => true,
 		'compareFormatsWeights' => 'mobile',
-		'customLazyloading' => false,
+		'customLazyLoading' => false,
 		'formats' => ['avif', 'webp'],
 		'addOriginalFormatAsSource' => false,
-		'noSrcsetInImg' => false,
+		'srcsetInImg' => true,
 		'relativeUrls' => false,
 		'stack' => null,
 	],

@@ -6,6 +6,7 @@ namespace TimNarr;
 
 use JsonSerializable;
 use Kirby\Cms\File;
+use Kirby\Cms\Helpers;
 use Kirby\Exception\InvalidArgumentException;
 use Kirby\Filesystem\F;
 use Kirby\Toolkit\A;
@@ -22,7 +23,7 @@ use Kirby\Toolkit\Str;
 class Imagex implements JsonSerializable
 {
 	protected string $loading;
-	protected bool $customLazyloading;
+	protected bool $customLazyLoading;
 	protected array $formats;
 	protected File $image;
 	/** Whether Kirby can resize/convert the main image (false e.g. for SVGs). */
@@ -42,7 +43,7 @@ class Imagex implements JsonSerializable
 	protected bool $compareFormats;
 	protected array $compareFormatsWeights;
 	protected bool $addOriginalFormatAsSource;
-	protected bool $noSrcsetInImg;
+	protected bool $srcsetInImg;
 	protected bool $relativeUrls;
 	protected $kirby;
 
@@ -66,18 +67,29 @@ class Imagex implements JsonSerializable
 
 	/** Accepted constructor options and their defaults. `image` has none — it's required. */
 	private const DEFAULT_OPTIONS = [
+		// null: use the global 'timnarr.imagex.*' option of the same name (see resolveGlobalOption())
+		'addOriginalFormatAsSource' => null,
 		'artDirection' => [],
 		'attributes' => [],
 		'compareFormats' => false,
+		'compareFormatsWeights' => null,
+		'customLazyLoading' => null,
 		'focus' => false,
-		// null: use the global 'timnarr.imagex.formats' option
 		'formats' => null,
 		'image' => null,
 		'loading' => 'lazy',
 		'nonce' => null,
 		'preload' => false,
 		'ratio' => 'intrinsic',
+		'relativeUrls' => null,
 		'srcset' => 'default',
+		'srcsetInImg' => null,
+	];
+
+	/** Renamed global options, keyed by their new name: [old name, whether its value is the opposite]. */
+	private const RENAMED_GLOBAL_OPTIONS = [
+		'customLazyLoading' => ['customLazyloading', false],
+		'srcsetInImg' => ['noSrcsetInImg', true],
 	];
 
 	/** Accepted keys of the `attributes` option. */
@@ -122,16 +134,14 @@ class Imagex implements JsonSerializable
 			exclusiveMediaConditions(array_column($this->artDirection, 'media'));
 		}
 
-		// Plugin options from config.php
+		// Options with a global default in config.php
 		$this->kirby = kirby();
-		$this->customLazyloading = $this->getBoolOption('customLazyloading');
-		$this->compareFormatsWeights = resolveCompareFormatsWeights($this->kirby->option('timnarr.imagex.compareFormatsWeights'));
-		$this->addOriginalFormatAsSource = $this->getBoolOption('addOriginalFormatAsSource');
-		$this->noSrcsetInImg = $this->getBoolOption('noSrcsetInImg');
-		$this->relativeUrls = $this->getBoolOption('relativeUrls');
-		$this->formats = $options['formats'] !== null
-			? $this->resolveFormats($options['formats'], "Option 'formats'")
-			: $this->resolveFormats($this->kirby->option('timnarr.imagex.formats'), "Option 'timnarr.imagex.formats'");
+		$this->customLazyLoading = $this->getBoolOption($options, 'customLazyLoading');
+		$this->compareFormatsWeights = resolveCompareFormatsWeights(...$this->resolveGlobalOption($options, 'compareFormatsWeights'));
+		$this->addOriginalFormatAsSource = $this->getBoolOption($options, 'addOriginalFormatAsSource');
+		$this->srcsetInImg = $this->getBoolOption($options, 'srcsetInImg');
+		$this->relativeUrls = $this->getBoolOption($options, 'relativeUrls');
+		$this->formats = $this->resolveFormats(...$this->resolveGlobalOption($options, 'formats'));
 		$this->stack = $this->resolveStack($this->kirby->option('timnarr.imagex.stack'));
 
 		if ($this->compareFormats && count($this->formats) <= 1) {
@@ -240,18 +250,51 @@ class Imagex implements JsonSerializable
 	}
 
 	/**
-	 * Reads a boolean plugin option, throwing a descriptive error for other types.
+	 * Resolves an option with a global default: the instance option if set, otherwise the
+	 * global 'timnarr.imagex.*' option. A renamed global option set under its old
+	 * name still works, with a deprecation warning in debug mode.
 	 *
+	 * @param array $options The resolved constructor options.
+	 * @param string $name Option name without the 'timnarr.imagex.' prefix.
+	 * @return array{0: mixed, 1: string} The value, and the option's name for error messages.
+	 * @throws InvalidArgumentException If a renamed option is set under its old name with a non-boolean value.
+	 */
+	private function resolveGlobalOption(array $options, string $name): array
+	{
+		if ($options[$name] !== null) {
+			return [$options[$name], "Option '{$name}'"];
+		}
+
+		[$oldName, $isOpposite] = self::RENAMED_GLOBAL_OPTIONS[$name] ?? [null, false];
+		$oldValue = $oldName !== null ? $this->kirby->option("timnarr.imagex.{$oldName}") : null;
+
+		if ($oldValue === null) {
+			return [$this->kirby->option("timnarr.imagex.{$name}"), "Option 'timnarr.imagex.{$name}'"];
+		}
+
+		Helpers::deprecated("[kirby-imagex] The option 'timnarr.imagex.{$oldName}' is deprecated. Use 'timnarr.imagex.{$name}'" . ($isOpposite ? ' with the opposite value' : '') . ' instead.');
+
+		if (!is_bool($oldValue)) {
+			throw new InvalidArgumentException("[kirby-imagex] Option 'timnarr.imagex.{$oldName}' must be a boolean. Got: " . get_debug_type($oldValue));
+		}
+
+		return [$isOpposite ? !$oldValue : $oldValue, "Option 'timnarr.imagex.{$oldName}'"];
+	}
+
+	/**
+	 * Resolves a boolean option with a global default, throwing a descriptive error for other types.
+	 *
+	 * @param array $options The resolved constructor options.
 	 * @param string $name Option name without the 'timnarr.imagex.' prefix.
 	 * @return bool The option value.
 	 * @throws InvalidArgumentException If the option is not a boolean.
 	 */
-	private function getBoolOption(string $name): bool
+	private function getBoolOption(array $options, string $name): bool
 	{
-		$value = $this->kirby->option('timnarr.imagex.' . $name);
+		[$value, $label] = $this->resolveGlobalOption($options, $name);
 
 		if (!is_bool($value)) {
-			throw new InvalidArgumentException("[kirby-imagex] Option 'timnarr.imagex.{$name}' must be a boolean. Got: " . get_debug_type($value));
+			throw new InvalidArgumentException("[kirby-imagex] {$label} must be a boolean. Got: " . get_debug_type($value));
 		}
 
 		return $value;
@@ -565,7 +608,7 @@ class Imagex implements JsonSerializable
 		['width' => $width, 'height' => $height] = $smallestEntry;
 		// Kirby returns the original for files it can't resize, so a srcset would only repeat it
 		$src = $this->image->thumb($smallestEntry)->url();
-		$srcset = $this->noSrcsetInImg || !$this->resizable ? null : $this->image->srcset($srcsetPreset);
+		$srcset = !$this->srcsetInImg || !$this->resizable ? null : $this->image->srcset($srcsetPreset);
 
 		// An id is only needed (and generated) when there are actual art-direction
 		// style overrides to scope to this <img> — see getArtDirectionStyles().
@@ -587,12 +630,12 @@ class Imagex implements JsonSerializable
 				'srcset' => $srcset,
 			],
 			'lazy' => [
-				'loading' => $this->customLazyloading ? null : 'lazy',
-				'data-src' => $this->customLazyloading ? $src : null,
+				'loading' => $this->customLazyLoading ? null : 'lazy',
+				'data-src' => $this->customLazyLoading ? $src : null,
 				// custom lazy loading libraries swap data-src into src; a placeholder can be set via attributes
-				'src' => $this->customLazyloading ? null : $src,
-				'data-srcset' => $this->customLazyloading ? $srcset : null,
-				'srcset' => $this->customLazyloading ? null : $srcset,
+				'src' => $this->customLazyLoading ? null : $src,
+				'data-srcset' => $this->customLazyLoading ? $srcset : null,
+				'srcset' => $this->customLazyLoading ? null : $srcset,
 			],
 		];
 
@@ -858,8 +901,8 @@ class Imagex implements JsonSerializable
 				...($this->sourcesAttributes['eager'] ?? []),
 			],
 			'lazy' => [
-				'srcset' => $this->customLazyloading ? null : $srcsetValue,
-				'data-srcset' => $this->customLazyloading ? $srcsetValue : null,
+				'srcset' => $this->customLazyLoading ? null : $srcsetValue,
+				'data-srcset' => $this->customLazyLoading ? $srcsetValue : null,
 				...($this->sourcesAttributes['lazy'] ?? []),
 			],
 		];

@@ -9,6 +9,7 @@ use Kirby\Cms\File;
 use Kirby\Content\Field;
 use Kirby\Exception\InvalidArgumentException;
 use Kirby\Toolkit\A;
+use PHPUnit\Framework\Attributes\IgnoreDeprecations;
 
 class ImagexTest extends ImagexTestCase
 {
@@ -72,7 +73,7 @@ class ImagexTest extends ImagexTestCase
 
 	public function testEagerImgKeepsSrcWithCustomLazyloading()
 	{
-		$this->app(['timnarr.imagex.customLazyloading' => true]);
+		$this->app(['timnarr.imagex.customLazyLoading' => true]);
 		$attributes = $this->imagex(['loading' => 'eager'])->getImgAttributes();
 
 		$this->assertStringContainsString('image-400x225', $attributes['src']);
@@ -80,11 +81,11 @@ class ImagexTest extends ImagexTestCase
 		$this->assertNull($attributes['data-src'] ?? null);
 	}
 
-	public function testEagerImgKeepsSrcWithCustomLazyloadingAndNoSrcsetInImg()
+	public function testEagerImgKeepsSrcWithCustomLazyLoadingWithoutSrcsetInImg()
 	{
 		$this->app([
-			'timnarr.imagex.customLazyloading' => true,
-			'timnarr.imagex.noSrcsetInImg' => true,
+			'timnarr.imagex.customLazyLoading' => true,
+			'timnarr.imagex.srcsetInImg' => false,
 		]);
 		$attributes = $this->imagex(['loading' => 'eager'])->getImgAttributes();
 
@@ -94,7 +95,7 @@ class ImagexTest extends ImagexTestCase
 
 	public function testLazyImgMovesSrcToDataSrcWithCustomLazyloading()
 	{
-		$this->app(['timnarr.imagex.customLazyloading' => true]);
+		$this->app(['timnarr.imagex.customLazyLoading' => true]);
 		$attributes = $this->imagex()->getImgAttributes();
 
 		$this->assertNull($attributes['src']);
@@ -106,7 +107,7 @@ class ImagexTest extends ImagexTestCase
 
 	public function testUserSrcOverridesLazyDefaultWithCustomLazyloading()
 	{
-		$this->app(['timnarr.imagex.customLazyloading' => true]);
+		$this->app(['timnarr.imagex.customLazyLoading' => true]);
 		$attributes = $this->imagex([
 			'attributes' => ['img' => ['lazy' => ['src' => 'placeholder.svg']]],
 		])->getImgAttributes();
@@ -381,10 +382,10 @@ class ImagexTest extends ImagexTestCase
 
 	public function testNonBooleanPluginOptionThrows()
 	{
-		$this->app(['timnarr.imagex.customLazyloading' => 'yes']);
+		$this->app(['timnarr.imagex.customLazyLoading' => 'yes']);
 
 		$this->expectException(InvalidArgumentException::class);
-		$this->expectExceptionMessage("Option 'timnarr.imagex.customLazyloading' must be a boolean. Got: string");
+		$this->expectExceptionMessage("Option 'timnarr.imagex.customLazyLoading' must be a boolean. Got: string");
 
 		$this->imagex();
 	}
@@ -926,5 +927,94 @@ class ImagexTest extends ImagexTestCase
 		$sources = $this->imagex(['formats' => ['webp', 'originalformat']])->getPictureSources();
 
 		$this->assertSame(['image/webp', 'image/jpeg'], array_column($sources, 'type'));
+	}
+
+	public function testOriginalformatIsOnlyAddedOnceWithAddOriginalFormatAsSource()
+	{
+		$sources = $this->imagex(['formats' => ['originalformat', 'webp'], 'addOriginalFormatAsSource' => true])->getPictureSources();
+
+		$this->assertSame(['image/jpeg', 'image/webp'], array_column($sources, 'type'));
+	}
+
+	public function testCustomLazyLoadingOptionOverridesGlobalOption()
+	{
+		$this->assertArrayHasKey('data-src', array_filter($this->imagex(['customLazyLoading' => true])->getImgAttributes()));
+
+		$this->app(['timnarr.imagex.customLazyLoading' => true]);
+		$this->assertSame('lazy', $this->imagex(['customLazyLoading' => false])->getImgAttributes()['loading']);
+	}
+
+	public function testSrcsetInImgOptionOverridesGlobalOption()
+	{
+		$this->assertNull($this->imagex(['srcsetInImg' => false])->getImgAttributes()['srcset']);
+
+		$this->app(['timnarr.imagex.srcsetInImg' => false]);
+		$this->assertStringContainsString('800w', $this->imagex(['srcsetInImg' => true])->getImgAttributes()['srcset']);
+	}
+
+	public function testRelativeUrlsOptionOverridesGlobalOption()
+	{
+		$this->assertStringStartsWith('/media/', $this->imagex(['relativeUrls' => true])->getImgAttributes()['src']);
+	}
+
+	public function testAddOriginalFormatAsSourceOptionOverridesGlobalOption()
+	{
+		$sources = $this->imagex(['addOriginalFormatAsSource' => true])->getPictureSources();
+
+		$this->assertSame(['image/avif', 'image/webp', 'image/jpeg'], array_column($sources, 'type'));
+	}
+
+	public function testInvalidCompareFormatsWeightsOptionNamesTheSnippetOption()
+	{
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage("Option 'compareFormatsWeights' must be a preset name");
+
+		$this->imagex(['compareFormatsWeights' => 5]);
+	}
+
+	public function testNonBooleanSnippetOptionNamesTheSnippetOption()
+	{
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage("Option 'srcsetInImg' must be a boolean. Got: string");
+
+		$this->imagex(['srcsetInImg' => 'no']);
+	}
+
+	public function testPictureSnippetForwardsOverridableOptions()
+	{
+		$html = snippet('imagex-picture', ['image' => $this->image(), 'srcsetInImg' => false, 'relativeUrls' => true], return: true);
+
+		$this->assertMatchesRegularExpression('/<img [^>]*src="\/media\//', $html);
+		$this->assertDoesNotMatchRegularExpression('/<img [^>]*srcset=/', $html);
+	}
+
+	#[IgnoreDeprecations]
+	public function testDeprecatedNoSrcsetInImgOptionStillWorks()
+	{
+		$this->app(['debug' => true, 'timnarr.imagex.noSrcsetInImg' => true]);
+
+		$this->expectUserDeprecationMessage("[kirby-imagex] The option 'timnarr.imagex.noSrcsetInImg' is deprecated. Use 'timnarr.imagex.srcsetInImg' with the opposite value instead.");
+
+		$this->assertNull($this->imagex()->getImgAttributes()['srcset']);
+	}
+
+	#[IgnoreDeprecations]
+	public function testDeprecatedCustomLazyloadingOptionStillWorks()
+	{
+		$this->app(['debug' => true, 'timnarr.imagex.customLazyloading' => true]);
+
+		$this->expectUserDeprecationMessage("[kirby-imagex] The option 'timnarr.imagex.customLazyloading' is deprecated. Use 'timnarr.imagex.customLazyLoading' instead.");
+
+		$this->assertStringContainsString('image-400x225', $this->imagex()->getImgAttributes()['data-src']);
+	}
+
+	public function testNonBooleanDeprecatedOptionNamesTheDeprecatedOption()
+	{
+		$this->app(['timnarr.imagex.noSrcsetInImg' => 'yes']);
+
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage("Option 'timnarr.imagex.noSrcsetInImg' must be a boolean. Got: string");
+
+		$this->imagex();
 	}
 }

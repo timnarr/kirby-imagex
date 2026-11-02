@@ -18,10 +18,10 @@ These are all default values, so you don't need to set them explicitly and I've 
 return [
   'timnarr.imagex' => [
     'cache' => true,
-    'customLazyloading' => false,
+    'customLazyLoading' => false,
     'formats' => ['avif', 'webp'],
     'addOriginalFormatAsSource' => false,
-    'noSrcsetInImg' => false,
+    'srcsetInImg' => true,
     'relativeUrls' => false,
   ],
 ];

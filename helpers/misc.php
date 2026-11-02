@@ -149,12 +149,13 @@ function isFormatSkippable(string $format, array $formats, string $smallestForma
  * with 'small', 'medium', and 'large' keys that must sum to 1.0.
  *
  * @param mixed $weights Preset name or custom weights array, as configured.
+ * @param string $label The option's name for error messages.
  * @return array Resolved weights array with 'small', 'medium', 'large' keys.
  * @throws InvalidArgumentException If it's neither a string nor an array, the preset is unknown or the custom array is invalid.
  *
  * @internal Not part of the public API — may change in any release.
  */
-function resolveCompareFormatsWeights(mixed $weights): array
+function resolveCompareFormatsWeights(mixed $weights, string $label = "Option 'timnarr.imagex.compareFormatsWeights'"): array
 {
 	$presets = [
 		'mobile'   => ['small' => 0.5,  'medium' => 0.3,  'large' => 0.2],
@@ -172,7 +173,7 @@ function resolveCompareFormatsWeights(mixed $weights): array
 	}
 
 	if (!is_array($weights)) {
-		throw new InvalidArgumentException("[kirby-imagex] Option 'timnarr.imagex.compareFormatsWeights' must be a preset name ({$available}) or an array with 'small', 'medium' and 'large' weights. Got: " . get_debug_type($weights));
+		throw new InvalidArgumentException("[kirby-imagex] {$label} must be a preset name ({$available}) or an array with 'small', 'medium' and 'large' weights. Got: " . get_debug_type($weights));
 	}
 
 	foreach (['small', 'medium', 'large'] as $key) {

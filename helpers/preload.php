@@ -149,7 +149,7 @@ function exclusiveMediaConditions(array $mediaList): array
  *
  * Without a default <source> (no formats, or an image Kirby can't resize),
  * the default link uses the <img>'s srcset. There's no `href`, unless the <img>
- * has no srcset (`noSrcsetInImg`, or an image Kirby can't resize): browsers
+ * has no srcset (`srcsetInImg: false`, or an image Kirby can't resize): browsers
  * without `imagesrcset` support then skip the link instead of fetching a
  * possibly unused image.
  *

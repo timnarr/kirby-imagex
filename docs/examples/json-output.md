@@ -16,10 +16,10 @@ The `imagex-picture-json` snippet accepts the same options as `imagex-picture` b
 return [
   'timnarr.imagex' => [
     'cache' => true,
-    'customLazyloading' => false,
+    'customLazyLoading' => false,
     'formats' => ['avif', 'webp'],
     'addOriginalFormatAsSource' => false,
-    'noSrcsetInImg' => false,
+    'srcsetInImg' => true,
     'relativeUrls' => false,
   ],
 ];

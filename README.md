@@ -40,10 +40,10 @@ return [
   'timnarr.imagex' => [
     'cache' => true,
     'compareFormatsWeights' => 'mobile',
-    'customLazyloading' => false,
+    'customLazyLoading' => false,
     'formats' => ['avif', 'webp'],
     'addOriginalFormatAsSource' => false,
-    'noSrcsetInImg' => false,
+    'srcsetInImg' => true,
     'relativeUrls' => false,
     'stack' => null,
   ],
@@ -52,16 +52,20 @@ return [
 
 ### Global Options
 
+Every global option except `cache` and `stack` can be overridden for a single image with the [snippet option](#snippet-options) of the same name.
+
 | Option | Default | Type | Description |
 | ------ | ------- | ---- | ----------- |
 | `cache` | `true` | Boolean | Imagex will cache some calculations. Read more about it here: "[Cache](#cache)" |
 | `compareFormatsWeights` | `'mobile'` | String or Array | Controls the weighting used when comparing format sizes via `compareFormats`. Preset strings: `'mobile'` (50/30/20), `'desktop'` (20/30/50), `'balanced'` (34/33/33). For custom weights pass an array: `['small' => 0.4, 'medium' => 0.4, 'large' => 0.2]` — values must sum to `1.0`. Read more: "[Dynamic Format Size Handling](#dynamic-format-size-handling)". |
-| `customLazyloading` | `false` | Boolean | Imagex will initially use native lazy loading with the `loading` attribute. Enable this option if you want to use a custom lazy loading library like lazysizes or any other JS-based solution. Imagex will then automatically use `data-src` and `data-srcset`. If you need something like `data-sizes="auto"` please use the snippet options to add it as a lazy HTML attribute. |
+| `customLazyLoading` | `false` | Boolean | Imagex will initially use native lazy loading with the `loading` attribute. Enable this option if you want to use a custom lazy loading library like lazysizes or any other JS-based solution. Imagex will then automatically use `data-src` and `data-srcset`. If you need something like `data-sizes="auto"` please use the snippet options to add it as a lazy HTML attribute. |
 | `formats` | `['avif', 'webp']` | Array with Strings | Define the modern image formats you want to use. ⚠️ Order matters here! You should go from the most to less modern format. The order in this array also affects the `compareFormats` snippet-option. [Read more about why the correct order is important](#why-order-matters). Don't add the original format by name (e.g. `'jpeg'`), since the image's format differs per upload. Use `'originalformat'` instead: it adds a `<source>` in the image's own format, using the base srcset preset, at this position in the order. |
 | `addOriginalFormatAsSource` | `false` | Boolean | Adds a `<source>` element for the image's original format (e.g. JPEG, PNG) after the `formats`, like `'originalformat'` at the end of `formats`. Useful when modern formats like AVIF or WebP can't be used, but you still need art-directed picture sources at different breakpoints / media conditions. |
-| `noSrcsetInImg` | `false` | Boolean | If active this will only output the `src` attribute in the `<img>` tag. The smallest size from the given srcset-preset is used and the `srcset` attribute is omitted. |
+| `srcsetInImg` | `true` | Boolean | Set to `false` to only output the `src` attribute in the `<img>` tag. The smallest size from the given srcset-preset is used and the `srcset` attribute is omitted. |
 | `relativeUrls` | `false` | Boolean | Output root-relative image URLs (`/media/…`) when active. Only the origin of your site URL is removed, so subfolder installs and multi-language sites keep working. |
 | `stack` | `null` | String or `null` | Name of a Kirby [template stack](#head-elements-via-template-stacks) in your `<head>` (e.g. `'imagex-head'`). When set, Imagex pushes its `<style>` elements and preload links into it instead of rendering styles next to the `<picture>`. Required for the `preload` snippet option. |
+
+`customLazyloading` and `noSrcsetInImg` were renamed to `customLazyLoading` and `srcsetInImg` (with the opposite value). The old names still work, with a deprecation warning in debug mode, but will be removed in a future release.
 
 ## Adjust Kirby's Thumbs Config and Add Srcset Presets
 The srcset configuration is still set up as you know it from Kirby, [like described here](https://getkirby.com/docs/reference/objects/cms/file/srcset#define-presets__extended-example).
@@ -220,6 +224,7 @@ Only `image` is required — everything else has sane defaults. The same options
 | `nonce` | `null` | String | CSP nonce for the generated `<style>` element. With a nonce set, the `focus` styles are also moved from the `<img>`'s `style` attribute into that `<style>` element, so the output works with a strict Content Security Policy. [Read more here](#content-security-policy-csp). |
 | `formats` | `null` | Array or `null` | Overrides the global [`formats`](#global-options) for this image, e.g. `['webp']` or `[]` for no modern formats at all. `null` uses the global option. Each format needs its srcset preset (`my-srcset-webp`, …). `addOriginalFormatAsSource` still applies. Useful for animated GIFs, see "[Files Kirby Can't Resize and Animated GIFs](#files-kirby-cant-resize-and-animated-gifs)". |
 | `preload` | `false` | Boolean | Adds `<link rel="preload">` elements for this image to the `<head>`, so the browser starts fetching it before it reaches the `<picture>`. Requires `loading: 'eager'`, and for `imagex-picture` also the global `stack` option (`imagex-picture-json` returns the links under `preloadLinks` instead). Use it for your LCP image only. [Read more here](#preload-links). |
+| `addOriginalFormatAsSource`, `compareFormatsWeights`, `customLazyLoading`, `relativeUrls`, `srcsetInImg` | `null` | Like the global option | Override the [global option](#global-options) of the same name for this image, e.g. `'srcsetInImg' => false`. `null` uses the global option. |
 
 ```php
 <?php
@@ -563,7 +568,7 @@ How Imagex builds the links:
 - **One format per source.** `<picture>` uses the first `<source>` with a supported format, but a browser fetches *every* preload link whose `type` it supports. So Imagex only preloads the format a browser supporting your most modern format would use — with `compareFormats`, the smallest one. Browsers without support for it simply skip the link.
 - **Mutually exclusive media.** `<picture>` uses the first matching `<source>`, but every preload link with a matching `media` is fetched. Imagex therefore extends each art-directed source's `media` so it excludes all earlier ones, and the default source only matches when no art-directed source does. Earlier conditions are negated in [range syntax](https://www.w3.org/TR/mediaqueries-4/#mq-range-context) where possible (`(width >= 800px)` or `(min-width: 800px)` → `(width < 800px)`), otherwise with `not (…)`. This requires media *conditions* like `(width >= 800px)` — media types (`screen and …`) and comma-separated lists throw an error when `preload` is enabled.
 - **`imagesizes` is the `<source>`'s `sizes`.** A `<source>` doesn't inherit the `<img>`'s `sizes`, so set `sizes` via `attributes.sources` (or per `artDirection` entry). Otherwise both the `<picture>` and the preload link fall back to `100vw`.
-- **No `href`.** Browsers without `imagesrcset` support skip the link instead of fetching an image that might not be used. Only images without any `srcset` get an `href`: files Kirby can't resize (e.g. SVGs), or no formats combined with `noSrcsetInImg`.
+- **No `href`.** Browsers without `imagesrcset` support skip the link instead of fetching an image that might not be used. Only images without any `srcset` get an `href`: files Kirby can't resize (e.g. SVGs), or no formats combined with `srcsetInImg: false`.
 - `fetchpriority="high"` is set on every link.
 
 Preload only what's visible above the fold, usually a single image: preloads compete with other critical resources like CSS and fonts. In the `imagex-picture-json` snippet, the links are available under the top-level `preloadLinks` key (an empty list when `preload` is off). See the [preload links example](/docs/examples/preload-links.md).
@@ -590,7 +595,7 @@ Imagex uses a **weighted multi-sample approach** to determine the smallest forma
 
    ⚠️ **At least three srcset entries are recommended** for meaningful weighting. With only two entries, the middle and last sample are identical, so the `medium` and `large` weights effectively collapse into one. With a single entry all three samples are the same and weighting has no effect at all.
 
-2. **Configurable Weighting**: The samples are weighted to reflect your audience's typical screen sizes. Configure this globally via `compareFormatsWeights` in your `config.php`. Available presets:
+2. **Configurable Weighting**: The samples are weighted to reflect your audience's typical screen sizes. Configure this globally via `compareFormatsWeights` in your `config.php`, or per image with the snippet option of the same name. Available presets:
    - `'mobile'` (default) — 50% smallest, 30% middle, 20% largest
    - `'desktop'` — 20% smallest, 30% middle, 50% largest
    - `'balanced'` — roughly equal weight across all three
