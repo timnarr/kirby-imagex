@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- Ratios may have spaces around the slash, like in CSS: `'16 / 9'`.
+
 ### Changed
 - **BREAKING:** `thumbRatio()` throws an `InvalidArgumentException` when `height` is passed. The height is derived from the ratio, so it was overwritten silently. Migration: remove `height` and pass a `width`.
 

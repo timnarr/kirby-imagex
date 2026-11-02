@@ -50,7 +50,7 @@ function getAspectRatioFromImage(int $width, int $height): array
 }
 
 /**
- * Get the aspect ratio from a string format "x/y".
+ * Get the aspect ratio from a string format "x/y" (spaces around the slash are allowed, e.g. "16 / 9").
  *
  * @param string $ratioString The aspect ratio in string format.
  * @return array Associative array with 'x' and 'y' keys for the aspect ratio.
@@ -60,7 +60,8 @@ function getAspectRatioFromImage(int $width, int $height): array
  */
 function getAspectRatioFromRatioString(string $ratioString): array
 {
-	if (!preg_match('/^(\d+)\/(\d+)$/', $ratioString, $matches)) {
+	// Spaces around the slash are allowed, like in CSS `aspect-ratio: 16 / 9`
+	if (!preg_match('/^\s*(\d+)\s*\/\s*(\d+)\s*$/', $ratioString, $matches)) {
 		throw new InvalidArgumentException("[kirby-imagex] Invalid ratio format '{$ratioString}'. Expected format \"x/y\" (e.g. \"16/9\") or \"intrinsic\".");
 	}
 

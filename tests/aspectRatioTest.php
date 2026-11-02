@@ -27,6 +27,12 @@ class AspectRatioTest extends TestCase
 		$this->assertEquals(['x' => 16, 'y' => 9], getAspectRatioFromRatioString('16/9'));
 	}
 
+	public function testGetAspectRatioFromRatioStringAllowsSpacesLikeCss()
+	{
+		$this->assertEquals(['x' => 16, 'y' => 9], getAspectRatioFromRatioString('16 / 9'));
+		$this->assertEquals(['x' => 21, 'y' => 9], getAspectRatioFromRatioString(' 21/ 9 '));
+	}
+
 	public function testInvalidGetAspectRatioFromRatioStringColon()
 	{
 		$this->expectException(InvalidArgumentException::class);
