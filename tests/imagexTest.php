@@ -920,4 +920,11 @@ class ImagexTest extends ImagexTestCase
 		$this->assertStringContainsString('type="image/webp"', $html);
 		$this->assertStringNotContainsString('image/avif', $html);
 	}
+
+	public function testOriginalformatInFormatsAddsTheImagesOwnFormat()
+	{
+		$sources = $this->imagex(['formats' => ['webp', 'originalformat']])->getPictureSources();
+
+		$this->assertSame(['image/webp', 'image/jpeg'], array_column($sources, 'type'));
+	}
 }
