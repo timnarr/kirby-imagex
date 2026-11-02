@@ -475,6 +475,14 @@ These are the parts of Imagex covered by semantic versioning. Breaking changes t
 - The [`thumbRatio()` file method](#thumbratiostring-ratio-array-options--)
 - The `TimNarr\Imagex` class: its constructor (same options as the snippets) and `getPictureAttributes()`, `getPictureSources()`, `getImgAttributes()`, `getArtDirectionStyles()`, `getNonce()`, `getPreloadLinks()` and `getStack()`
 
+The attribute getters return arrays ready for Kirby's `attr()`, keyed by attribute name. `getPictureSources()` and `getPreloadLinks()` return a list of them, one per `<source>`/`<link>`, in output order. Within an attribute array:
+
+- `null` and `false` mean the attribute is left out. `attr()` skips them; filter them out if you render the attributes yourself.
+- `true` is a boolean attribute.
+- `class` and `style` are lists of strings (`style` declarations end with `;`), joined with spaces by `attr()`.
+- `width` and `height` are integers.
+- Other values are strings, or what you passed via `attributes`.
+
 Everything else is internal and may change in any release. That includes the helper functions in the `TimNarr` namespace (e.g. `getAspectRatio()`, `mergeHTMLAttributes()`) and `Imagex::getSmallestFormatForImage()`. They are marked `@internal`.
 
 ## Cache

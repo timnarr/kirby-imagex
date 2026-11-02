@@ -10,6 +10,14 @@ use Kirby\Filesystem\F;
 use Kirby\Toolkit\A;
 use Kirby\Toolkit\Str;
 
+/**
+ * Builds the attributes of a responsive, art-directed <picture> from a Kirby image.
+ *
+ * The getters return attribute arrays as passed to Kirby's `attr()`, keyed by
+ * attribute name. `null` and `false` mean the attribute is left out, `true` is a
+ * boolean attribute, `class` and `style` are lists of strings, and `width`/`height`
+ * are integers. Other values are strings, or what you passed via `attributes`.
+ */
 class Imagex
 {
 	protected string $loading;
@@ -512,7 +520,7 @@ class Imagex
 	/**
 	 * Get the <img> tag attributes based on srcset preset and user defined + default attributes.
 	 *
-	 * @return array Attributes for the <img> tag.
+	 * @return array<string, string|int|bool|array|null> Attributes for the <img> tag.
 	 */
 	public function getImgAttributes(): array
 	{
@@ -649,7 +657,7 @@ class Imagex
 	 * Derived from getPictureSources(), so the links always match what <picture>
 	 * picks (see buildPreloadLinks()).
 	 *
-	 * @return array List of attribute arrays, empty if `preload` is disabled.
+	 * @return list<array<string, string|int|bool|array|null>> One attribute array per <link>, empty if `preload` is disabled.
 	 */
 	public function getPreloadLinks(): array
 	{
@@ -740,7 +748,7 @@ class Imagex
 	/**
 	 * Get HTML attributes for the <picture> element based on loading mode and user defined attributes.
 	 *
-	 * @return array HTML attributes for the <picture> element.
+	 * @return array<string, string|int|bool|array|null> HTML attributes for the <picture> element.
 	 */
 	public function getPictureAttributes(): array
 	{
@@ -827,7 +835,7 @@ class Imagex
 	 * source (no `media`, always matches) would come before an art-directed source
 	 * that compareFormats limited to WebP, so AVIF browsers would never use it.
 	 *
-	 * @return array Compiled data of all picture sources.
+	 * @return list<array<string, string|int|bool|array|null>> One attribute array per <source>, in output order.
 	 */
 	public function getPictureSources(): array
 	{
