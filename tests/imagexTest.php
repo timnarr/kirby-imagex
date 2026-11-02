@@ -177,6 +177,23 @@ class ImagexTest extends ImagexTestCase
 		$this->assertStringContainsString('image-800x450-crop.jpg 800w', $attributes['srcset']);
 	}
 
+	public function testSrcsetPresetCropFalseIsReplacedWithTrueAndPositionsAreKept()
+	{
+		file_put_contents($this->root . '/content/test/image.jpg.txt', 'Focus: 20% 30%');
+		$this->app(['thumbs' => ['srcsets' => [
+			'default' => [
+				'400w' => ['width' => 400, 'crop' => false],
+				'800w' => ['width' => 800, 'crop' => 'top left'],
+			],
+		]]]);
+
+		$srcset = $this->imagex(['formats' => []])->getImgAttributes()['srcset'];
+
+		// true anchors the crop at the focus point
+		$this->assertStringContainsString('image-400x225-crop-20-30.jpg 400w', $srcset);
+		$this->assertStringContainsString('image-800x450-crop-top-left.jpg 800w', $srcset);
+	}
+
 	public function testIntrinsicRatioThrowsForImageWithoutDimensions()
 	{
 		$this->expectException(InvalidArgumentException::class);

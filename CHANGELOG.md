@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Fixed
+- **Bug:** `thumbRatio()` with `'crop' => false` returned a thumb in the image's own ratio instead of the requested one, e.g. 600×450 for `thumbRatio('16/9', ['width' => 800, 'crop' => false])`. Like in srcset presets, `false` is now replaced with `true`. Crop positions like `'top left'` still work. Migration: for an uncropped thumb, use Kirby's `thumb()` directly.
+
 ## [0.6.0-beta.1] - October 30, 2026
 
 Beta for Kirby 6. Install it with `composer require timnarr/kirby-imagex:^0.6@beta`. For Kirby 5, stay on `0.5.x`.

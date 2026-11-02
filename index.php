@@ -24,7 +24,7 @@ Kirby::plugin('timnarr/imagex', [
 		 * Generate a thumb with dimensions derived from an aspect ratio.
 		 *
 		 * @param string $ratio Aspect ratio string in "x/y" format, or 'intrinsic' to use the image's natural ratio.
-		 * @param array $options Additional thumb options (e.g. width, quality, format). 'crop' defaults to true.
+		 * @param array $options Additional thumb options (e.g. width, quality, format). 'crop' defaults to true and is never false.
 		 * @return \Kirby\Cms\FileVersion|\Kirby\Cms\File|\Kirby\Filesystem\Asset The thumb, as returned by Kirby's thumb().
 		 */
 		'thumbRatio' => function (string $ratio, array $options = []): Kirby\Cms\FileVersion|Kirby\Cms\File|Kirby\Filesystem\Asset {
@@ -36,7 +36,8 @@ Kirby::plugin('timnarr/imagex', [
 				...$options,
 				'width'  => $width,
 				'height' => $height,
-				'crop'   => $options['crop'] ?? true,
+				// Never false, like in srcset presets: without cropping the thumb loses the ratio
+				'crop'   => empty($options['crop']) ? true : $options['crop'],
 			]);
 		},
 	],

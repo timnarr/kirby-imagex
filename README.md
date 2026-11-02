@@ -70,6 +70,8 @@ Set your srcset preset, like `my-srcset`, and define only the `width` — no `he
 
 Kirby's shorthand forms work too: `'my-srcset' => [400, 800, 1200]` or `[400 => '1x', 800 => '2x']`.
 
+You don't need to set `crop`: Imagex sets a missing or `false` `crop` to `true`, since a thumb would otherwise lose its ratio. With `true`, Kirby anchors the crop at the image's [focus point](#focus-point-support). A crop position like `'top left'` is kept, but overrides the focus point.
+
 If you use AVIF and/or WebP, add a separate preset per format by copying the base preset, appending `-{format}` to the name, and setting the `format` option. This gives you full control over quality per format.
 
 The quality settings for the modern formats shouldn't simply be taken from the default preset: AVIF and WebP need different quality values than JPEG to look the same. As a rule of thumb, use **AVIF = JPEG − 15** and **WebP = JPEG + 5**. From JPEG 80 upwards, use the same value for WebP as for JPEG.
@@ -434,7 +436,7 @@ Generates a thumb whose dimensions are derived from an aspect ratio string inste
 | Parameter | Type | Description |
 | --------- | ---- | ----------- |
 | `$ratio` | String | Aspect ratio in `'x/y'` format (e.g. `'16/9'`), or `'intrinsic'` to use the image's natural ratio. |
-| `$options` | Array | Standard Kirby thumb options (`width`, `quality`, `format`, …). `crop` defaults to `true`. |
+| `$options` | Array | Standard Kirby thumb options (`width`, `quality`, `format`, …). `crop` defaults to `true` and is never `false`, so the ratio is always kept. A position like `'top left'` works too. |
 
 **Returns** the thumb `File` object, so you can chain `->url()`, `->width()`, etc.
 

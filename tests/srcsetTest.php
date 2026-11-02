@@ -63,6 +63,21 @@ class SrcsetTest extends TestCase
 		$this->assertEquals($expected, $result);
 	}
 
+	public function testAddRatioBasedHeightToSrcsetPresetReplacesMissingOrFalseCropWithTrue()
+	{
+		$srcset = [
+			'test-preset' => [
+				'100w' => ['width' => 100],
+				'200w' => ['width' => 200, 'crop' => false],
+				'300w' => ['width' => 300, 'crop' => 'top left'],
+			],
+		];
+
+		$result = addRatioBasedHeightToSrcsetPreset($srcset, 1, 1);
+
+		$this->assertSame([true, true, 'top left'], array_column($result['test-preset'], 'crop'));
+	}
+
 	public function testNormalizeSrcsetPresetWidthList()
 	{
 		$this->assertSame(

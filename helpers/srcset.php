@@ -13,7 +13,7 @@ use Kirby\Exception\InvalidArgumentException;
  *                             (e.g. ['my-srcset' => ['400w' => ['width' => 400]]]).
  * @param int $ratioX The width part of the aspect ratio.
  * @param int $ratioY The height part of the aspect ratio.
- * @return array The srcset presets with 'height' (and 'crop') set on every entry.
+ * @return array The srcset presets with 'height' set on every entry, and a missing or false 'crop' set to true.
  *
  * @internal Not part of the public API — may change in any release.
  */
@@ -25,7 +25,7 @@ function addRatioBasedHeightToSrcsetPreset(array $srcsetPresets, int $ratioX, in
 		foreach ($preset as $condition => $options) {
 			$srcsetPresets[$presetName][$condition]['height'] = (int)round((int)$options['width'] * $ratio);
 
-			// A ratio-based height only works with cropping; an explicit false is invalid here
+			// Never false: without cropping the thumb loses the ratio. Positions like 'top left' are kept
 			if (empty($options['crop'])) {
 				$srcsetPresets[$presetName][$condition]['crop'] = true;
 			}

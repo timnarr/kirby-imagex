@@ -1,6 +1,6 @@
 # Thumbs Config
 
-I use this thumbs config in all the examples. I limit this to have only two widths defined here to keep the examples simple. You propably have more widths defined in a real project. `crop` should be `true` everywhere, because we switch ratios and want to use Kirby's focus functionality but you can of course also use `'crop' => 'center'` and so on.
+I use this thumbs config in all the examples. I limit this to have only two widths defined here to keep the examples simple. You propably have more widths defined in a real project. `crop` is `true` everywhere, because we switch ratios and want to use Kirby's focus functionality. Imagex sets a missing or `false` `crop` to `true` anyway. You can also use a position like `'crop' => 'top left'`, but it overrides the focus point.
 
 ```php
 // config.php
