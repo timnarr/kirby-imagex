@@ -622,6 +622,64 @@ class ImagexTest extends ImagexTestCase
 		$this->assertSame(['image/avif', 'image/webp'], array_column($data['sources'], 'type'));
 	}
 
+	public function testFileMethodReturnsAnImagexForTheFile()
+	{
+		$imagex = $this->image()->imagex(['ratio' => '16/9']);
+
+		$this->assertInstanceOf(Imagex::class, $imagex);
+		$this->assertSame(225, $imagex->getImgAttributes()['height']);
+	}
+
+	public function testFileMethodThrowsOnUnknownOptions()
+	{
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('Unknown option(s): ration');
+
+		$this->image()->imagex(['ration' => '16/9']);
+	}
+
+	public function testFileMethodThrowsOnImageOption()
+	{
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage("uses the file itself as 'image'");
+
+		$this->image()->imagex(['image' => $this->image('landscape.jpg')]);
+	}
+
+	public function testFileMethodRendersThePictureSnippet()
+	{
+		$html = (string)$this->image()->imagex(['ratio' => '16/9', 'attributes' => ['img' => ['alt' => 'A cat']]]);
+
+		$this->assertSame(snippet('imagex-picture', ['image' => $this->image(), 'ratio' => '16/9', 'attributes' => ['img' => ['alt' => 'A cat']]], return: true), $html);
+	}
+
+	public function testFileMethodIgnoresControllerData()
+	{
+		// What a page controller returning these variables puts into every snippet's scope
+		App::instance()->data = ['ratio' => '1/1', 'loading' => 'eager'];
+
+		$html = (string)$this->image()->imagex();
+
+		$this->assertMatchesRegularExpression('/<img [^>]*height="300"/', $html);
+		$this->assertStringNotContainsString('fetchpriority', $html);
+	}
+
+	public function testSnippetIgnoresAControllerVariableNamedImagex()
+	{
+		App::instance()->data = ['imagex' => $this->image()->imagex(['ratio' => '1/1'])];
+
+		$html = snippet('imagex-picture', ['image' => $this->image(), 'ratio' => '16/9'], return: true);
+
+		$this->assertMatchesRegularExpression('/<img [^>]*height="225"/', $html);
+	}
+
+	public function testFileMethodEncodesAsTheJsonSnippet()
+	{
+		$json = snippet('imagex-picture-json', ['image' => $this->image(), 'ratio' => '16/9'], return: true);
+
+		$this->assertSame($json, json_encode($this->image()->imagex(['ratio' => '16/9']), JSON_UNESCAPED_SLASHES));
+	}
+
 	public function testToArrayMatchesTheJsonSnippet()
 	{
 		$options = ['image' => $this->image(), 'ratio' => '16/9', 'attributes' => ['img' => ['class' => 'hero']]];

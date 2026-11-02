@@ -57,6 +57,12 @@ $data = json_decode($json, true);
 ?>
 ```
 
+In PHP, you don't need the JSON detour: `$file->imagex()` returns the same data as an array, and `json_encode()` gives the same JSON as the snippet.
+
+```php
+$data = $image->toFile()->imagex(['srcset' => 'imagex-demo', 'ratio' => '16/9'])->toArray();
+```
+
 ### JSON Output
 The JSON always has the same five keys. `picture`, `img` and every entry of `sources` are attribute objects you can spread onto the element as is. `artDirectionStyles` is a CSS string (empty without art direction), `preloadLinks` a list of `<link>` attribute objects (empty unless `preload` is enabled).
 

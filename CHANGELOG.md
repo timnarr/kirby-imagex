@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- New `$file->imagex($options)` file method: creates an `Imagex` instance for the file with the same options as the snippets. Echo it to render the `<picture>` (via the `imagex-picture` snippet, including your own override), or use `toArray()`/`json_encode()` for the JSON data. Unlike the snippets, it only gets the options you pass: unknown options throw, and controller variables named like an option (e.g. `$ratio`, `$image`) are never picked up, which Kirby otherwise passes to every snippet.
 - New public `Imagex::toArray()`: everything needed to render the `<picture>`, in the structure of the `imagex-picture-json` snippet, e.g. to return it from a Kirby route. `Imagex` also implements `JsonSerializable`, so `json_encode($imagex)` returns the snippet's JSON.
 - Ratios may have spaces around the slash, like in CSS: `'16 / 9'`.
 

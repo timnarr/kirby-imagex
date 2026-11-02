@@ -197,7 +197,9 @@ The JSON output always has the same five keys:
 Each attribute object can be spread onto its element as is, e.g. `<img {...data.img} />` in JSX. In PHP, `Imagex::toArray()` returns the same data as an array. See the [JSON output example](/docs/examples/json-output.md) for more details.
 
 ### Snippet Options
-Only `image` is required — everything else has sane defaults. Unknown options throw an error, so typos like `ration` don't go unnoticed when you use the `Imagex` class directly. (Snippets only forward the options listed below, so a misspelled snippet option is still ignored there.)
+Only `image` is required — everything else has sane defaults. The same options work for the snippets, [`$file->imagex()`](#imagexarray-options--) and the `Imagex` class.
+
+⚠️ Snippets can't tell your options apart from other variables in their scope: a misspelled option like `ration` is ignored, and since Kirby passes controller data to every snippet, a controller variable named like an option (e.g. `$ratio` or `$image`) is used whenever you don't pass that option yourself. [`$file->imagex()`](#imagexarray-options--) only gets the options you pass and throws on unknown ones.
 
 - **Flat attribute syntax:** Attributes passed directly to `picture`/`img`/`sources` are auto-treated as `shared`. Use the full `shared`/`eager`/`lazy` structure when you need loading-mode-specific values.
 - **Override anything:** Developer-defined attributes always win. `class` and `style` are merged; all others are replaced. Defaults: `loading: 'eager'` → `fetchpriority: 'high'`; `decoding: 'async'`.
@@ -437,6 +439,25 @@ Any stack name works. A dedicated one like `imagex-head` makes clear where the o
 
 Imagex registers additional methods on Kirby's `File` object.
 
+### `imagex(array $options = [])`
+
+Creates an `Imagex` instance for the file, with the same [options](#snippet-options) as the snippets (without `image`). Echo it to render the `<picture>`, or use `toArray()` for the [JSON data](#json-output):
+
+```php
+<?= $image->imagex([
+  'ratio' => '16/9',
+  'loading' => 'eager',
+  'attributes' => ['img' => ['alt' => $image->alt()]],
+]) ?>
+```
+
+```php
+// e.g. in a Kirby route
+return ['hero' => $page->cover()->toFile()->imagex(['ratio' => '16/9'])->toArray()];
+```
+
+Unlike the snippets, it only gets the options you pass: unknown options like `ration` throw an error, and controller variables are never picked up. Echoing renders the `imagex-picture` snippet, including your own override in `site/snippets`. `json_encode()` returns the same JSON as the `imagex-picture-json` snippet.
+
 ### `thumbRatio(string $ratio, array $options = [])`
 
 Generates a thumb whose dimensions are derived from an aspect ratio string instead of having to calculate the height manually.
@@ -479,8 +500,8 @@ These are the parts of Imagex covered by semantic versioning. Breaking changes t
 - The `imagex-picture` and `imagex-picture-json` snippets and their [options](#snippet-options)
 - The JSON structure returned by `imagex-picture-json` (see the [JSON output example](/docs/examples/json-output.md))
 - The [global plugin options](#global-options)
-- The [`thumbRatio()` file method](#thumbratiostring-ratio-array-options--)
-- The `TimNarr\Imagex` class: its constructor (same options as the snippets) and `getPictureAttributes()`, `getPictureSources()`, `getImgAttributes()`, `getArtDirectionStyles()`, `getNonce()`, `getPreloadLinks()` and `getStack()`
+- The [`imagex()`](#imagexarray-options--) and [`thumbRatio()`](#thumbratiostring-ratio-array-options--) file methods
+- The `TimNarr\Imagex` class: its constructor (same options as the snippets), `getPictureAttributes()`, `getPictureSources()`, `getImgAttributes()`, `getArtDirectionStyles()`, `getNonce()`, `getPreloadLinks()`, `getStack()` and `toArray()`, as well as rendering it as a string (`echo`) and `json_encode()`
 
 The attribute getters return arrays ready for Kirby's `attr()`, keyed by attribute name. `getPictureSources()` and `getPreloadLinks()` return a list of them, one per `<source>`/`<link>`, in output order. Within an attribute array:
 

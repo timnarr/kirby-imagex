@@ -5,7 +5,7 @@ declare(strict_types = 1);
 use Kirby\Exception\InvalidArgumentException;
 use TimNarr\Imagex;
 
-// Picks the known options from the snippet's variables; Imagex applies the defaults
+// The instance echoed via $file->imagex(), or one built from the snippet's options (Imagex applies the defaults)
 $imagex = Imagex::fromSnippetData(get_defined_vars());
 
 $pictureAttributes = $imagex->getPictureAttributes();

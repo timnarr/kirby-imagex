@@ -61,6 +61,9 @@ class Imagex implements JsonSerializable
 	/** Smallest format per image and ratio, keyed by 'imageId|ratio'. */
 	private array $smallestFormats = [];
 
+	/** The instance __toString() is currently rendering, see fromSnippetData(). */
+	private static self|null $rendering = null;
+
 	/** Accepted constructor options and their defaults. `image` has none — it's required. */
 	private const DEFAULT_OPTIONS = [
 		'artDirection' => [],
@@ -142,6 +145,11 @@ class Imagex implements JsonSerializable
 	 * Creates an instance from a snippet's variables, picking only the known
 	 * options so the snippets don't have to list them again.
 	 *
+	 * When the snippet is rendered by __toString(), the rendering instance is
+	 * returned instead. It's matched by identity: Kirby merges controller data
+	 * into every snippet's scope, so a controller variable named `imagex` must
+	 * not be mistaken for it.
+	 *
 	 * @param array $vars The snippet's variables, e.g. get_defined_vars().
 	 * @return static
 	 * @throws InvalidArgumentException See __construct().
@@ -149,7 +157,29 @@ class Imagex implements JsonSerializable
 	 */
 	public static function fromSnippetData(array $vars): static
 	{
+		if (self::$rendering !== null && ($vars['imagex'] ?? null) === self::$rendering) {
+			return self::$rendering;
+		}
+
 		return new static(array_intersect_key($vars, self::DEFAULT_OPTIONS));
+	}
+
+	/**
+	 * Renders the `imagex-picture` snippet for this instance, e.g. `<?= $image->imagex([...]) ?>`.
+	 * A snippet override in `site/snippets` is used as well.
+	 *
+	 * @return string The <picture> HTML.
+	 */
+	public function __toString(): string
+	{
+		$previous = self::$rendering;
+		self::$rendering = $this;
+
+		try {
+			return (string)$this->kirby->snippet('imagex-picture', ['imagex' => $this], return: true);
+		} finally {
+			self::$rendering = $previous;
+		}
 	}
 
 	/**

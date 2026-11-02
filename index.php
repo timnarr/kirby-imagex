@@ -21,6 +21,23 @@ Kirby::plugin('timnarr/imagex', [
 	],
 	'fileMethods' => [
 		/**
+		 * Create an Imagex instance for this image, e.g. `<?= $image->imagex(['ratio' => '16/9']) ?>`.
+		 *
+		 * Unlike the snippets, it only gets the options you pass: unknown options throw,
+		 * and controller variables with the same name as an option are never picked up.
+		 *
+		 * @param array $options The snippet options, without 'image'.
+		 * @return \TimNarr\Imagex Renders the `imagex-picture` snippet when echoed; toArray() returns the JSON data.
+		 * @throws \Kirby\Exception\InvalidArgumentException If an option is invalid or 'image' is passed.
+		 */
+		'imagex' => function (array $options = []): TimNarr\Imagex {
+			if (array_key_exists('image', $options)) {
+				throw new Kirby\Exception\InvalidArgumentException("[kirby-imagex] \$file->imagex() uses the file itself as 'image'. Remove 'image' from the options.");
+			}
+
+			return new TimNarr\Imagex([...$options, 'image' => $this]);
+		},
+		/**
 		 * Generate a thumb with dimensions derived from an aspect ratio.
 		 *
 		 * @param string $ratio Aspect ratio string in "x/y" format, or 'intrinsic' to use the image's natural ratio.
