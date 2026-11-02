@@ -4,6 +4,8 @@ declare(strict_types = 1);
 
 namespace TimNarr;
 
+use Kirby\Exception\InvalidArgumentException;
+
 /**
  * Integration tests for the `thumbRatio()` file method.
  */
@@ -40,6 +42,14 @@ class ThumbRatioTest extends ImagexTestCase
 
 		$this->assertSame(800, $thumb->width());
 		$this->assertSame(450, $thumb->height());
+	}
+
+	public function testHeightThrows()
+	{
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('thumbRatio() derives the height from the ratio');
+
+		$this->image()->thumbRatio('16/9', ['width' => 800, 'height' => 100]);
 	}
 
 	public function testCropPositionIsKept()

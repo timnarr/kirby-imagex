@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+- **BREAKING:** `thumbRatio()` throws an `InvalidArgumentException` when `height` is passed. The height is derived from the ratio, so it was overwritten silently. Migration: remove `height` and pass a `width`.
+
 ### Fixed
 - **Bug:** The `imagex-picture-json` snippet output Kirby fields as objects: `'alt' => $image->alt()`, as used in the README, became `"alt": {"value": "…"}`. Attribute values that are `Stringable` (e.g. Kirby fields) are now converted to strings when the `Imagex` instance is created, so the HTML and JSON output get the same value.
 - **Bug:** The `imagex-picture-json` snippet left out empty strings, e.g. `alt=""` for decorative images, while the HTML kept them. Attributes in the JSON output are now left out exactly like in the HTML output: `null` and `false` remove an attribute (previously `false` was output as `false`), empty strings are kept.

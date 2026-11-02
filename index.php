@@ -26,8 +26,13 @@ Kirby::plugin('timnarr/imagex', [
 		 * @param string $ratio Aspect ratio string in "x/y" format, or 'intrinsic' to use the image's natural ratio.
 		 * @param array $options Additional thumb options (e.g. width, quality, format). 'crop' defaults to true and is never false.
 		 * @return \Kirby\Cms\FileVersion|\Kirby\Cms\File|\Kirby\Filesystem\Asset The thumb, as returned by Kirby's thumb().
+		 * @throws \Kirby\Exception\InvalidArgumentException If the ratio is invalid or a 'height' is passed.
 		 */
 		'thumbRatio' => function (string $ratio, array $options = []): Kirby\Cms\FileVersion|Kirby\Cms\File|Kirby\Filesystem\Asset {
+			if (isset($options['height'])) {
+				throw new Kirby\Exception\InvalidArgumentException("[kirby-imagex] thumbRatio() derives the height from the ratio. Remove 'height' from the options and pass a 'width' instead.");
+			}
+
 			['x' => $ratioX, 'y' => $ratioY] = \TimNarr\getAspectRatio($ratio, $this);
 			$width = $options['width'] ?? $this->width();
 			$height = (int)round($width * $ratioY / $ratioX);
