@@ -453,12 +453,13 @@ class Imagex
 	 * (see compareFormatsWeights). Only meaningful with compareFormats enabled,
 	 * for which the constructor guarantees at least two formats.
 	 *
+	 * Protected (not private) so tests can pin the result in a subclass.
+	 *
 	 * @param File|null $image Optional file object; defaults to main image.
 	 * @param string|null $ratio Optional aspect ratio; defaults to object's ratio.
 	 * @return string The smallest format.
-	 * @internal Not part of the public API — may change in any release.
 	 */
-	public function getSmallestFormatForImage(File|null $image = null, string|null $ratio = null): string
+	protected function getSmallestFormatForImage(File|null $image = null, string|null $ratio = null): string
 	{
 		$image ??= $this->image;
 		$ratio ??= $this->ratio;

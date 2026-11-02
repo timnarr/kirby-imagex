@@ -18,7 +18,7 @@ class PinnedFormatsImagex extends Imagex
 	public static array $smallest = [];
 	public static int $calls = 0;
 
-	public function getSmallestFormatForImage(File|null $image = null, string|null $ratio = null): string
+	protected function getSmallestFormatForImage(File|null $image = null, string|null $ratio = null): string
 	{
 		self::$calls++;
 
