@@ -2,7 +2,7 @@
 
 declare(strict_types = 1);
 
-namespace TimNarr;
+namespace TimNarr\Imagex;
 
 use Kirby\Exception\InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
@@ -61,6 +61,21 @@ class SrcsetTest extends TestCase
 		$result = addRatioBasedHeightToSrcsetPreset($srcset, $ratioX, $ratioY);
 
 		$this->assertEquals($expected, $result);
+	}
+
+	public function testAddRatioBasedHeightToSrcsetPresetReplacesMissingOrFalseCropWithTrue()
+	{
+		$srcset = [
+			'test-preset' => [
+				'100w' => ['width' => 100],
+				'200w' => ['width' => 200, 'crop' => false],
+				'300w' => ['width' => 300, 'crop' => 'top left'],
+			],
+		];
+
+		$result = addRatioBasedHeightToSrcsetPreset($srcset, 1, 1);
+
+		$this->assertSame([true, true, 'top left'], array_column($result['test-preset'], 'crop'));
 	}
 
 	public function testNormalizeSrcsetPresetWidthList()

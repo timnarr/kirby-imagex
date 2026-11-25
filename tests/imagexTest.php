@@ -6,77 +6,16 @@ namespace TimNarr;
 
 use Kirby\Cms\App;
 use Kirby\Cms\File;
+use Kirby\Content\Field;
 use Kirby\Exception\InvalidArgumentException;
-use Kirby\Filesystem\Dir;
 use Kirby\Toolkit\A;
-use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\IgnoreDeprecations;
 
-class ImagexTest extends TestCase
+use function TimNarr\Imagex\getAspectRatio;
+use function TimNarr\Imagex\urlHandler;
+
+class ImagexTest extends ImagexTestCase
 {
-	private string $root;
-
-	protected function setUp(): void
-	{
-		$this->root = sys_get_temp_dir() . '/kirby-imagex-tests-' . uniqid();
-		Dir::make($this->root . '/content/test');
-		$this->createJpeg('image.jpg', 1600, 1200);
-		$this->createJpeg('landscape.jpg', 2100, 900);
-		// no width/height/viewBox — Kirby reports 0x0
-		file_put_contents($this->root . '/content/test/logo.svg', '<svg xmlns="http://www.w3.org/2000/svg"></svg>');
-		$this->app();
-	}
-
-	protected function tearDown(): void
-	{
-		Dir::remove($this->root);
-	}
-
-	private function createJpeg(string $filename, int $width, int $height): void
-	{
-		imagejpeg(imagecreatetruecolor($width, $height), $this->root . '/content/test/' . $filename);
-	}
-
-	/**
-	 * Boots a fresh Kirby instance with srcset presets for all default formats.
-	 * `$options` are merged into the config options (flat keys, e.g. 'timnarr.imagex.formats').
-	 */
-	private function app(array $options = [], string $indexUrl = 'https://example.com'): App
-	{
-		$preset = fn (string|null $format = null) => [
-			'400w' => array_filter(['width' => 400, 'format' => $format]),
-			'800w' => array_filter(['width' => 800, 'format' => $format]),
-		];
-
-		return new App([
-			'roots' => ['index' => $this->root],
-			'urls' => ['index' => $indexUrl],
-			'options' => [
-				'thumbs' => ['srcsets' => [
-					'default' => $preset(),
-					'default-webp' => $preset('webp'),
-					'default-avif' => $preset('avif'),
-				]],
-				...$options,
-			],
-		]);
-	}
-
-	private function image(string $filename = 'image.jpg'): File
-	{
-		return App::instance()->page('test')->image($filename);
-	}
-
-	private function imagex(array $options = []): Imagex
-	{
-		return new Imagex([
-			'image' => $this->image(),
-			'ratio' => '16/9',
-			'srcset' => 'default',
-			'compareFormats' => false,
-			...$options,
-		]);
-	}
-
 	public function testArtDirectionStylesAreEmptyWithoutArtDirection()
 	{
 		$this->assertSame('', $this->imagex()->getArtDirectionStyles());
@@ -85,7 +24,7 @@ class ImagexTest extends TestCase
 	public function testArtDirectionStylesAreEmptyWhenNoSourceChangesAnything()
 	{
 		$imagex = $this->imagex(['artDirection' => [
-			['media' => '(min-width: 800px)', 'ratio' => '16/9'],
+			['media' => '(width >= 800px)', 'ratio' => '16/9'],
 		]]);
 
 		$this->assertSame('', $imagex->getArtDirectionStyles());
@@ -97,11 +36,11 @@ class ImagexTest extends TestCase
 		// <picture> picks the first matching <source>; CSS applies the last matching
 		// rule. With both queries matching (>= 1200px), 21/9 must win.
 		$css = $this->imagex(['artDirection' => [
-			['media' => '(min-width: 1200px)', 'ratio' => '21/9'],
-			['media' => '(min-width: 600px)', 'ratio' => '4/3'],
+			['media' => '(width >= 1200px)', 'ratio' => '21/9'],
+			['media' => '(width >= 600px)', 'ratio' => '4/3'],
 		]])->getArtDirectionStyles();
 
-		$this->assertMatchesRegularExpression('/min-width: 600px.*aspect-ratio: 4 \/ 3.*min-width: 1200px.*aspect-ratio: 21 \/ 9/', $css);
+		$this->assertMatchesRegularExpression('/width >= 600px.*aspect-ratio: 4 \/ 3.*width >= 1200px.*aspect-ratio: 21 \/ 9/', $css);
 	}
 
 	public function testArtDirectionStylesResetRatioForEarlierSourceMatchingTheDefault()
@@ -109,17 +48,17 @@ class ImagexTest extends TestCase
 		// The 1200px source uses the default ratio, but must still get a rule —
 		// otherwise the also-matching 600px rule would apply 4/3 to it.
 		$css = $this->imagex(['artDirection' => [
-			['media' => '(min-width: 1200px)', 'ratio' => '16/9'],
-			['media' => '(min-width: 600px)', 'ratio' => '4/3'],
+			['media' => '(width >= 1200px)', 'ratio' => '16/9'],
+			['media' => '(width >= 600px)', 'ratio' => '4/3'],
 		]])->getArtDirectionStyles();
 
-		$this->assertMatchesRegularExpression('/min-width: 600px.*aspect-ratio: 4 \/ 3.*min-width: 1200px.*aspect-ratio: 16 \/ 9/', $css);
+		$this->assertMatchesRegularExpression('/width >= 600px.*aspect-ratio: 4 \/ 3.*width >= 1200px.*aspect-ratio: 16 \/ 9/', $css);
 	}
 
 	public function testArtDirectionStylesUseSourceImageRatioForIntrinsic()
 	{
 		$css = $this->imagex(['artDirection' => [
-			['media' => '(min-width: 800px)', 'image' => $this->image('landscape.jpg')],
+			['media' => '(width >= 800px)', 'image' => $this->image('landscape.jpg')],
 		]])->getArtDirectionStyles();
 
 		$this->assertStringContainsString('aspect-ratio: 7 / 3 !important;', $css);
@@ -128,7 +67,7 @@ class ImagexTest extends TestCase
 	public function testArtDirectionStylesTargetTheImgId()
 	{
 		$imagex = $this->imagex(['artDirection' => [
-			['media' => '(min-width: 800px)', 'ratio' => '1/1'],
+			['media' => '(width >= 800px)', 'ratio' => '1/1'],
 		]]);
 		$id = $imagex->getImgAttributes()['id'];
 
@@ -137,7 +76,7 @@ class ImagexTest extends TestCase
 
 	public function testEagerImgKeepsSrcWithCustomLazyloading()
 	{
-		$this->app(['timnarr.imagex.customLazyloading' => true]);
+		$this->app(['timnarr.imagex.customLazyLoading' => true]);
 		$attributes = $this->imagex(['loading' => 'eager'])->getImgAttributes();
 
 		$this->assertStringContainsString('image-400x225', $attributes['src']);
@@ -145,11 +84,11 @@ class ImagexTest extends TestCase
 		$this->assertNull($attributes['data-src'] ?? null);
 	}
 
-	public function testEagerImgKeepsSrcWithCustomLazyloadingAndNoSrcsetInImg()
+	public function testEagerImgKeepsSrcWithCustomLazyLoadingWithoutSrcsetInImg()
 	{
 		$this->app([
-			'timnarr.imagex.customLazyloading' => true,
-			'timnarr.imagex.noSrcsetInImg' => true,
+			'timnarr.imagex.customLazyLoading' => true,
+			'timnarr.imagex.srcsetInImg' => false,
 		]);
 		$attributes = $this->imagex(['loading' => 'eager'])->getImgAttributes();
 
@@ -159,7 +98,7 @@ class ImagexTest extends TestCase
 
 	public function testLazyImgMovesSrcToDataSrcWithCustomLazyloading()
 	{
-		$this->app(['timnarr.imagex.customLazyloading' => true]);
+		$this->app(['timnarr.imagex.customLazyLoading' => true]);
 		$attributes = $this->imagex()->getImgAttributes();
 
 		$this->assertNull($attributes['src']);
@@ -171,7 +110,7 @@ class ImagexTest extends TestCase
 
 	public function testUserSrcOverridesLazyDefaultWithCustomLazyloading()
 	{
-		$this->app(['timnarr.imagex.customLazyloading' => true]);
+		$this->app(['timnarr.imagex.customLazyLoading' => true]);
 		$attributes = $this->imagex([
 			'attributes' => ['img' => ['lazy' => ['src' => 'placeholder.svg']]],
 		])->getImgAttributes();
@@ -186,6 +125,12 @@ class ImagexTest extends TestCase
 		$this->assertSame('lazy', $attributes['loading']);
 		$this->assertStringContainsString('image-400x225', $attributes['src']);
 		$this->assertStringContainsString('800w', $attributes['srcset']);
+	}
+
+	public function testEagerImgGetsHighFetchpriority()
+	{
+		$this->assertSame('high', $this->imagex(['loading' => 'eager'])->getImgAttributes()['fetchpriority']);
+		$this->assertNull($this->imagex(['loading' => 'lazy'])->getImgAttributes()['fetchpriority'] ?? null);
 	}
 
 	public function testRelativeUrlsKeepSubfolderPath()
@@ -237,6 +182,23 @@ class ImagexTest extends TestCase
 		$this->assertStringContainsString('image-800x450-crop.jpg 800w', $attributes['srcset']);
 	}
 
+	public function testSrcsetPresetCropFalseIsReplacedWithTrueAndPositionsAreKept()
+	{
+		file_put_contents($this->root . '/content/test/image.jpg.txt', 'Focus: 20% 30%');
+		$this->app(['thumbs' => ['srcsets' => [
+			'default' => [
+				'400w' => ['width' => 400, 'crop' => false],
+				'800w' => ['width' => 800, 'crop' => 'top left'],
+			],
+		]]]);
+
+		$srcset = $this->imagex(['formats' => []])->getImgAttributes()['srcset'];
+
+		// true anchors the crop at the focus point
+		$this->assertStringContainsString('image-400x225-crop-20-30.jpg 400w', $srcset);
+		$this->assertStringContainsString('image-800x450-crop-top-left.jpg 800w', $srcset);
+	}
+
 	public function testIntrinsicRatioThrowsForImageWithoutDimensions()
 	{
 		$this->expectException(InvalidArgumentException::class);
@@ -249,7 +211,7 @@ class ImagexTest extends TestCase
 	{
 		$css = $this->imagex([
 			'attributes' => ['img' => ['id' => '1-hero']],
-			'artDirection' => [['media' => '(min-width: 800px)', 'ratio' => '1/1']],
+			'artDirection' => [['media' => '(width >= 800px)', 'ratio' => '1/1']],
 		])->getArtDirectionStyles();
 
 		$this->assertStringContainsString('#\31 -hero {', $css);
@@ -268,7 +230,7 @@ class ImagexTest extends TestCase
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage('artDirection[0] has unknown key(s): ratios');
 
-		$this->imagex(['artDirection' => [['media' => '(min-width: 800px)', 'ratios' => '1/1']]]);
+		$this->imagex(['artDirection' => [['media' => '(width >= 800px)', 'ratios' => '1/1']]]);
 	}
 
 	public function testArtDirectionSourceWithInvalidImageThrows()
@@ -276,7 +238,7 @@ class ImagexTest extends TestCase
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage("artDirection[0]: 'image' must be an instance of Kirby\\Cms\\File or null.");
 
-		$this->imagex(['artDirection' => [['media' => '(min-width: 800px)', 'image' => 'landscape.jpg']]]);
+		$this->imagex(['artDirection' => [['media' => '(width >= 800px)', 'image' => 'landscape.jpg']]]);
 	}
 
 	public function testArtDirectionSourceWithInvalidRatioThrowsOnConstruction()
@@ -284,24 +246,24 @@ class ImagexTest extends TestCase
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage("artDirection[0]: Invalid ratio format '16:9'");
 
-		$this->imagex(['artDirection' => [['media' => '(min-width: 800px)', 'ratio' => '16:9']]]);
+		$this->imagex(['artDirection' => [['media' => '(width >= 800px)', 'ratio' => '16:9']]]);
 	}
 
-	public function testArtDirectionIntrinsicRatioErrorNamesEntry()
+	public function testArtDirectionWithNonResizableImageThrows()
 	{
 		$this->expectException(InvalidArgumentException::class);
-		$this->expectExceptionMessage("artDirection[1]: Cannot use ratio 'intrinsic' for 'test/logo.svg'");
+		$this->expectExceptionMessage("artDirection[1]: Kirby can't resize 'logo.svg'");
 
 		$this->imagex(['artDirection' => [
-			['media' => '(min-width: 1200px)', 'ratio' => '1/1'],
-			['media' => '(min-width: 800px)', 'image' => $this->image('logo.svg')],
+			['media' => '(width >= 1200px)', 'ratio' => '1/1'],
+			['media' => '(width >= 800px)', 'image' => $this->image('logo.svg')],
 		]]);
 	}
 
 	public function testArtDirectionSourceWithNullImageFallsBackToMainImage()
 	{
 		$sources = $this->imagex(['artDirection' => [
-			['media' => '(min-width: 800px)', 'ratio' => '1/1', 'image' => null],
+			['media' => '(width >= 800px)', 'ratio' => '1/1', 'image' => null],
 		]])->getPictureSources();
 
 		$this->assertStringContainsString('image-400x400-crop', $sources[0]['srcset']);
@@ -376,7 +338,7 @@ class ImagexTest extends TestCase
 	public function testArtDirectionAcceptsFlatAttributes()
 	{
 		$sources = $this->imagex(['artDirection' => [
-			['media' => '(min-width: 800px)', 'attributes' => ['data-landscape' => 'true', 'class' => 'a b']],
+			['media' => '(width >= 800px)', 'attributes' => ['data-landscape' => 'true', 'class' => 'a b']],
 		]])->getPictureSources();
 
 		$this->assertSame('true', $sources[0]['data-landscape']);
@@ -386,7 +348,7 @@ class ImagexTest extends TestCase
 	public function testArtDirectionAcceptsClassStringInStructuredAttributes()
 	{
 		$sources = $this->imagex(['artDirection' => [
-			['media' => '(min-width: 800px)', 'attributes' => ['lazy' => ['class' => 'a b']]],
+			['media' => '(width >= 800px)', 'attributes' => ['lazy' => ['class' => 'a b']]],
 		]])->getPictureSources();
 
 		$this->assertSame(['a', 'b'], $sources[0]['class']);
@@ -406,8 +368,8 @@ class ImagexTest extends TestCase
 		$this->expectExceptionMessage('artDirection[1]: Type mismatch detected: attribute "style" in "lazy" expected to be array, integer given.');
 
 		$this->imagex(['artDirection' => [
-			['media' => '(min-width: 1200px)'],
-			['media' => '(min-width: 800px)', 'attributes' => ['lazy' => ['style' => 42]]],
+			['media' => '(width >= 1200px)'],
+			['media' => '(width >= 800px)', 'attributes' => ['lazy' => ['style' => 42]]],
 		]]);
 	}
 
@@ -417,16 +379,16 @@ class ImagexTest extends TestCase
 		$this->expectExceptionMessage('artDirection[0]: Attributes mix flat keys');
 
 		$this->imagex(['artDirection' => [
-			['media' => '(min-width: 800px)', 'attributes' => ['class' => 'a', 'lazy' => ['data-x' => 'y']]],
+			['media' => '(width >= 800px)', 'attributes' => ['class' => 'a', 'lazy' => ['data-x' => 'y']]],
 		]]);
 	}
 
 	public function testNonBooleanPluginOptionThrows()
 	{
-		$this->app(['timnarr.imagex.customLazyloading' => 'yes']);
+		$this->app(['timnarr.imagex.customLazyLoading' => 'yes']);
 
 		$this->expectException(InvalidArgumentException::class);
-		$this->expectExceptionMessage("Option 'timnarr.imagex.customLazyloading' must be a boolean. Got: string");
+		$this->expectExceptionMessage("Option 'timnarr.imagex.customLazyLoading' must be a boolean. Got: string");
 
 		$this->imagex();
 	}
@@ -468,7 +430,7 @@ class ImagexTest extends TestCase
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage("Option 'artDirection' must be an array of sources.");
 
-		$this->imagex(['artDirection' => '(min-width: 800px)']);
+		$this->imagex(['artDirection' => '(width >= 800px)']);
 	}
 
 	public function testMissingSrcsetConfigThrowsOnConstruction()
@@ -501,24 +463,72 @@ class ImagexTest extends TestCase
 		$this->imagex(['compareFormats' => true]);
 	}
 
-	public function testCompareFormatsRendersOnlyFormatsUpToTheSmallest()
+	public function testCompareFormatsKeepsAllFormatsWhenTheFirstIsSmallest()
+	{
+		$this->assertSame(['image/avif', 'image/webp'], array_column($this->pinnedImagex(['image.jpg' => 'avif'])->getPictureSources(), 'type'));
+	}
+
+	public function testCompareFormatsSkipsFormatsBeforeTheSmallest()
+	{
+		$this->assertSame(['image/webp'], array_column($this->pinnedImagex(['image.jpg' => 'webp'])->getPictureSources(), 'type'));
+	}
+
+	public function testCompareFormatsCanPickTheOriginalFormat()
 	{
 		$this->app([
 			'timnarr.imagex.formats' => ['webp'],
 			'timnarr.imagex.addOriginalFormatAsSource' => true,
 		]);
-		$imagex = $this->imagex(['compareFormats' => true]);
 
-		$smallest = $imagex->getSmallestFormatForImage();
-		$types = array_column($imagex->getPictureSources(), 'type');
+		$this->assertSame(['image/jpeg'], array_column($this->pinnedImagex(['image.jpg' => 'originalformat'])->getPictureSources(), 'type'));
+	}
 
-		$this->assertContains($smallest, ['webp', 'originalformat']);
-		$this->assertSame($smallest === 'webp' ? ['image/webp', 'image/jpeg'] : ['image/jpeg'], $types);
+	public function testArtDirectedSourcesKeepTheirFormatsBeforeTheDefault()
+	{
+		// Regression: sources were grouped by format, so the default AVIF source
+		// (no media, always matches) came before the art-directed WebP source,
+		// and AVIF browsers never used the art-directed image.
+		$sources = $this->pinnedImagex(['image.jpg' => 'avif', 'landscape.jpg' => 'webp'], [
+			'artDirection' => [['media' => '(width >= 800px)', 'image' => $this->image('landscape.jpg')]],
+		])->getPictureSources();
+
+		$this->assertSame(['image/webp', 'image/avif', 'image/webp'], array_column($sources, 'type'));
+		$this->assertSame(['(width >= 800px)', null, null], array_map(fn ($source) => $source['media'] ?? null, $sources));
+	}
+
+	public function testArtDirectedImageKeepsFormatsTheMainImageSkips()
+	{
+		$sources = $this->pinnedImagex(['image.jpg' => 'webp', 'landscape.jpg' => 'avif'], [
+			'artDirection' => [['media' => '(width >= 800px)', 'image' => $this->image('landscape.jpg')]],
+		])->getPictureSources();
+
+		$this->assertSame(['image/avif', 'image/webp', 'image/webp'], array_column($sources, 'type'));
+	}
+
+	public function testArtDirectionWithoutImageFollowsTheMainImageFormats()
+	{
+		$sources = $this->pinnedImagex(['image.jpg' => 'webp'], [
+			'artDirection' => [['media' => '(width >= 800px)', 'ratio' => '1/1']],
+		])->getPictureSources();
+
+		$this->assertSame(['image/webp', 'image/webp'], array_column($sources, 'type'));
+		$this->assertSame('(width >= 800px)', $sources[0]['media']);
+	}
+
+	public function testPictureSourcesAreBuiltOncePerInstance()
+	{
+		$imagex = $this->pinnedImagex(['image.jpg' => 'webp'], ['loading' => 'eager', 'preload' => true]);
+		$imagex->getPictureSources();
+		$calls = PinnedFormatsImagex::$calls;
+		$imagex->getPictureSources();
+		$imagex->getPreloadLinks();
+
+		$this->assertSame($calls, PinnedFormatsImagex::$calls);
 	}
 
 	public function testRenderingDoesNotCacheSrcsetPresetsPersistently()
 	{
-		$imagex = $this->imagex(['artDirection' => [['media' => '(min-width: 800px)', 'ratio' => '1/1']]]);
+		$imagex = $this->imagex(['artDirection' => [['media' => '(width >= 800px)', 'ratio' => '1/1']]]);
 		$imagex->getPictureSources();
 		$imagex->getImgAttributes();
 
@@ -534,6 +544,24 @@ class ImagexTest extends TestCase
 		$this->imagex(['compareFormats' => true])->getPictureSources();
 
 		$this->assertCount(1, $this->cacheFiles('compare-formats-'));
+	}
+
+	public function testCompareFormatsCacheIsInvalidatedWhenTheImageChanges()
+	{
+		$options = [
+			'timnarr.imagex.formats' => ['webp'],
+			'timnarr.imagex.addOriginalFormatAsSource' => true,
+		];
+		$this->app($options);
+		$this->imagex(['compareFormats' => true])->getPictureSources();
+
+		// A replaced file keeps its id, only the modification time changes
+		touch($this->root . '/content/test/image.jpg', time() + 60);
+		clearstatcache();
+		$this->app($options);
+		$this->imagex(['compareFormats' => true])->getPictureSources();
+
+		$this->assertCount(2, $this->cacheFiles('compare-formats-'));
 	}
 
 	private function cacheFiles(string $prefix): array
@@ -557,7 +585,7 @@ class ImagexTest extends TestCase
 		$html = snippet('imagex-picture', [
 			'image' => $this->image(),
 			'ratio' => '16/9',
-			'artDirection' => [['media' => '(min-width: 800px)', 'ratio' => '1/1']],
+			'artDirection' => [['media' => '(width >= 800px)', 'ratio' => '1/1']],
 		], return: true);
 
 		$this->assertStringContainsString('<picture', $html);
@@ -566,7 +594,7 @@ class ImagexTest extends TestCase
 		$this->assertMatchesRegularExpression('/<img [^>]*id="(imagex-[0-9a-f]{8})"/', $html);
 
 		preg_match('/<img [^>]*id="([^"]+)"/', $html, $matches);
-		$this->assertStringContainsString('<style>@media (min-width: 800px) { #' . $matches[1] . ' {', $html);
+		$this->assertStringContainsString('<style>@media (width >= 800px) { #' . $matches[1] . ' {', $html);
 	}
 
 	public function testJsonSnippetRenders()
@@ -576,7 +604,119 @@ class ImagexTest extends TestCase
 
 		$this->assertSame(400, $data['img']['width']);
 		$this->assertSame(225, $data['img']['height']);
-		$this->assertCount(2, $data['picture']['sources']);
+		$this->assertCount(2, $data['sources']);
+	}
+
+	public function testJsonSnippetAlwaysOutputsAllKeys()
+	{
+		$json = snippet('imagex-picture-json', ['image' => $this->image(), 'formats' => []], return: true);
+
+		$this->assertSame(['picture', 'sources', 'img', 'artDirectionStyles', 'preloadLinks'], array_keys(json_decode($json, true)));
+		// Attribute maps are objects even when empty, lists stay lists
+		$this->assertStringStartsWith('{"picture":{},"sources":[],"img":{', $json);
+		$this->assertStringEndsWith(',"artDirectionStyles":"","preloadLinks":[]}', $json);
+	}
+
+	public function testJsonSnippetSeparatesPictureAttributesFromSources()
+	{
+		$json = snippet('imagex-picture-json', ['image' => $this->image(), 'attributes' => ['picture' => ['class' => 'frame']]], return: true);
+		$data = json_decode($json, true, flags: JSON_THROW_ON_ERROR);
+
+		$this->assertSame(['class' => 'frame'], $data['picture']);
+		$this->assertSame(['image/avif', 'image/webp'], array_column($data['sources'], 'type'));
+	}
+
+	public function testFileMethodReturnsAnImagexForTheFile()
+	{
+		$imagex = $this->image()->imagex(['ratio' => '16/9']);
+
+		$this->assertInstanceOf(Imagex::class, $imagex);
+		$this->assertSame(225, $imagex->getImgAttributes()['height']);
+	}
+
+	public function testFileMethodThrowsOnUnknownOptions()
+	{
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('Unknown option(s): ration');
+
+		$this->image()->imagex(['ration' => '16/9']);
+	}
+
+	public function testFileMethodThrowsOnImageOption()
+	{
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage("uses the file itself as 'image'");
+
+		$this->image()->imagex(['image' => $this->image('landscape.jpg')]);
+	}
+
+	public function testFileMethodRendersThePictureSnippet()
+	{
+		$html = (string)$this->image()->imagex(['ratio' => '16/9', 'attributes' => ['img' => ['alt' => 'A cat']]]);
+
+		$this->assertSame(snippet('imagex-picture', ['image' => $this->image(), 'ratio' => '16/9', 'attributes' => ['img' => ['alt' => 'A cat']]], return: true), $html);
+	}
+
+	public function testFileMethodIgnoresControllerData()
+	{
+		// What a page controller returning these variables puts into every snippet's scope
+		App::instance()->data = ['ratio' => '1/1', 'loading' => 'eager'];
+
+		$html = (string)$this->image()->imagex();
+
+		$this->assertMatchesRegularExpression('/<img [^>]*height="300"/', $html);
+		$this->assertStringNotContainsString('fetchpriority', $html);
+	}
+
+	public function testSnippetIgnoresAControllerVariableNamedImagex()
+	{
+		App::instance()->data = ['imagex' => $this->image()->imagex(['ratio' => '1/1'])];
+
+		$html = snippet('imagex-picture', ['image' => $this->image(), 'ratio' => '16/9'], return: true);
+
+		$this->assertMatchesRegularExpression('/<img [^>]*height="225"/', $html);
+	}
+
+	public function testFileMethodEncodesAsTheJsonSnippet()
+	{
+		$json = snippet('imagex-picture-json', ['image' => $this->image(), 'ratio' => '16/9'], return: true);
+
+		$this->assertSame($json, json_encode($this->image()->imagex(['ratio' => '16/9']), JSON_UNESCAPED_SLASHES));
+	}
+
+	public function testToArrayMatchesTheJsonSnippet()
+	{
+		$options = ['image' => $this->image(), 'ratio' => '16/9', 'attributes' => ['img' => ['class' => 'hero']]];
+		$json = snippet('imagex-picture-json', $options, return: true);
+
+		$this->assertSame(json_decode($json, true), (new Imagex($options))->toArray());
+		$this->assertSame('hero', (new Imagex($options))->toArray()['img']['class']);
+	}
+
+	public function testJsonSnippetOutputsFieldsAsStrings()
+	{
+		$json = snippet('imagex-picture-json', [
+			'image' => $this->image(),
+			'attributes' => ['img' => ['alt' => new Field(null, 'alt', 'A cat'), 'class' => new Field(null, 'class', 'hero')]],
+		], return: true);
+		$data = json_decode($json, true, flags: JSON_THROW_ON_ERROR);
+
+		$this->assertSame('A cat', $data['img']['alt']);
+		$this->assertSame('hero', $data['img']['class']);
+	}
+
+	public function testJsonSnippetLeavesOutAttributesLikeTheHtmlSnippet()
+	{
+		$options = ['image' => $this->image(), 'attributes' => ['img' => ['alt' => '', 'decoding' => false, 'class' => null]]];
+		$data = json_decode(snippet('imagex-picture-json', $options, return: true), true, flags: JSON_THROW_ON_ERROR);
+		$html = snippet('imagex-picture', $options, return: true);
+
+		$this->assertSame('', $data['img']['alt']);
+		$this->assertStringContainsString('alt=""', $html);
+		$this->assertArrayNotHasKey('decoding', $data['img']);
+		$this->assertStringNotContainsString('decoding=', $html);
+		$this->assertArrayNotHasKey('class', $data['img']);
+		$this->assertStringNotContainsString('class=', $html);
 	}
 
 	public function testSnippetWithOnlyImageUsesClassDefaults()
@@ -616,10 +756,10 @@ class ImagexTest extends TestCase
 		$css = $this->imagex([
 			'focus' => true,
 			'nonce' => 'abc123',
-			'artDirection' => [['media' => '(min-width: 800px)', 'ratio' => '1/1']],
+			'artDirection' => [['media' => '(width >= 800px)', 'ratio' => '1/1']],
 		])->getArtDirectionStyles();
 
-		$this->assertMatchesRegularExpression('/^#imagex-[0-9a-f]{8} \\{ object-fit: cover; object-position: center; \\} @media \\(min-width: 800px\\)/', $css);
+		$this->assertMatchesRegularExpression('/^#imagex-[0-9a-f]{8} \\{ object-fit: cover; object-position: center; \\} @media \\(width >= 800px\\)/', $css);
 	}
 
 	public function testNonceWithoutFocusOrArtDirectionGeneratesNoStyles()
@@ -648,5 +788,236 @@ class ImagexTest extends TestCase
 
 		$this->assertStringContainsString('<style nonce="abc123">#imagex-', $html);
 		$this->assertStringNotContainsString('style="', $html);
+	}
+
+	public function testNonResizableImageRendersOnlyTheOriginalAsImg()
+	{
+		$imagex = $this->imagex(['image' => $this->image('icon.svg'), 'ratio' => 'intrinsic']);
+		$img = $imagex->getImgAttributes();
+
+		$this->assertSame([], $imagex->getPictureSources());
+		$this->assertStringEndsWith('/icon.svg', $img['src']);
+		$this->assertNull($img['srcset']);
+		$this->assertSame(400, $img['width']);
+		$this->assertSame(225, $img['height']);
+	}
+
+	public function testNonResizableImageSkipsCompareFormats()
+	{
+		$imagex = $this->imagex(['image' => $this->image('icon.svg'), 'compareFormats' => true]);
+
+		$this->assertSame([], $imagex->getPictureSources());
+		$this->assertSame([], $this->cacheFiles('compare-formats-'));
+	}
+
+	public function testNonResizableImageKeepsResizableArtDirectedSources()
+	{
+		$sources = $this->imagex([
+			'image' => $this->image('icon.svg'),
+			'artDirection' => [['media' => '(width >= 800px)', 'image' => $this->image('landscape.jpg')]],
+		])->getPictureSources();
+
+		$this->assertSame(['image/avif', 'image/webp'], array_column($sources, 'type'));
+		$this->assertSame(['(width >= 800px)', '(width >= 800px)'], array_column($sources, 'media'));
+	}
+
+	public function testArtDirectionFallingBackToNonResizableMainImageThrows()
+	{
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage("artDirection[0]: Kirby can't resize 'icon.svg'");
+
+		$this->imagex([
+			'image' => $this->image('icon.svg'),
+			'artDirection' => [['media' => '(width >= 800px)', 'ratio' => '1/1']],
+		]);
+	}
+
+	public function testNonResizableImagePreloadLinkUsesHref()
+	{
+		$this->app(['timnarr.imagex.stack' => 'imagex-head']);
+		$links = $this->imagex(['image' => $this->image('icon.svg'), 'loading' => 'eager', 'preload' => true])->getPreloadLinks();
+
+		$this->assertCount(1, $links);
+		$this->assertNull($links[0]['imagesrcset']);
+		$this->assertNull($links[0]['type']);
+		$this->assertStringEndsWith('/icon.svg', $links[0]['href']);
+	}
+
+	public function testPreloadLinkFallsBackToImgForNonResizableDefault()
+	{
+		$links = $this->imagex([
+			'image' => $this->image('icon.svg'),
+			'loading' => 'eager',
+			'preload' => true,
+			'artDirection' => [['media' => '(width >= 800px)', 'image' => $this->image('landscape.jpg')]],
+		])->getPreloadLinks();
+
+		$this->assertSame(['image/avif', null], array_column($links, 'type'));
+		$this->assertSame(['(width >= 800px)', '(width < 800px)'], array_column($links, 'media'));
+		$this->assertStringEndsWith('/icon.svg', $links[1]['href']);
+	}
+
+	public function testPictureSnippetRendersNonResizableImage()
+	{
+		$html = snippet('imagex-picture', ['image' => $this->image('icon.svg')], return: true);
+
+		$this->assertStringNotContainsString('<source', $html);
+		$this->assertStringNotContainsString('srcset', $html);
+		$this->assertMatchesRegularExpression('/<img [^>]*height="225"[^>]*src="[^"]+\/icon\.svg"[^>]*width="400"/', $html);
+	}
+
+	public function testFormatsOptionOverridesGlobalFormats()
+	{
+		$sources = $this->imagex(['formats' => ['webp']])->getPictureSources();
+
+		$this->assertSame(['image/webp'], array_column($sources, 'type'));
+	}
+
+	public function testEmptyFormatsOptionRendersOnlyTheImg()
+	{
+		$imagex = $this->imagex(['formats' => []]);
+
+		$this->assertSame([], $imagex->getPictureSources());
+		$this->assertStringContainsString('800w', $imagex->getImgAttributes()['srcset']);
+	}
+
+	public function testNullFormatsOptionUsesGlobalFormats()
+	{
+		$this->assertSame(['image/avif', 'image/webp'], array_column($this->imagex(['formats' => null])->getPictureSources(), 'type'));
+	}
+
+	public function testFormatsOptionKeepsAddOriginalFormatAsSource()
+	{
+		$this->app(['timnarr.imagex.addOriginalFormatAsSource' => true]);
+
+		$this->assertSame(['image/webp', 'image/jpeg'], array_column($this->imagex(['formats' => ['webp']])->getPictureSources(), 'type'));
+	}
+
+	public function testInvalidFormatsOptionNamesTheSnippetOption()
+	{
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage("Option 'formats' must be an array of format names");
+
+		$this->imagex(['formats' => 'webp']);
+	}
+
+	public function testFormatsOptionWithoutPresetThrows()
+	{
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage("Missing srcset preset(s) for active formats: 'default-png'");
+
+		$this->imagex(['formats' => ['png']]);
+	}
+
+	public function testCompareFormatsWithSingleSnippetFormatThrows()
+	{
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('Not enough formats');
+
+		$this->imagex(['formats' => ['webp'], 'compareFormats' => true]);
+	}
+
+	public function testPictureSnippetForwardsFormatsOption()
+	{
+		$html = snippet('imagex-picture', ['image' => $this->image(), 'formats' => ['webp']], return: true);
+
+		$this->assertStringContainsString('type="image/webp"', $html);
+		$this->assertStringNotContainsString('image/avif', $html);
+	}
+
+	public function testOriginalformatInFormatsAddsTheImagesOwnFormat()
+	{
+		$sources = $this->imagex(['formats' => ['webp', 'originalformat']])->getPictureSources();
+
+		$this->assertSame(['image/webp', 'image/jpeg'], array_column($sources, 'type'));
+	}
+
+	public function testOriginalformatIsOnlyAddedOnceWithAddOriginalFormatAsSource()
+	{
+		$sources = $this->imagex(['formats' => ['originalformat', 'webp'], 'addOriginalFormatAsSource' => true])->getPictureSources();
+
+		$this->assertSame(['image/jpeg', 'image/webp'], array_column($sources, 'type'));
+	}
+
+	public function testCustomLazyLoadingOptionOverridesGlobalOption()
+	{
+		$this->assertArrayHasKey('data-src', array_filter($this->imagex(['customLazyLoading' => true])->getImgAttributes()));
+
+		$this->app(['timnarr.imagex.customLazyLoading' => true]);
+		$this->assertSame('lazy', $this->imagex(['customLazyLoading' => false])->getImgAttributes()['loading']);
+	}
+
+	public function testSrcsetInImgOptionOverridesGlobalOption()
+	{
+		$this->assertNull($this->imagex(['srcsetInImg' => false])->getImgAttributes()['srcset']);
+
+		$this->app(['timnarr.imagex.srcsetInImg' => false]);
+		$this->assertStringContainsString('800w', $this->imagex(['srcsetInImg' => true])->getImgAttributes()['srcset']);
+	}
+
+	public function testRelativeUrlsOptionOverridesGlobalOption()
+	{
+		$this->assertStringStartsWith('/media/', $this->imagex(['relativeUrls' => true])->getImgAttributes()['src']);
+	}
+
+	public function testAddOriginalFormatAsSourceOptionOverridesGlobalOption()
+	{
+		$sources = $this->imagex(['addOriginalFormatAsSource' => true])->getPictureSources();
+
+		$this->assertSame(['image/avif', 'image/webp', 'image/jpeg'], array_column($sources, 'type'));
+	}
+
+	public function testInvalidCompareFormatsWeightsOptionNamesTheSnippetOption()
+	{
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage("Option 'compareFormatsWeights' must be a preset name");
+
+		$this->imagex(['compareFormatsWeights' => 5]);
+	}
+
+	public function testNonBooleanSnippetOptionNamesTheSnippetOption()
+	{
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage("Option 'srcsetInImg' must be a boolean. Got: string");
+
+		$this->imagex(['srcsetInImg' => 'no']);
+	}
+
+	public function testPictureSnippetForwardsOverridableOptions()
+	{
+		$html = snippet('imagex-picture', ['image' => $this->image(), 'srcsetInImg' => false, 'relativeUrls' => true], return: true);
+
+		$this->assertMatchesRegularExpression('/<img [^>]*src="\/media\//', $html);
+		$this->assertDoesNotMatchRegularExpression('/<img [^>]*srcset=/', $html);
+	}
+
+	#[IgnoreDeprecations]
+	public function testDeprecatedNoSrcsetInImgOptionStillWorks()
+	{
+		$this->app(['debug' => true, 'timnarr.imagex.noSrcsetInImg' => true]);
+
+		$this->expectUserDeprecationMessage("[kirby-imagex] The option 'timnarr.imagex.noSrcsetInImg' is deprecated. Use 'timnarr.imagex.srcsetInImg' with the opposite value instead.");
+
+		$this->assertNull($this->imagex()->getImgAttributes()['srcset']);
+	}
+
+	#[IgnoreDeprecations]
+	public function testDeprecatedCustomLazyloadingOptionStillWorks()
+	{
+		$this->app(['debug' => true, 'timnarr.imagex.customLazyloading' => true]);
+
+		$this->expectUserDeprecationMessage("[kirby-imagex] The option 'timnarr.imagex.customLazyloading' is deprecated. Use 'timnarr.imagex.customLazyLoading' instead.");
+
+		$this->assertStringContainsString('image-400x225', $this->imagex()->getImgAttributes()['data-src']);
+	}
+
+	public function testNonBooleanDeprecatedOptionNamesTheDeprecatedOption()
+	{
+		$this->app(['timnarr.imagex.noSrcsetInImg' => 'yes']);
+
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage("Option 'timnarr.imagex.noSrcsetInImg' must be a boolean. Got: string");
+
+		$this->imagex();
 	}
 }

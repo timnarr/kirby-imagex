@@ -2,30 +2,58 @@
 
 declare(strict_types = 1);
 
-namespace TimNarr;
+namespace TimNarr\Imagex;
 
 use Kirby\Exception\InvalidArgumentException;
+use Stringable;
 
 /**
- * Converts 'class' and 'style' string values to arrays in a flat attribute array.
+ * Normalizes the values of a flat attribute array, so the HTML and JSON output get the same values.
  *
- * 'class' strings are split by whitespace into individual class names.
- * 'style' strings are wrapped in a single-element array to preserve CSS values
- * that contain spaces (e.g. 'background-color: red').
+ * - Stringable values (e.g. Kirby fields like `$image->alt()`) become strings,
+ *   also inside 'class' and 'style' arrays.
+ * - 'class' strings are split by whitespace into individual class names.
+ * - 'style' strings are wrapped in a single-element array to preserve CSS values
+ *   that contain spaces (e.g. 'background-color: red').
+ * - 'class' and 'style' set to null or false become an empty array: they add nothing,
+ *   which allows conditional values like `$isActive ? 'active' : null`.
+ * - 'style' declarations end with a semicolon, so they stay separate when joined.
+ *
+ * Other types of 'class' and 'style' are left for validateAttributeTypes() to reject.
  *
  * @param array $attributes Flat attribute array (not structured by loading mode).
- * @return array Attribute array with 'class' and 'style' coerced to arrays.
+ * @return array Attribute array with normalized values, 'class' and 'style' as arrays.
  *
  * @internal Not part of the public API — may change in any release.
  */
-function coerceClassStyleToArrays(array $attributes): array
+function normalizeAttributeValues(array $attributes): array
 {
-	if (isset($attributes['class']) && is_string($attributes['class'])) {
-		$attributes['class'] = array_values(array_filter(explode(' ', $attributes['class'])));
+	$toString = fn (mixed $value) => $value instanceof Stringable ? (string)$value : $value;
+	$attributes = array_map($toString, $attributes);
+
+	foreach (['class', 'style'] as $name) {
+		if (!array_key_exists($name, $attributes)) {
+			continue;
+		}
+
+		$value = $attributes[$name];
+
+		$attributes[$name] = match (true) {
+			$value === null, $value === false => [],
+			is_string($value) && $name === 'class' => preg_split('/\s+/', $value, -1, PREG_SPLIT_NO_EMPTY),
+			is_string($value) => [$value],
+			is_array($value) => array_map($toString, $value),
+			default => $value,
+		};
 	}
 
-	if (isset($attributes['style']) && is_string($attributes['style'])) {
-		$attributes['style'] = [$attributes['style']];
+	if (is_array($attributes['style'] ?? null)) {
+		$attributes['style'] = array_map(
+			fn (mixed $declaration) => is_string($declaration) && trim($declaration) !== ''
+				? rtrim(trim($declaration), ';') . ';'
+				: $declaration,
+			$attributes['style']
+		);
 	}
 
 	return $attributes;
@@ -128,9 +156,10 @@ function mergeHTMLAttributes(array $attributes, string $loadingMode, array $defa
  * with missing keys filled in as empty arrays. Mixing both styles throws, since
  * the flat keys would otherwise be dropped silently.
  *
- * 'class' and 'style' strings are auto-converted to arrays:
+ * Values are normalized via normalizeAttributeValues(), e.g.:
  * - 'class' => 'foo bar'  becomes  'class' => ['foo', 'bar']
- * - 'style' => 'color: red'  becomes  'style' => ['color: red']
+ * - 'style' => 'color: red'  becomes  'style' => ['color: red;']
+ * - 'alt' => $image->alt()  becomes  'alt' => 'The field value'
  *
  * @param array $attributes User-provided attributes (flat or structured)
  * @return array Normalized attributes with shared/eager/lazy structure
@@ -142,32 +171,24 @@ function normalizeAttributesStructure(array $attributes): array
 {
 	$loadingModeKeys = ['shared', 'eager', 'lazy'];
 
-	// Check if any loading mode keys exist
-	$hasLoadingModeKeys = !empty(array_intersect(array_keys($attributes), $loadingModeKeys));
-
-	if ($hasLoadingModeKeys) {
-		$flatKeys = array_diff(array_keys($attributes), $loadingModeKeys);
-
-		if (!empty($flatKeys)) {
-			$flatList = implode(', ', array_map(fn ($key) => "'{$key}'", $flatKeys));
-
-			throw new InvalidArgumentException("[kirby-imagex] Attributes mix flat keys ({$flatList}) with loading mode keys ('shared', 'eager', 'lazy'). Move them into 'shared', or pass all attributes flat.");
-		}
-
-		// Already structured, just ensure all keys exist and coerce class/style
-		$normalized = [
-			'shared' => coerceClassStyleToArrays($attributes['shared'] ?? []),
-			'eager' => coerceClassStyleToArrays($attributes['eager'] ?? []),
-			'lazy' => coerceClassStyleToArrays($attributes['lazy'] ?? []),
-		];
-	} else {
-		// Flat structure - wrap in 'shared'
-		$normalized = [
-			'shared' => coerceClassStyleToArrays($attributes),
-			'eager' => [],
-			'lazy' => [],
-		];
+	// Flat attributes apply to both loading modes
+	if (empty(array_intersect(array_keys($attributes), $loadingModeKeys))) {
+		$attributes = ['shared' => $attributes];
 	}
+
+	$flatKeys = array_diff(array_keys($attributes), $loadingModeKeys);
+
+	if (!empty($flatKeys)) {
+		$flatList = implode(', ', array_map(fn ($key) => "'{$key}'", $flatKeys));
+
+		throw new InvalidArgumentException("[kirby-imagex] Attributes mix flat keys ({$flatList}) with loading mode keys ('shared', 'eager', 'lazy'). Move them into 'shared', or pass all attributes flat.");
+	}
+
+	$normalized = [
+		'shared' => normalizeAttributeValues($attributes['shared'] ?? []),
+		'eager' => normalizeAttributeValues($attributes['eager'] ?? []),
+		'lazy' => normalizeAttributeValues($attributes['lazy'] ?? []),
+	];
 
 	validateAttributeTypes($normalized);
 

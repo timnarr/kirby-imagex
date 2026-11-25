@@ -2,7 +2,7 @@
 
 declare(strict_types = 1);
 
-namespace TimNarr;
+namespace TimNarr\Imagex;
 
 use Kirby\Cms\File;
 use Kirby\Exception\InvalidArgumentException;
@@ -40,7 +40,7 @@ function normalizeFormat(string $format): string
  */
 function urlHandler(string $url, bool|null $useRelativeUrls = null, string|null $siteUrl = null): string
 {
-	$useRelativeUrls = $useRelativeUrls ?? kirby()->option('timnarr.imagex.relativeUrls');
+	$useRelativeUrls ??= kirby()->option('timnarr.imagex.relativeUrls');
 
 	if (!$useRelativeUrls) {
 		return $url;
@@ -77,15 +77,16 @@ function getUrlOrigin(string $url): string|null
 }
 
 /**
- * Finds and returns the smallest value in an array and its key.
+ * Finds the key of the smallest value in an array, e.g. the format with the
+ * smallest file size.
  *
- * @param array $array The array to search.
- * @return string The smallestKey.
+ * @param array $array The array to search, keyed by string.
+ * @return string The key of the smallest value.
  * @throws InvalidArgumentException If the array is empty.
  *
  * @internal Not part of the public API — may change in any release.
  */
-function findSmallestValueAndKey(array $array): string
+function findKeyOfSmallestValue(array $array): string
 {
 	if (empty($array)) {
 		throw new InvalidArgumentException('[kirby-imagex] Input array cannot be empty.');
@@ -148,33 +149,31 @@ function isFormatSkippable(string $format, array $formats, string $smallestForma
  * with 'small', 'medium', and 'large' keys that must sum to 1.0.
  *
  * @param mixed $weights Preset name or custom weights array, as configured.
+ * @param string $label The option's name for error messages.
  * @return array Resolved weights array with 'small', 'medium', 'large' keys.
  * @throws InvalidArgumentException If it's neither a string nor an array, the preset is unknown or the custom array is invalid.
  *
  * @internal Not part of the public API — may change in any release.
  */
-function resolveCompareFormatsWeights(mixed $weights): array
+function resolveCompareFormatsWeights(mixed $weights, string $label = "Option 'timnarr.imagex.compareFormatsWeights'"): array
 {
 	$presets = [
 		'mobile'   => ['small' => 0.5,  'medium' => 0.3,  'large' => 0.2],
 		'desktop'  => ['small' => 0.2,  'medium' => 0.3,  'large' => 0.5],
 		'balanced' => ['small' => 0.34, 'medium' => 0.33, 'large' => 0.33],
 	];
-
-	if (!is_string($weights) && !is_array($weights)) {
-		$available = implode(', ', array_keys($presets));
-
-		throw new InvalidArgumentException("[kirby-imagex] Option 'timnarr.imagex.compareFormatsWeights' must be a preset name ({$available}) or an array with 'small', 'medium' and 'large' weights. Got: " . get_debug_type($weights));
-	}
+	$available = implode(', ', array_keys($presets));
 
 	if (is_string($weights)) {
 		if (!isset($presets[$weights])) {
-			$available = implode(', ', array_keys($presets));
-
 			throw new InvalidArgumentException("[kirby-imagex] Invalid compareFormatsWeights preset '{$weights}'. Available presets: {$available}");
 		}
 
 		return $presets[$weights];
+	}
+
+	if (!is_array($weights)) {
+		throw new InvalidArgumentException("[kirby-imagex] {$label} must be a preset name ({$available}) or an array with 'small', 'medium' and 'large' weights. Got: " . get_debug_type($weights));
 	}
 
 	foreach (['small', 'medium', 'large'] as $key) {
@@ -306,14 +305,12 @@ function escapeCssIdentifier(string $value): string
  */
 function applyUrlHandlerToAttributes(array $attributes, bool|null $useRelativeUrls = null, string|null $siteUrl = null): array
 {
-	$useRelativeUrls = $useRelativeUrls ?? kirby()->option('timnarr.imagex.relativeUrls');
+	$useRelativeUrls ??= kirby()->option('timnarr.imagex.relativeUrls');
 
-	// Only process if relativeUrls option is enabled
 	if (!$useRelativeUrls) {
 		return $attributes;
 	}
 
-	// List of URL-based attributes that should be processed
 	$urlAttributes = ['src', 'srcset', 'data-src', 'data-srcset'];
 
 	foreach ($urlAttributes as $attr) {
@@ -326,8 +323,10 @@ function applyUrlHandlerToAttributes(array $attributes, bool|null $useRelativeUr
 }
 
 /**
- * Transforms data for JSON output by converting class/style arrays to strings
- * and removing null values and empty strings.
+ * Transforms data for JSON output, leaving out attributes exactly like Kirby's
+ * `attr()` does in the HTML output: class/style arrays become strings, null,
+ * false and empty class/style arrays are removed. Empty strings are kept, e.g.
+ * `alt=""` for decorative images.
  *
  * @param mixed $data The data to transform.
  * @return mixed The transformed data.
@@ -343,16 +342,14 @@ function transformForJson(mixed $data): mixed
 	$result = [];
 
 	foreach ($data as $key => $value) {
-		// Convert class and style arrays to strings
 		if (($key === 'class' || $key === 'style') && is_array($value)) {
-			$value = implode(' ', $value);
+			$value = $value === [] ? null : implode(' ', $value);
 		}
 
 		// Recursively transform nested arrays
 		$transformed = transformForJson($value);
 
-		// Skip null values and empty strings
-		if ($transformed !== null && $transformed !== '') {
+		if ($transformed !== null && $transformed !== false) {
 			$result[$key] = $transformed;
 		}
 	}
