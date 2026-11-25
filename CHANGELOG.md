@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.0-beta.3] - November 25, 2026
+
+Third beta for Kirby 6, to test against the stable Kirby 6.0.0 release before tagging `0.6.0`. Install it with `composer require timnarr/kirby-imagex:^0.6@beta`. For Kirby 5, stay on `0.5.x`. When updating from `0.5.x`, read the `0.6.0-beta.1` and `0.6.0-beta.2` entries: they contain breaking changes and a migration guide.
+
+### Changed
+- Tested against the stable Kirby 6.0.0 release.
+- PHP 8.6 is now supported (PHP 8.3–8.6, like Kirby 6).
+
 ## [0.6.0-beta.2] - November 2, 2026
 
 Second beta for Kirby 6. Install it with `composer require timnarr/kirby-imagex:^0.6@beta`. For Kirby 5, stay on `0.5.x`. If you use the `imagex-picture-json` output, see the migration guide below: its structure changed.

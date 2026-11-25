@@ -16,9 +16,9 @@ jobs:
       fail-fast: false
       matrix:
         # phpunit/phpunit ^13 requires PHP >=8.4.1, so the full dev toolchain
-        # (php-cs-fixer + phpunit) only installs on 8.4/8.5. Older supported
+        # (php-cs-fixer + phpunit) only installs on 8.4+. Older supported
         # versions are covered by the `compatibility` job below.
-        php-version: ['8.4', '8.5']
+        php-version: ['8.4', '8.5', '8.6']
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
